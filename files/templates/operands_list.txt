@@ -1,0 +1,55 @@
+NATIVE PYTHON OPERATORS
+www.tutorialspoint.com/python/python_basic_operators.htm
+
+**				Exponentiation (raise to the power)
+~ + -			Complement, unary plus and minus (method names for the last two are +@ and -@)
+* / % //		Multiply, divide, modulo and floor division
++ -				Addition and subtraction
+
+>> <<			Right and left bitwise shift
+
+&				Bitwise 'AND'td>
+^ |				Bitwise exclusive `OR' and regular `OR'
+
+<= < > >=		Comparison operators
+<> == !=		Equality operators
+
+is is not		Identity operators
+in not in		Membership operators
+not or and		Logical operators
+
+= %= /= //= -= += *= **= 	Assignment operators
+
+
+GP OPERAND GROUPS
+(copy / paste into functions.cvs, giving weight through quantity of copies)
+
++,2
+-,2
+*,2
+/,2
+**,2 (not recommended)
+
+and,2	or	&,2 ???
+or,2	or	|,2 ???
+not,1	or	!,2 ??? # need to get 'not' to not fall at the end
+
++ sin,2
+- sin,2
+* sin,2
+/ sin,2
+
++ cos,2
+- cos,2
+* cos,2
+/ cos,2
+
++ exp,2 
+- exp,2
+* exp,2
+/ exp,2
+
++ sqrt,2
++ sqrt,2
+- sqrt,2
+/ sqrt,2
