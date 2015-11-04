@@ -2,6 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
+# version 0.9
 
 import sys # sys.path.append('modules/') # add the directory 'modules' to the current path
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()

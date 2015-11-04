@@ -2,6 +2,7 @@
 # Define the Karoo GP methods and global variables
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
+# version 0.9
 
 import csv
 import os
@@ -186,7 +187,7 @@ class Base_GP(object):
 		print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 		print '\t **    ** **    **  **    **  ******    ******       ******   **'
 		print '\033[0;0m'
-		print '\t\033[36m Genetic Programming in Python - by Kai Staats\033[0;0m'
+		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9\033[0;0m'
 		
 		if run == 'server':
 			print '\n\t Type \033[1m?\033[0;0m to configure Karoo GP before your run, or \033[1mENTER\033[0;0m to continue.\033[0;0m'
