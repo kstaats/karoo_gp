@@ -1,7 +1,6 @@
 # Karoo Feature Set Prep
 # Prepare a balanced feature set
 # by Kai Staats, MSc UCT / AIMS and Arun Kumar, PhD
-# ver. 20151020
 
 import sys
 import numpy as np

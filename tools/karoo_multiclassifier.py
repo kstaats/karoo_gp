@@ -1,7 +1,6 @@
 # Karoo Multiclass Classifer Test
 # Play with quantity of class labels against a range of results
 # by Kai Staats, MSc UCT / AIMS
-# ver. 20151018
 
 from numpy import arange
 
