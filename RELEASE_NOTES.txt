@@ -1,13 +1,16 @@
 2015 11/04
 
-Initial development of Karoo GP began in February 2015, on a Python-based evolutionary algorithm for an MSc research project at the University of Cape Town (UCT) / African Institute for Mathematical Sciences (AIMS) and the Square Kilometer Array (SKA). The myriad debug statements evolved into the user interface and the classic Machine Learning test cases into the built-in example runs.
+Initial development of Karoo GP began in February 2015, on a Python-based evolutionary algorithm for an MSc research project at the University of Cape Town (UCT) / African Institute for Mathematical Sciences (AIMS) and the Square Kilometer Array (SKA). The myriad debug statements evolved into the user interface while the classic Machine Learning test cases became the built-in example runs.
 
-In the end, Karoo GP became a fairly flexible, easy-to-use platform for Genetic Programming.
+In the end, Karoo GP became a flexible, easy-to-use platform for Genetic Programming.
 
-With all development conducted locally, this version 0.9 marks the first release to GitHub.
+It has been thoroughly tested on a 40-core server at the Square Kilometer Array offices in Cape Town, South Africa, where for one month it worked on 10,000 row datasets for up to 50 hours without a single crash. It is proved as a fully functional, multi-core workhorse.
 
-This initial release is private, with select collaborators only.
+With all development to date conducted locally, this version 0.9 marks the first release to GitHub.
 
-Once a paper is published in conjunction with Karoo GP, the repository will be made public.
+This initial GitHub release is private, shared with select collaborators only. Please do not distribute any part of the code until it is made public.
+
+Thank you! --kai
+
 
 
