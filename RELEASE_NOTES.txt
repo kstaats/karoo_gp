@@ -14,3 +14,10 @@ Thank you! --kai
 
 
 
+2015 12/23
+
+Discovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in the files/ directory, according to the selected kernel.
+
+This is now fixed.
+
+Happy holidays! --kai

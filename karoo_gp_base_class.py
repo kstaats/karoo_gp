@@ -2,7 +2,7 @@
 # Define the Karoo GP methods and global variables
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9
+# version 0.9.1.1
 
 import csv
 import os
@@ -215,21 +215,28 @@ class Base_GP(object):
 		func_dict = {'a':'files/functions_ABS.csv', 'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
 		fitt_dict = {'a':'min', 'b':'max', 'c':'max', 'm':'max', 'p':''}
 		
-		if len(sys.argv) == 1:
-			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1]
-			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float)
+		if len(sys.argv) == 1: # load data in the files/ directory
+			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # skip right-most column
+			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			
-		elif len(sys.argv) == 2:
-			print '\n\t\033[36m You have opted to load the alternative dataset:', sys.argv[1], '\033[0;0m'
+			header = open(data_dict[self.kernel],'r')
+			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','')
+			
+			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str)
+			self.fitness_type = fitt_dict[self.kernel]
+			
+		elif len(sys.argv) == 2: # load an external data file
+			print '\n\t\033[36m You have opted to load an alternative dataset:', sys.argv[1], '\033[0;0m'
 			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1]
 			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float)
 			
+			header = open(sys.argv[1],'r')
+			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','')
+			
+			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str)
+			self.fitness_type = fitt_dict[self.kernel]
+			
 		else: print '\n\t\033[31mERROR! You have assigned too many command line arguments at launch. Try again ...\033[0;0m'; sys.exit()
-		
-		header = open(data_dict[self.kernel],'r')
-		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','')
-		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str)
-		self.fitness_type = fitt_dict[self.kernel]
 		
 		
 		### 2) from the dataset, prepare terminals, TRAINING, and TEST data ###
@@ -921,7 +928,7 @@ class Base_GP(object):
 		Build the Terminal nodes
 		'''
 			
-		self.pop_node_depth = self.pop_tree_depth_max # set the final node_depth (same as 'pop_node_depth' + 1)
+		self.pop_node_depth = self.pop_tree_depth_max # set the final node_depth (same as 'pop_node_depth' + 1gp)
 		
 		for j in range(1, len(self.tree[3]) ): # increment through all nodes (exclude 0) in array 'tree'
 		
