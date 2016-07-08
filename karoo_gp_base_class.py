@@ -1,8 +1,15 @@
 # Karoo GP Base Class
-# Define the Karoo GP methods and global variables
+# Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.1
+# version 0.9.1.2
+
+'''
+A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
+Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo Quick Start' before running 
+this application. While your computer will not burst into flames nor will the sun collapse into a black hole if you do not, you will 
+likely find more enjoyment of this particular flavour of GP with a little understanding of its intent and design.
+'''
 
 import csv
 import os
@@ -104,7 +111,7 @@ class Base_GP(object):
 		self.algo_sym = 0 # temp store the sympified polynomial-- CONSIDER MAKING THIS VARIABLE LOCAL
 		self.fittest_dict = {} # temp store all Trees which share the best fitness score
 		self.gene_pool = [] # temp store all Tree IDs for use by Tournament
-		self.core_count = pp.get_number_of_cores()
+		self.core_count = pp.get_number_of_cores() # pprocess
 		
 		return
 		
@@ -215,43 +222,43 @@ class Base_GP(object):
 		func_dict = {'a':'files/functions_ABS.csv', 'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
 		fitt_dict = {'a':'min', 'b':'max', 'c':'max', 'm':'max', 'p':''}
 		
-		if len(sys.argv) == 1: # load data in the files/ directory
-			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # skip right-most column
+		if len(sys.argv) == 1: # load data in the karoo_gp/files/ directory
+			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			
 			header = open(data_dict[self.kernel],'r')
-			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','')
+			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
 			
-			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str)
+			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 			self.fitness_type = fitt_dict[self.kernel]
 			
 		elif len(sys.argv) == 2: # load an external data file
 			print '\n\t\033[36m You have opted to load an alternative dataset:', sys.argv[1], '\033[0;0m'
-			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1]
-			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float)
+			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
+			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			
 			header = open(sys.argv[1],'r')
-			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','')
+			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
 			
-			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str)
+			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 			self.fitness_type = fitt_dict[self.kernel]
 			
 		else: print '\n\t\033[31mERROR! You have assigned too many command line arguments at launch. Try again ...\033[0;0m'; sys.exit()
 		
 		
-		### 2) from the dataset, prepare terminals, TRAINING, and TEST data ###
+		### 2) from the dataset, generate TRAINING and TEST data ###
 		if len(data_x) < 11: # for small datasets we will not split them into TRAINING and TEST components
 			data_train = np.c_[data_x, data_y]
 			data_test = np.c_[data_x, data_y]
 			
-		else: # if larger than 10, we run the data through the SciKit Learn random split
-			x_train, x_test, y_train, y_test = skcv.train_test_split(data_x, data_y, test_size = 0.2)
+		else: # if larger than 10, we run the data through the SciKit Learn's 'random split' function
+			x_train, x_test, y_train, y_test = skcv.train_test_split(data_x, data_y, test_size = 0.2) # 80/20 TRAIN/TEST split
 			data_x, data_y = [], [] # clear from memory
 			
-			data_train = np.c_[x_train, y_train] # recombine the features with the solutions
+			data_train = np.c_[x_train, y_train] # recombine each row of data with its associated label (right column)
 			x_train, y_train = [], [] # clear from memory
 			
-			data_test = np.c_[x_test, y_test] # recombine the features with the solutions
+			data_test = np.c_[x_test, y_test] # recombine each row of data with its associated label (right column)
 			x_test, y_test = [], [] # clear from memory
 			
 		self.data_train_cols = len(data_train[0,:])
@@ -269,9 +276,9 @@ class Base_GP(object):
 				data_train_dict.update( {self.terminals[col]:data_train[row,col]} ) # to be unpacked in 'fx_fitness_eval'
 				
 			self.data_train_dict_array = np.append(self.data_train_dict_array, data_train_dict.copy())
-		
-		data_train = [] # clear from memory
 			
+		data_train = [] # clear from memory
+		
 		
 		### 4) copy TEST data into an array (rows) of dictionaries (columns) ###
 		data_test_dict = {}
@@ -282,9 +289,9 @@ class Base_GP(object):
 				data_test_dict.update( {self.terminals[col]:data_test[row,col]} ) # to be unpacked in 'fx_fitness_eval'
 				
 			self.data_test_dict_array = np.append(self.data_test_dict_array, data_test_dict.copy())
-		
-		data_test = [] # clear from memory
 			
+		data_test = [] # clear from memory
+		
 		
 		### 5) initialise all .csv files ###
 		self.filename = {} # a dictionary to hold .csv filenames
@@ -298,11 +305,11 @@ class Base_GP(object):
 		target.close()
 		
 		self.filename.update( {'f':'files/population_f.csv'} )
-		target = open(self.filename['f'], 'w') # initialise the .csv file for the final population (used to test)
+		target = open(self.filename['f'], 'w') # initialise the .csv file for the final population (test)
 		target.close()
 		
 		self.filename.update( {'s':'files/population_s.csv'} )
-		# do NOT initialise this .csv file, as it is retained for loading a previous run
+		# do NOT initialise this .csv file, as it is retained for loading a previous run (recover)
 		
 		return
 		
@@ -310,7 +317,8 @@ class Base_GP(object):
 	def fx_karoo_data_recover(self, population):
 	
 		'''
-		[need to write]
+		This method is used to load a saved population of trees into the current population. As invoked through the
+		(pause) menu, this loads population_s to replace population_a.
 		'''
 		
 		with open(population, 'rb') as csv_file:
@@ -348,8 +356,8 @@ class Base_GP(object):
 		
 		'''
 		As used by the method 'fx_karoo_gp', this method constructs the initial population based upon the user-defined 
-		Tree type and quantity. As "ramped half/half" is an industry standard, it was hard-coded into this method. But 
-		the ratio of Full to Grow Trees may be easily modified, below.
+		Tree type and quantity. "Ramped half/half" is currently not ramped, rather split 50/50 Full/Grow. This will be
+		updated with the next version of Karoo GP.
 		'''
 		
 		if self.display == 'i' or self.display == 'g':
@@ -1426,7 +1434,7 @@ class Base_GP(object):
 		'''
 		This multiclass classifer compares each row of a given Tree to the known solution, comparing estimated values 
 		(labels) generated by Karoo GP against the correct labels. This method is able to work with any number of class 
-		labels, from 2 to n. The first label bin includes -inf. The last label bin includes +inf. Those in between are 
+		labels, from 2 to n. The left-most bin includes -inf. The right-most bin includes +inf. Those inbetween are 
 		by default confined to the spacing of 1.0 each, as defined by:
 		
 			(solution - 1) < result <= solution
@@ -1435,8 +1443,6 @@ class Base_GP(object):
 		origin. At the time of this writing, an odd number of class labels will generate an extra bin on the positive 
 		side of origin as it has not yet been determined the effect of enabling the middle bin to include both a 
 		negative and positive space.
-		
-		Commented in the code is another 
 		'''
 		
 		# tested 2015 10/18
@@ -1448,11 +1454,11 @@ class Base_GP(object):
 			fitness = 1
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '<=', int(0 - skew), '\033[0;0m'
 			
-		elif solution == self.class_labels - 1 and result > (solution - 1) - skew: # check for last class
+		elif solution == self.class_labels - 1 and result > solution - 1 - skew: # check for last class
 			fitness = 1
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '>', int(solution - skew), '\033[0;0m'
+			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '>', int(solution - 1 - skew), '\033[0;0m'
 			
-		elif (solution - 1) - skew < result <= solution - skew: # check for class bins between first and last
+		elif solution - 1 - skew < result <= solution - skew: # check for class bins between first and last
 			fitness = 1
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', int(solution - 1 - skew), '<', result, '<=', int(solution - skew), '\033[0;0m'
 			
@@ -1861,7 +1867,7 @@ class Base_GP(object):
 		branch_top = np.random.randint(2, len(tree[3])) # randomly select a non-root node
 		branch_eval = self.fx_eval_id(tree, branch_top) # generate tuple of 'branch_top' and subseqent nodes
 		branch_symp = sp.sympify(branch_eval) # convert string into something useful
-		branch = np.append(branch, branch_symp)
+		branch = np.append(branch, branch_symp) # append list to array
 		
 		branch = np.sort(branch) # sort nodes in branch for Crossover Reproduction.
 		
@@ -2406,7 +2412,7 @@ class Base_GP(object):
 		
 		return
 		
-	
+		
 	def fx_test_normalize(self, array):
 	
 		'''
@@ -2423,7 +2429,8 @@ class Base_GP(object):
 		array_max = np.max(array)
 		
 		for col in range(1, len(array) + 1):
-			norm = float((array[col - 1] - array_min) / (array_max - array_min))			
+			norm = float((array[col - 1] - array_min) / (array_max - array_min))
+			norm = round(norm, 4) # force to 4 decimal points		
 			array_norm = np.append(array_norm, norm)
 			
 		return array_norm

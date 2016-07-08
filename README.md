@@ -4,7 +4,7 @@ Karoo GP is an evolutionary algorithm, a Genetic Programming application suite w
 
 Karoo GP provides a transparent interface to the inner workings of Genetic Programming. As a teaching tool, it enables instructors to showcase, step-by-step, how an evolutionary algorithm arrives to its solution. As a hands-on learning tool, Karoo GP supports rapid, repeatable experimentation with a simple, no-programming-required interface. Included with Karoo GP are two executables: an intuitive Text-based User Interface with built-in, real-world test cases, and a fully scriptable, single-line configuration which provides SciKit Learn-like functionality.
 
-The Quick Start Tutorial (PDF) offers system requirements, a crash-course in Genetic Programming, and use of Karoo GP for both the novice and advanced user.
+The Quick Start Tutorial (PDF) offers system requirements, a crash-course in Genetic Programming, and use of Karoo GP for both the novice and advanced user. Included are a suite of data manipulation tools and example datasets.
 
 Feedback is welcomed.
 

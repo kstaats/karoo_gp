@@ -1,23 +1,59 @@
-2015 11/04
+2015 11/04 - version 0.9.1.0
 
 Initial development of Karoo GP began in February 2015, on a Python-based evolutionary algorithm for an MSc research project at the University of Cape Town (UCT) / African Institute for Mathematical Sciences (AIMS) and the Square Kilometer Array (SKA). The myriad debug statements evolved into the user interface while the classic Machine Learning test cases became the built-in example runs.
 
-In the end, Karoo GP became a flexible, easy-to-use platform for Genetic Programming.
+In the course of six months development, the code base grew to become a flexible, easy-to-use platform for Genetic Programming.
 
-It has been thoroughly tested on a 40-core server at the Square Kilometer Array offices in Cape Town, South Africa, where for one month it worked on 10,000 row datasets for up to 50 hours without a single crash. It is proved as a fully functional, multi-core workhorse.
+Karoo GP has been thoroughly tested on a 40-core server at the Square Kilometer Array offices in Cape Town, South Africa, where for one month it chewed through 10,000 rows of data for up to 50 hours without incident. It is proved as a fully functional, multi-core workhorse.
 
-With all development to date conducted locally, this version 0.9 marks the first release to GitHub.
+With all development to date conducted locally, this version 0.9 marks the first release to github.
 
-This initial GitHub release is private, shared with select collaborators only. Please do not distribute any part of the code until it is made public.
+This initial github release is private, shared with select collaborators only. Please do not distribute any part of the code until it is made public.
 
 Thank you! --kai
 
 
 
-2015 12/23
+2015 12/23 - version 0.9.1.1
 
-Discovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in the files/ directory, according to the selected kernel.
+It was iscovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in the files/ directory, according to the selected kernel.
 
 This is now fixed.
 
 Happy holidays! --kai
+
+
+
+2016 07/07 - version 0.9.1.2
+
+In preparation for public launch of Karoo GP, a number of updates are complete or underway.
+
+The Quick Start Tutorial is being fully revised. A number of corrections were made, but more importantly, all new content has been added relevant to preparation of datasets and the use of the Karoo GP Tools accordingly. The genetic operators descriptions now feature visuals and revised descriptions, as to many other sections.
+
+In the karoo_gp/tools/ directory, all scripts have undergone updates, 2 of which now offer automated scaling and a user interface that in the original versions were not present, as follows:
+
+	karoo_data_sort.py (formerly karoo_features_sort.py)
+	This script now engages the user with a query for the number of class labels and the number of data points (rows) for the new, randomly generated subset of the parent dataset. This script is designed to be used prior to karoo_normalise.py.
+
+	karoo_normalise.py
+	This script now auto-scales to any number of columns and rows (within the limit of your computer's capability), and features a text-based user interface. This script is designed to be used following karoo_data_sort.py.
+
+	karoo_multiclassifier.py
+	This script functions as before, but with a minor bug fixed in which the final class was mislabeled.
+
+	karoo_iris_plot.py
+	This script functions as before, but with improved in-script documentation and cleaner code.
+
+
+In development now are a number of updates and improvements to the base_class such that Karoo GP will more readily conform to the GP standards, as follows:
+
+1) Karoo GP currently produces only 1 offspring for each parent, where it should produce 2.
+
+2) The tree generation method "Ramped Half/Half" is in its current form only a 50/50 split of Full and Grow methods without a graduated scaling.
+
+3) Karoo GP currently engages a bloat inhibitor, that is, an upper limit on tree depth which is maintained through all modes of mutation and crossover. This will become a user defined switch such that it can be active or deactive, enabling growth of trees beyond the original, user defined limit.
+
+4) Karoo GP will be made to launch as a single, command-line function with all required parameters included, SciKit Learn style.
+
+
+Stay tuned for more updates, soon! --kai
