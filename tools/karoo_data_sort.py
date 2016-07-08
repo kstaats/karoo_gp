@@ -13,7 +13,7 @@ the subset, if we grab a series of datapoints (rows in a .csv) from the larger d
 the top, middle, or bottom, we will likely bias the new dataset and incorrectly train the machine learning algorithm. 
 Therefore, it is imperative that we engage a random function, guided only by the number of data points for each class.
 
-This script can be used before or after karoo_normalise.py but assumes no header has yet been applied to the .csv.
+This script can be used *before* karoo_normalise.py, and assumes no header has yet been applied to the .csv.
 '''
 
 ### USER INTERACTION ###

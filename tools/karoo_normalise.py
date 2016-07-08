@@ -12,7 +12,7 @@ This script works with a raw dataset to prepare a new, normalised dataset. It do
 given column, finding the maximum and minimum values, and then modifying each value to fall between a high of 1 and 
 low of 0. The modified values are written to a new file, the original remaining untouched.
 
-This script can be used before or after karoo_features_sort.py but assumes no header has yet been applied to the .csv.
+This script can be used *after* karoo_features_sort.py, and assumes no header has yet been applied to the .csv.
 '''
 
 def normalise(array):
