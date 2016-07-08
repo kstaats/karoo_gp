@@ -1,11 +1,16 @@
 # Karoo Feature Set Prep
-# Prepare a balanced feature set
+# Prepare a balanced dataset
 # by Kai Staats, MSc UCT / AIMS and Arun Kumar, PhD
 
 import sys
 import numpy as np
 
+if len(sys.argv) == 1: print '\n\t\033[31mERROR! You have not assigned an input file. Try again ...\033[0;0m'; sys.exit()
+elif len(sys.argv) > 2: print '\n\t\033[31mERROR! You have assigned too many command line arguments. Try again ...\033[0;0m'; sys.exit()
+
 filename = sys.argv[1] # 'data/pixel_classifier/kat7-20150924-SUBSET.csv'
+print '\n\t\033[36m You have opted to load the dataset:', filename, '\033[0;0m'
+
 samples = 5000
 
 # do NOT use readline as that is very, very slow
