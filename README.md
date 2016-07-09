@@ -14,8 +14,10 @@ multiclass classification.
 The included Quick Start Tutorial (PDF) offers system requirements, a crash-course in Genetic Programming, and use of 
 Karoo GP for both the novice and advanced user.
 
-Karoo GP was developed for Kai Staats’ MSc research at the Square Kilometre Array (SKA), Cape Town, South Africa, and 
-owes its foundation to the “Field Guide to Genetic Programming” by Poli, Langdon, McPhee, and Koza.
+Karoo GP was developed during Staats’ MSc research at the University of Cape Town / African Institute for Mathematical 
+Sciences and the Square Kilometre Array (SKA), South Africa, and owes its foundation to the "Field Guide to Genetic 
+Programming" by Poli, Langdon, McPhee, and Koza. The Field Guide and many more GP publications and software packages 
+are showcased at www.geneticprogramming.com
 
 Enjoy!
 
