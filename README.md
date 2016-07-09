@@ -1,19 +1,20 @@
 # Karoo GP
 
-Karoo GP is an evolutionary algorithm, a Genetic Programming application suite which provides both Symbolic Regression 
-and Classification analysis. Written in the programming language Python, Karoo GP owes its foundation to the "Field 
-Guide to Genetic Programming" by Poli, Langdon, McPhee, and Koza.
+Karoo GP is an evolutionary algorithm, a genetic programming application suite which provides both symbolic regression 
+and classification analysis. Karoo GP is a scalable platform with multicore support, designed to readily work with 
+realworld data. No programming required. As a teaching tool, it enables instructors to share step-by-step how an 
+evolutionary algorithm arrives to its solution. As a hands-on learning tool, Karoo GP supports rapid, repeatable 
+experimentation with a simple interface.
 
-Karoo GP provides a transparent interface to the inner workings of Genetic Programming. As a teaching tool, it enables 
-instructors to showcase, step-by-step, how an evolutionary algorithm arrives to its solution. As a hands-on learning 
-tool, Karoo GP supports rapid, repeatable experimentation with a simple, no-programming-required interface. Included 
-with Karoo GP are two executables: an intuitive Text-based User Interface with built-in, real-world test cases, and a 
-fully scriptable, single-line configuration which provides SciKit Learn-like functionality.
+Karoo GP includes an intuitive text-based user interface for desktop applications, a configuration file for readily 
+repeated server-side execution, a tool which generates randomly constructed subsets of larger datasets, a tool which 
+normalises datasets, and a toy model which shows the inner workings of multiclass classification.
 
-The Quick Start Tutorial (PDF) offers system requirements, a crash-course in Genetic Programming, and use of Karoo GP
-for both the novice and advanced user. Included are a suite of data manipulation tools and example datasets.
+The included Quick Start Tutorial (PDF) offers system requirements, a crash-course in Genetic Programming, and use of 
+Karoo GP for both the novice and advanced user.
 
-Feedback is welcomed.
+Karoo GP was developed for Kai Staats’ MSc research at the Square Kilometre Array (SKA), Cape Town, South Africa, and 
+owes its foundation to the “Field Guide to Genetic Programming” by Poli, Langdon, McPhee, and Koza.
 
 Enjoy!
 
