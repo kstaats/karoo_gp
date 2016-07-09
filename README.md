@@ -7,9 +7,9 @@ step-by-step how an evolutionary algorithm arrives to its solution. As a hands-o
 rapid, repeatable experimentation with a simple interface.
 
 Karoo GP includes an intuitive text-based user interface for desktop applications, a configuration file for readily 
-repeated server-side execution, a stand-alone script which generates randomly constructed subsets of larger datasets, 
-a stand-alone script which normalises datasets, and a toy model which shows the inner workings of multiclass 
-classification.
+repeated server-side execution, a stand-alone Python script which generates randomly constructed subsets of larger 
+datasets, a stand-alone Python script which normalises datasets, and a toy model which shows the inner workings of 
+multiclass classification.
 
 The included Quick Start Tutorial (PDF) offers system requirements, a crash-course in Genetic Programming, and use of 
 Karoo GP for both the novice and advanced user.
