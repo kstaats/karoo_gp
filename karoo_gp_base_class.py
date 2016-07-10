@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.2
+# version 0.9.1.3
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -63,6 +63,7 @@ class Base_GP(object):
 		'tree_type'					Full, Grow, or Ramped 50/50 (local variable)
 		'gp.tree_depth_min'			minimum number of nodes
 		'tree_depth_max'			maximum number of nodes [nodes = 2^(depth + 1) - 1] (local variable)
+		'gp.tree_depth_adj'			increases the ceiling of tree_depth_max, enabling larger trees (and potential bloat)
 		'gp.tree_pop_max'			maximum number of Trees per generation
 		'gp.generation_max'			maximum number of generations
 		'gp.display'				level of on-screen feedback
@@ -97,7 +98,7 @@ class Base_GP(object):
 		'gp.generation_id'			simple n + 1 increment
 		'gp.fitness_type'			set in 'fx_karoo_data_load' as either a minimising or maximising function
 		'gp.tree'					axis-1, 13 element Numpy array that defines each Tree, stored in 'gp.population'
-		'gp.pop_'					13 elements which define each Tree (see 'fx_gen_tree_initialise' below)
+		'gp.pop_*'					13 elements which define each Tree (see 'fx_gen_tree_initialise' below)
 		
 		### Fishing nets ###
 		You can insert a "fishing net" to search for a specific polynomial expression when you fear the evolutionary
@@ -123,15 +124,9 @@ class Base_GP(object):
 	def karoo_gp(self, run, tree_type, tree_depth_max):
 	
 		'''
-		This is THE single method that enables the engagement of the entire Karoo GP application. The intent to is to 
-		give Karoo GP an SKLearn-like interface for rapid integration into scientific applications. This method enables 
-		remotely operated execution and use of scriptable, configuration files.
-		
-		The file "karoo_gp_server.py" included with the Karoo GP package is an example of a bare-bones configuration 
-		and launch file.
-		
-		You must pass the banner display mode, tree_type, and tree_depth_max, along with configuration of all the 
-		variables defined in karoo_gp_server.py, to get the whole thing rolling.
+		This is single method enables the engagement of the entire Karoo GP application. It is used by 
+		karoo_gp_server.py and the single, command line execution, but not by karoo_gp_main.py which engages each
+		of the included functions sequentially.
 		'''
 		
 		self.karoo_banner(run)
@@ -157,7 +152,7 @@ class Base_GP(object):
 			self.fx_karoo_reproduce() # method 1 - Reproduction
 			self.fx_karoo_point_mutate() # method 2 - Point Mutation
 			self.fx_karoo_branch_mutate() # method 3 - Branch Mutation
-			self.fx_karoo_crossover_reproduce() # method 4 - Crossover Reproduction
+			self.fx_karoo_crossover() # method 4 - Crossover
 			self.fx_eval_generation() # evaluate all Trees in a single generation
 			
 			self.population_a = self.fx_evo_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
@@ -356,8 +351,8 @@ class Base_GP(object):
 		
 		'''
 		As used by the method 'fx_karoo_gp', this method constructs the initial population based upon the user-defined 
-		Tree type and quantity. "Ramped half/half" is currently not ramped, rather split 50/50 Full/Grow. This will be
-		updated with the next version of Karoo GP.
+		Tree type and initial, maximum Tree depth. "Ramped half/half" is currently not ramped, rather split 50/50 
+		Full/Grow. This will be updated with a future version of Karoo GP.
 		'''
 		
 		if self.display == 'i' or self.display == 'g':
@@ -411,10 +406,9 @@ class Base_GP(object):
 	
 		'''
 		Through tournament selection, a copy of a tree from the prior generation mutates before being added to the 
-		next generation. In the biological world, this may be analogous to asexual reproduction, that is, a copy of 
-		an individual with a minor mutation. In this method, a single point is selected for mutation while maintaining 
-		function nodes as functions (operands) and terminal nodes as terminals (variables). The size and shape of the 
-		tree will remain identical.
+		next generation. In this method, a single point is selected for mutation while maintaining function nodes as 
+		functions (operands) and terminal nodes as terminals (variables). The size and shape of the tree will remain 
+		identical.
 		'''
 		
 		if self.display != 's':
@@ -434,12 +428,11 @@ class Base_GP(object):
 	
 		'''
 		Through tournament selection, a copy of a tree from the prior generation mutates before being added to the 
-		next generation. In the biological world, this may be analogous to asexual reproduction, that is, a copy of an 
-		individual but with a potentially substantial mutation. Unlike Point Mutation, in this method an entire branch 
-		is selected. If the evolutionary run is designated as Full, the size and shape of the tree will remain 
-		identical, each node mutated sequentially, where functions remain functions and terminals remain terminals. If 
-		the evolutionary run is designated as Grow or Ramped Half/Half, the size and shape of the tree may grow 
-		smaller or larger, but it may not exceed the maximum depth defined by the user.
+		next generation. Unlike Point Mutation, in this method an entire branch is selected. If the evolutionary run is 
+		designated as Full, the size and shape of the tree will remain identical, each node mutated sequentially, where 
+		functions remain functions and terminals remain terminals. If the evolutionary run is designated as Grow or 
+		Ramped Half/Half, the size and shape of the tree may grow smaller or larger, but it may not exceed the maximum 
+		depth defined by the user.
 		'''
 		
 		if self.display != 's':
@@ -462,7 +455,7 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_karoo_crossover_reproduce(self):
+	def fx_karoo_crossover(self):
 	
 		'''
 		Through tournament selection, two trees are selected as parents to produce a single offspring (future 
@@ -475,14 +468,14 @@ class Base_GP(object):
 		having a higher fitness than the average population. Therefore, there is a chance their offspring will provide 
 		an improvement in total fitness.
 		
-		In most GP applications, Crossover Reproduction is the most commonly applied evolutionary operator (60-70%).
+		In most GP applications, Crossover is the most commonly applied evolutionary operator (60-70%).
 		
 		For those who like to watch, select 'db' (debug mode) at the launch of Karoo GP or at any (pause).
 		'''
 		
 		if self.display != 's':
 			if self.display == 'i': print ''
-			print '  Perform', self.evolve_cross, 'Crossover Reproductions ...'
+			print '  Perform', self.evolve_cross, 'Crossover ...'
 			if self.display == 'i': self.fx_karoo_pause(0)
 			
 		for n in range(self.evolve_cross): # quantity of Trees to be generated through crossover
@@ -493,11 +486,11 @@ class Base_GP(object):
 			parent_b = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for 'parent_b'
 			branch_b = self.fx_evo_branch_select(parent_b) # select branch within 'parent_b' to receive crossover
 			
-			# child_1 = self.fx_evo_crossover(parent_a, branch_a, parent_b, branch_b) # perform Crossover Reproduction
-			# self.population_b.append(child_1) # append the child of Crossover Reproduction to next generation population of Trees
+			# child_1 = self.fx_evo_crossover(parent_a, branch_a, parent_b, branch_b) # perform Crossover
+			# self.population_b.append(child_1) # append the child of Crossover to next generation population of Trees
 			
-			child_2 = self.fx_evo_crossover(parent_b, branch_b, parent_a, branch_a) # perform Crossover Reproduction
-			self.population_b.append(child_2) # append the child of Crossover Reproduction to next generation population of Trees
+			child_2 = self.fx_evo_crossover(parent_b, branch_b, parent_a, branch_a) # perform Crossover
+			self.population_b.append(child_2) # append the child of Crossover to next generation population of Trees
 			
 		return
 		
@@ -505,232 +498,280 @@ class Base_GP(object):
 	def fx_karoo_pause(self, eol):
 	
 		'''
-		Pause the visual output to screen until the user selects an option, as outlined below.
+		Pause the program execution and output to screen until the user selects a valid option.
 		'''
-				
-		pause = raw_input('\n\t\033[36m (pause) \033[0;0m')
 		
-		if pause == '?' or pause == 'help':
-			print '\n\t\033[36mSelect one of the following options:\033[0;0m'
-			
-			print '\t\033[36m\033[1m i\033[0;0m\t interactive display mode'
-			print '\t\033[36m\033[1m m\033[0;0m\t minimal display mode'
-			print '\t\033[36m\033[1m g\033[0;0m\t generation display mode'
-			print '\t\033[36m\033[1m s\033[0;0m\t silent (server) display mode'
-			print '\t\033[36m\033[1m db\033[0;0m\t debug display mode'
-			print '\t\033[36m\033[1m t\033[0;0m\t timer display mode'
-			print ''
-			print '\t\033[36m\033[1m ts\033[0;0m\t adjust the tournament size'
-			print '\t\033[36m\033[1m min\033[0;0m\t adjust the minimum number of nodes (minimum boundary)'
-			# print '\t\033[36m\033[1m max\033[0;0m\t adjust the maximum tree depth (maximum boundary)'
-			print '\t\033[36m\033[1m b\033[0;0m\t adjust the balance of genetic operators (sum to 100%)'
-			print '\t\033[36m\033[1m c\033[0;0m\t adjust the number of engaged CPU cores'
-			print ''
-			print '\t\033[36m\033[1m id\033[0;0m\t display the generation ID'
-			print '\t\033[36m\033[1m l\033[0;0m\t list all Trees with the best fitness score'
-			print '\t\033[36m\033[1m p\033[0;0m\t print a Tree to screen'
-			print ''
-			print '\t\033[36m\033[1m a\033[0;0m\t evaluate a Tree for Accuracy (TRAINING)'
-			print '\t\033[36m\033[1m test\033[0;0m\t evaluate a Tree for Precision & Recall (TEST)'
-			print ''
-			print '\t\033[36m\033[1m cont\033[0;0m\t continue evolution, starting with the current population'
-			print '\t\033[36m\033[1m load\033[0;0m\t load population_s to replace population_a'
-			print '\t\033[36m\033[1m w\033[0;0m\t write the evolving population_b to disk'
-			print '\t\033[36m\033[1m q\033[0;0m\t quit Karoo GP without saving population_b'
-			print ''
-			
-			if eol == 0: print '\t\033[36m\033[1m ENTER\033[0;0m to continue ...'
-			
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'i': self.display = 'i'; print '\t Interactive mode engaged (for control freaks)'; self.fx_karoo_pause(0)
-		elif pause == 'm': self.display = 'm'; print '\t Minimal mode engaged (for recovering control freaks)'; self.fx_karoo_pause(0)
-		elif pause == 'g': self.display = 'g'; print '\t Generation mode engaged (for GP gurus)'; self.fx_karoo_pause(0)
-		elif pause == 's': self.display = 's'; print '\t Server mode engaged (for zen masters)'; self.fx_karoo_pause(0)
-		elif pause == 'db': self.display = 'db'; print '\t Debug mode engaged (for vouyers)'; self.fx_karoo_pause(0)
-		elif pause == 't': self.display = 't'; print '\t Timer mode engaged (for managers)'; self.fx_karoo_pause(0)			
+		options = ['?','help','i','m','g','s','db','t','ts','min','max','b','c','id','pop','l','p','a','test','cont','load','w','q','']
 		
-		elif pause == 'ts': # adjust the tournament size
-			n = range(1, self.tree_pop_max + 1) # set to total population size only for the sake of experimentation
-			while True:
-				try:
-					print '\n\t The current tournament size is:', self.tourn_size
-					query = int(raw_input('\t Adjust the tournament size (suggested 10): '))
-					if query not in (n): raise ValueError()
-					self.tourn_size = query; break
-				except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-				
-		elif pause == 'min': # adjust the minimum boundary condition
-			n = range(3, 1001) # we must have at least 3 nodes, as in: x * y; 1000 is an arbitrary number
-			while True:
-				try:
-					print '\n\t The current minimum number of nodes is:', self.tree_depth_min
-					query = int(raw_input('\t Adjust the minimum number of nodes for any given Tree (min 3): '))
-					if query not in (n): raise ValueError()					
-					self.tree_depth_min = query; break
-				except ValueError: print '\n\t\033[32m Enter a number from 3 including 1000. Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		### cannot be made live until a new global variable is set for tree_depth_max and then fully tested ###
-		
-		# elif pause == 'max': # adjust the maximum boundary condition
-			# n = range(3, 11) # we must have a depth of at least 3; a depth 10 carries up to 2047 nodes
-			# while True:
-				# try:
-					# print '\n\t The current maximum Tree depth is:', tree_depth_max
-					# query = int(raw_input('\n\t Adjust the maximum Tree depth (min 3, max 10): '))
-					# if query not in (n): raise ValueError()					
-					# tree_depth_max = query; break
-				# except ValueError: print '\n\t\033[32m Enter a number from 3 including 10. Try again ...\033[0;0m'; self.fx_karoo_pause(0)
-			
-		elif pause == 'b': # adjust the balance of genetic operators'
-			n = range(0, 101) # 0 to 100% expresssed as an integer
-			
-			print '\n\t The current balance of genetic operators is:'
-			print '\t\t Reproduction:', self.evolve_repro
-			print '\t\t Point Mutation:', self.evolve_point
-			print '\t\t Branch Mutation:', self.evolve_branch
-			print '\t\t Cross Over Reproduction:', self.evolve_cross, '\n'
-
-			while True:
-				try:
-					query = int(raw_input('\t Enter percentage (0-100) for Reproduction: '))
-					if query not in (n): raise ValueError()
-					self.evolve_repro = int(float(query) / 100 * self.tree_pop_max); break
-				except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
-				
-			while True:
-				try:
-					query = int(raw_input('\t Enter percentage (0-100) for Point Mutation: '))
-					if query not in (n): raise ValueError()
-					self.evolve_point = int(float(query) / 100 * self.tree_pop_max); break
-				except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
-				
-			while True:
-				try:
-					query = int(raw_input('\t Enter percentage (0-100) for Branch Mutation: '))
-					if query not in (n): raise ValueError()
-					self.evolve_branch = int(float(query) / 100 * self.tree_pop_max); break
-				except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
-				
-			while True:
-				try:
-					query = int(raw_input('\t Enter percentage (0-100) for Cross Over Reproduction: '))
-					if query not in (n): raise ValueError()
-					self.evolve_cross = int(float(query) / 100 * self.tree_pop_max); break
-				except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
-				
-			print '\n\t The revised balance of genetic operators is:'
-			print '\t\t Reproduction:', self.evolve_repro
-			print '\t\t Point Mutation:', self.evolve_point
-			print '\t\t Branch Mutation:', self.evolve_branch
-			print '\t\t Cross Over Reproduction:', self.evolve_cross
-			
-			if self.evolve_repro + self.evolve_point + self.evolve_branch + self.evolve_cross != 100:
-				print '\n\t The sum of the above does not equal 100%. Try again ...'
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'c': # adjust the number of engaged CPU cores
-			n = range(1, self.core_count + 1) # assuming any run above 24 cores will simply use the maximum number
-			while True:
-				try:
-					print '\n\t The current number of engaged CPU cores is:', self.cores
-					query = int(raw_input('\n\t Adjust the number of CPU cores (min 1): '))
-					if query not in (n): raise ValueError()
-					self.cores = int(query); break
-				except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.core_count) + ".", 'Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'id': print '\n\t The current generation is:', self.generation_id; self.fx_karoo_pause(0)
-			
-		elif pause == 'l': # display dictionary of Trees with the best fitness score
-			print '\n\t The leading Trees and their associated expressions are:'
-			for n in range(len(self.fittest_dict)):
-				print '\t  ', self.fittest_dict.keys()[n], ':', self.fittest_dict.values()[n]
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'p': # display a Tree; need to add a SymPy graphical print option
-			n = range(1, self.tree_pop_max + 1)
-			while True:
-				try:
-					query = raw_input('\n\t Select a Tree to print ([ENTER] to exit): ')
-					if query not in str(n) and query not in '': raise ValueError()
-					elif query == '0' or query == '': break
+		while True:
+			try:
+				pause = raw_input('\n\t\033[36m (pause) \033[0;0m')
+				if pause not in options: raise ValueError()
+				if pause == '':
+					if eol == 1: self.fx_karoo_pause(1) # return to pause menu as the GP run is complete
+					else: break # drop back into the current GP run
 					
-					if len(self.population_a) > 1: self.fx_eval_tree_print(self.population_a[int(query)]); break
-					else: break
-				except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'a': # evaluate Accuracy against the TRAINING data
-			n = range(1, self.tree_pop_max + 1)
-			while True:
-				try:
-					query = raw_input('\n\t Select a Tree for Accuracy in TRAINING ([ENTER] to exit): ')
-					if query not in str(n) and query not in '': raise ValueError()
-					elif query == '0' or query == '': break
+				if pause == '?' or pause == 'help':
+					print '\n\t\033[36mSelect one of the following options:\033[0;0m'
+					print '\t\033[36m\033[1m i \t\033[0;0m interactive display mode'
+					print '\t\033[36m\033[1m m \t\033[0;0m minimal display mode'
+					print '\t\033[36m\033[1m g \t\033[0;0m generation display mode'
+					print '\t\033[36m\033[1m s \t\033[0;0m silent (server) display mode'
+					print '\t\033[36m\033[1m db \t\033[0;0m debug display mode'
+					print '\t\033[36m\033[1m t \t\033[0;0m timer display mode'
+					print ''
+					print '\t\033[36m\033[1m ts \t\033[0;0m adjust the tournament size'
+					print '\t\033[36m\033[1m min \t\033[0;0m adjust the minimum number of nodes'
+					# print '\t\033[36m\033[1m max \t\033[0;0m adjust the maximum tree depth'
+					print '\t\033[36m\033[1m b \t\033[0;0m adjust the balance of genetic operators (sum to 100%)'
+					print '\t\033[36m\033[1m c \t\033[0;0m adjust the number of engaged CPU cores'
+					print ''
+					print '\t\033[36m\033[1m id \t\033[0;0m display the generation ID'
+					print '\t\033[36m\033[1m pop \t\033[0;0m list all Trees in designated population'
+					print '\t\033[36m\033[1m l \t\033[0;0m list Trees with leading fitness scores'
+					print '\t\033[36m\033[1m p \t\033[0;0m print a Tree to screen'
+					print ''
+					print '\t\033[36m\033[1m test \t\033[0;0m evaluate a Tree for Precision & Recall'
+					print ''
+					print '\t\033[36m\033[1m cont \t\033[0;0m continue evolution, starting with the current population'
+					print '\t\033[36m\033[1m load \t\033[0;0m load population_s to replace population_a'
+					print '\t\033[36m\033[1m w \t\033[0;0m write the evolving population_b to disk'
+					print '\t\033[36m\033[1m q \t\033[0;0m quit Karoo GP without saving population_b'
+					print ''
 					
-					if len(self.population_a) > 1: self.fx_eval_accuracy(int(query)); break
-					else: break
-				except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'test': # evaluate a Tree against the TEST data
-			n = range(1, self.tree_pop_max + 1)
-			while True:
-				try:
-					query = raw_input('\n\t Select a Tree for Precision & Recall in TEST ([ENTER] to exit): ')
-					if query not in str(n) and query not in '': raise ValueError()
-					elif query == '0' or query == '': break
+					if eol == 1: print '\t\033[0;0m Remember to archive your final population before your next run!'
+					else: print '\t\033[36m\033[1m ENTER\033[0;0m to continue ...'
 					
-					if len(self.population_a) > 1:
-						if self.kernel == 'a': self.fx_test_abs(int(query)); break
-						elif self.kernel == 'm': self.fx_test_match(int(query)); break
-						elif self.kernel == 'c': self.fx_test_classify(int(query)); break
-					else: break
-				except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
+				elif pause == 'i': self.display = 'i'; print '\t Interactive mode engaged (for control freaks)'
+				elif pause == 'm': self.display = 'm'; print '\t Minimal mode engaged (for recovering control freaks)'
+				elif pause == 'g': self.display = 'g'; print '\t Generation mode engaged (for GP gurus)'
+				elif pause == 's': self.display = 's'; print '\t Server mode engaged (for zen masters)'
+				elif pause == 'db': self.display = 'db'; print '\t Debug mode engaged (for vouyers)'
+				elif pause == 't': self.display = 't'; print '\t Timer mode engaged (for managers)'
+				
+				
+				elif pause == 'ts': # adjust the tournament size
+				
+					menu = range(2,self.tree_pop_max + 1) # set to total population size only for the sake of experimentation
+					while True:
+						try:
+							print '\n\t The current tournament size is:', self.tourn_size
+							query = int(raw_input('\t Adjust the tournament size (suggest 10): '))
+							if query not in menu: raise ValueError()
+							self.tourn_size = query; break
+						except ValueError: print '\n\t\033[32m Enter a number from 2 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
+					
+					
+				elif pause == 'min': # adjust the global, minimum number of nodes per Tree
+				
+					menu = range(3,1001) # we must have at least 3 nodes, as in: x * y; 1000 is an arbitrary number
+					while True:
+						try:
+							print '\n\t The current minimum number of nodes is:', self.tree_depth_min
+							query = int(raw_input('\t Adjust the minimum number of nodes for all Trees (min 3): '))
+							if query not in menu: raise ValueError()
+							self.tree_depth_min = query; break
+						except ValueError: print '\n\t\033[32m Enter a number from 3 including 1000. Try again ...\033[0;0m'
 						
-		elif pause == 'cont': # continue evolution, starting with the current population
-			n = range(1, 101)
-			while True:
-				try:
-					query = raw_input('\n\t How many more generations would you like to add? (1-100): ')
-					if query not in str(n) and query not in '': raise ValueError()
-					elif query == '0' or query == '': break
-					
-					self.generation_max = self.generation_max + int(query)
-					next_gen_start = self.generation_id + 1
-					self.fx_karoo_continue(next_gen_start) # continue evolving, starting with the last population
-				except ValueError: print '\n\t\033[32m Enter a number from 1 including 100. Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'load': # load population_s to replace population_a
-			while True:
-				try:
-					query = raw_input('\n\t Overwrite the current population with population_s? ')
-					if query not in ['y','n']: raise ValueError()
-					
-					if query == 'y': self.fx_karoo_data_recover(self.filename['s']); break
-					elif query == 'n': break
-				except ValueError: print '\n\t\033[32m Enter (y)es or (n)o. Try again ...\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		elif pause == 'w': # write the evolving population_b to disk
-			if self.generation_id > 1:
-				self.fx_tree_archive(self.population_b, 'b')
-				print '\t All current members of the evolving population_b saved to .csv'; self.fx_karoo_pause(0)
 				
-			else: print '\t The evolving population_b does not yet exist'; self.fx_karoo_pause(0)
+				### this needs a new, static global variable in order to function properly ###
+				# elif pause == 'max': # adjust the global, adjusted maximum Tree depth
+				
+					# menu = range(1,11)
+					# while True:
+						# try:
+							# print '\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', self.pop_tree_depth_max + self.tree_depth_adj
+							# query = int(raw_input('\n\t Adjust the global maximum Tree depth to (1 ... 10): '))
+							# if query not in menu: raise ValueError()
+							# if query < self.pop_tree_depth_max + self.tree_depth_adj:
+								# print '\n\t\033[32m This value is less than the current value.\033[0;0m'
+								# conf = raw_input('\n\t Are you ok with this? (y/n) ')
+								# if conf == 'n': break
+							# self.tree_depth_adj = int(query - self.pop_tree_depth_max); break
+						# except ValueError: print '\n\t\033[32m Enter a number from 1 including 10. Try again ...\033[0;0m'
+						
+				
+				elif pause == 'b': # adjust the balance of genetic operators'					
+					print '\n\t The current balance of genetic operators is:'
+					print '\t\t Reproduction:', self.evolve_repro
+					print '\t\t Point Mutation:', self.evolve_point
+					print '\t\t Branch Mutation:', self.evolve_branch
+					print '\t\t Cross Over Reproduction:', self.evolve_cross, '\n'
+					
+					menu = range(0,101) # 0 to 100% expresssed as an integer
+					
+					while True:
+						try:
+							query = raw_input('\t Enter percentage (0-100) for Reproduction: ')
+							if query not in str(menu): raise ValueError()
+							elif query == '': break
+							self.evolve_repro = int(float(query) / 100 * self.tree_pop_max); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+						
+					while True:
+						try:
+							query = raw_input('\t Enter percentage (0-100) for Point Mutation: ')
+							if query not in str(menu): raise ValueError()
+							elif query == '': break
+							self.evolve_point = int(float(query) / 100 * self.tree_pop_max); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+						
+					while True:
+						try:
+							query = raw_input('\t Enter percentage (0-100) for Branch Mutation: ')
+							if query not in str(menu): raise ValueError()
+							elif query == '': break
+							self.evolve_branch = int(float(query) / 100 * self.tree_pop_max); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+						
+					while True:
+						try:
+							query = raw_input('\t Enter percentage (0-100) for Cross Over Reproduction: ')
+							if query not in str(menu): raise ValueError()
+							elif query == '': break
+							self.evolve_cross = int(float(query) / 100 * self.tree_pop_max); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+						
+					print '\n\t The revised balance of genetic operators is:'
+					print '\t\t Reproduction:', self.evolve_repro
+					print '\t\t Point Mutation:', self.evolve_point
+					print '\t\t Branch Mutation:', self.evolve_branch
+					print '\t\t Cross Over Reproduction:', self.evolve_cross
+					
+					if self.evolve_repro + self.evolve_point + self.evolve_branch + self.evolve_cross != 100:
+						print '\n\t The sum of the above does not equal 100%. Try again ...'
+					
+				
+				elif pause == 'c': # adjust the number of engaged CPU cores
+				
+					menu = range(1,self.core_count + 1) # assuming any run above 24 cores will simply use the maximum number
+					while True:
+						try:
+							print '\n\t The current number of engaged CPU cores is:', self.cores
+							query = int(raw_input('\n\t Adjust the number of CPU cores (min 1): '))
+							if query not in (menu): raise ValueError()
+							elif query == '': break
+							self.cores = int(query); break
+						except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.core_count) + ".", 'Try again ...\033[0;0m'
+					
+				
+				elif pause == 'id': print '\n\t The current generation is:', self.generation_id
+				
+				
+				elif pause == 'pop': # list Trees in the current population
+				
+					print ''
+					if self.generation_id == 1:
+						for tree_id in range(1, len(self.population_a)):
+							self.fx_eval_poly(self.population_a[tree_id]) # extract the Polynomial
+							print '\t\033[36m Tree', self.population_a[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
+							
+					elif self.generation_id > 1:
+						for tree_id in range(1, len(self.population_b)):
+							self.fx_eval_poly(self.population_b[tree_id]) # extract the Polynomial
+							print '\t\033[36m Tree', self.population_b[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
+							
+					else: print '\n\t\033[36m There is nor forest for which to see the Trees.\033[0;0m'
+					
+				
+				elif pause == 'l': # display dictionary of Trees with the best fitness score
+				
+					print '\n\t The leading Trees and their associated expressions are:'
+					for n in range(len(self.fittest_dict)):
+						print '\t  ', self.fittest_dict.keys()[n], ':', self.fittest_dict.values()[n]
+					
+					
+				elif pause == 'p': # print a Tree to screen; need to add a SymPy graphical print option
+				
+					if self.generation_id == 1:
+						menu = range(1,len(self.population_a))
+						while True:
+							try:
+								query = raw_input('\n\t Select a Tree to print: ')
+								if query not in str(menu) or query == '0': raise ValueError()
+								elif query == '': break
+								self.fx_eval_tree_print(self.population_a[int(query)]); break
+							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_a) - 1) + ".", 'Try again ...\033[0;0m'
+							
+					elif self.generation_id > 1:
+						menu = range(1,len(self.population_b))
+						while True:
+							try:
+								query = raw_input('\n\t Select a Tree to print: ')
+								if query not in str(menu) or query == '0': raise ValueError()
+								elif query == '': break
+								self.fx_eval_tree_print(self.population_b[int(query)]); break
+							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_b) - 1) + ".", 'Try again ...\033[0;0m'
+							
+					else: print '\n\t\033[36m There is nor forest for which to see the Trees.\033[0;0m'
+					
+				
+				elif pause == 'test': # evaluate a Tree against the TEST data
+				
+					if self.generation_id > 1:
+						menu = range(1,len(self.population_b))
+						while True:
+							try:
+								query = raw_input('\n\t Select a Tree in population_b to evaluate for Precision & Recall: ')
+								if query not in str(menu) or query == '0': raise ValueError()
+								elif query == '': break
+								if self.kernel == 'a': self.fx_test_abs(int(query)); break
+								elif self.kernel == 'm': self.fx_test_match(int(query)); break
+								elif self.kernel == 'c': self.fx_test_classify(int(query)); break
+							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_b) - 1) + ".", 'Try again ...\033[0;0m'
+							
+					else: print '\n\t\033[32m Karoo GP does not enable evaluation of the foundation population. Be patient ...\033[0;0m'
+					
+				
+				elif pause == 'cont': # continue evolution, starting with the current population
+				
+					menu = range(1,101)
+					while True:
+						try:
+							query = raw_input('\n\t How many more generations would you like to add? (1-100): ')
+							if query not in str(menu) or query == '0': raise ValueError()
+							elif query == '': break
+							self.generation_max = self.generation_max + int(query)
+							next_gen_start = self.generation_id + 1
+							self.fx_karoo_continue(next_gen_start) # continue evolving, starting with the last population
+						except ValueError: print '\n\t\033[32m Enter a number from 1 including 100. Try again ...\033[0;0m'
+					
+				
+				elif pause == 'load': # load population_s to replace population_a
+				
+					while True:
+						try:
+							query = raw_input('\n\t Overwrite the current population with population_s? ')
+							if query not in ['y','n']: raise ValueError()
+							if query == 'y': self.fx_karoo_data_recover(self.filename['s']); break
+							elif query == 'n': break
+						except ValueError: print '\n\t\033[32m Enter (y)es or (n)o. Try again ...\033[0;0m'
+						
+				
+				elif pause == 'w': # write the evolving population_b to disk
+				
+					if self.generation_id > 1:
+						self.fx_tree_archive(self.population_b, 'b')
+						print '\t\033[36m All current members of the evolving population_b saved to .csv\033[0;0m'
+						
+					else: print '\n\t\033[36m The evolving population_b does not yet exist\033[0;0m'
+					
+				
+				elif pause == 'q':
+					
+					if eol == 0:
+						query = raw_input('\n\t \033[32mThe current population_b will be lost!\033[0;0m\n\n\t Are you certain you want to quit? ')
+						if query == 'y': sys.exit() # quit the script without saving population_b
+						else: break
+						
+					else:
+						query = raw_input('\n\t Are you certain you want to quit? ')
+						if query == 'y': print '\n\t \033[32mRemember to archive the Trees found in karoo_gp/files/ before your next run ...\033[0;0m'; sys.exit()
+						else: self.fx_karoo_pause(1)
+						
+			except ValueError: print '\t\033[32m Select from the options given. Try again ...\033[0;0m'
+			except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
 			
-		elif pause == 'q': # quit the script without saving the evolving population_b
-			sys.exit()
-			
-		elif pause != '': self.fx_karoo_pause(0)
-		
-		if eol == 1: self.fx_karoo_pause(1) # catch all other entries so as to not accidentally exit
-		
 		return
 		
 	
@@ -750,7 +791,7 @@ class Base_GP(object):
 			self.fx_karoo_reproduce() # method 1 - Reproduction
 			self.fx_karoo_point_mutate() # method 2 - Point Mutation
 			self.fx_karoo_branch_mutate() # method 3 - Branch Mutation
-			self.fx_karoo_crossover_reproduce() # method 4 - Crossover Reproduction
+			self.fx_karoo_crossover() # method 4 - Crossover
 			self.fx_eval_generation() # evaluate all Trees in a single generation
 			
 			self.population_a = self.fx_evo_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
@@ -775,7 +816,7 @@ class Base_GP(object):
 		print '\033[3m  but the one most responsive to change."\033[0;0m --Charles Darwin'
 		print ''
 		print '\033[3m Congrats!\033[0;0m Your multi-generational Karoo GP run is complete.\n'
-		print '\033[36m Type \033[1m?\033[0;0m\033[36m to review your options or \033[1mENTER\033[0;0m\033[36m to exit.\033[0;0m\n'
+		print '\033[36m Type \033[1m?\033[0;0m\033[36m to review your options or \033[1mq\033[0;0m\033[36m to exit.\033[0;0m\n'
 		self.fx_karoo_pause(1)
 		
 		return
@@ -790,10 +831,8 @@ class Base_GP(object):
 		'''
 		Assign 13 global variables to the array 'tree'.
 		
-		Build the array 'tree' with 13 rows and initally, just 1 column of labels. This array will
-		grow as each new node is appended.
-		
-		The values of this array are stored as string characters. Numbers will be forced to integers
+		Build the array 'tree' with 13 rows and initally, just 1 column of labels. This array will grow as each new 
+		node is appended. The values of this array are stored as string characters. Numbers will be forced to integers
 		at the point of execution.
 		
 		Requires 'TREE_ID', 'tree_type', and 'tree_depth_max'
@@ -858,7 +897,7 @@ class Base_GP(object):
 		Build the Function nodes
 		'''
 		
-		for i in range(1, self.pop_tree_depth_max): # increment depth, from 1 through 1 shy of 'tree_depth_max'
+		for i in range(1, self.pop_tree_depth_max): # increment depth, from 1 through 'tree_depth_max' - 1
 		
 			self.pop_node_depth = i # increment 'node_depth'
 			
@@ -936,7 +975,7 @@ class Base_GP(object):
 		Build the Terminal nodes
 		'''
 			
-		self.pop_node_depth = self.pop_tree_depth_max # set the final node_depth (same as 'pop_node_depth' + 1gp)
+		self.pop_node_depth = self.pop_tree_depth_max # set the final node_depth (same as 'gp.pop_node_depth' + 1)
 		
 		for j in range(1, len(self.tree[3]) ): # increment through all nodes (exclude 0) in array 'tree'
 		
@@ -1039,7 +1078,7 @@ class Base_GP(object):
 	
 		'''
 		This method combines 4 sub-methods into a single method for ease of deployment. It is designed to executed 
-		within a for loop such that an entire population is built. However, it may also be run from the command line, 
+		within a loop such that an entire population is built. However, it may also be run from the command line, 
 		passing a single TREE_ID to the method.
 		
 		'tree_type' is either (f)ull or (g)row. Note, however, that when the user selects 'ramped 50/50' at launch, it 
@@ -1130,16 +1169,14 @@ class Base_GP(object):
 		
 		This method displays all sequential node_ids from 'start' node through bottom, within the given tree.
 		'''
-		start = 1 # can pass 'start' to this method, to print only a sub-section of the Tree
 		
 		ind = ''
-		
 		print '\n\033[1m\033[36m Tree ID', int(tree[0][1]), '\033[0;0m'
 		
-		for depth in range(int(tree[4][start]), int(tree[2][1]) + 1): # increment through all Tree depths
+		for depth in range(0, int(tree[2][1]) + self.tree_depth_adj + 1): # increment through all Tree depths - tested 2016 07/09
 			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
-			for node in range(start, len(tree[3])): # increment through all nodes (redundant, I know)
+			for node in range(1, len(tree[3])): # increment through all nodes (redundant, I know)
 				if int(tree[4][node]) == depth:
 					print ''
 					print ind,'\033[1m\033[36m NODE:', tree[3][node], '\033[0;0m'
@@ -1171,7 +1208,7 @@ class Base_GP(object):
 		branch = np.append(branch, branch_symp) # append list to array
 		ind = ''
 		
-		for depth in range(int(tree[4][start]), int(tree[2][1]) + 1): # increment through all Tree depths
+		for depth in range(int(tree[4][start]), int(tree[2][1]) + self.tree_depth_adj + 1): # increment through all Tree depths - tested 2016 07/09
 			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
 			for n in range(0, len(branch)): # increment through all nodes listed in the branch
@@ -1194,22 +1231,22 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_eval_accuracy(self, tree_id):
+	#def fx_eval_accuracy(self, tree_id):
 	
-		'''
-		Evaluate Accuracy of a single Tree during training.
+	#	'''
+	#	Evaluate Accuracy of a single Tree during training.
 		
-		This method compares the stored, total fitness score for all rows of a single Tree to the total number of rows 
-		in the associated dataset.
+	#	This method compares the stored, total fitness score for all rows of a single Tree to the total number of rows 
+	#	in the associated dataset.
 		
-		For this method to provide meaningful output, the fitness function must be maximising and the desired solution 
-		an exact Match. This method will not provide meaningful output for a minimisation (Absolute Diff) nor 
-		Classification function.
-		'''
+	#	For this method to provide meaningful output, the fitness function must be maximising and the desired solution 
+	#	an exact Match. This method will not provide meaningful output for a minimisation (Absolute Diff) nor 
+	#	Classification function.
+	#	'''
 		
-		print '\n\t Tree', tree_id, 'has an accuracy of:', float(self.population_a[tree_id][12][1]) / self.data_train_dict_array.shape[0] * 100
-		
-		return
+	#	print '\n\t Tree', tree_id, 'has an accuracy of:', float(self.population_a[tree_id][12][1]) / self.data_train_dict_array.shape[0] * 100
+	#	
+	#	return
 		
 	
 	def fx_eval_generation(self):
@@ -1228,7 +1265,7 @@ class Base_GP(object):
 			
 		self.fx_evo_tree_renum(self.population_b) # population renumber
 		self.fx_fitness_gym(self.population_b) # run 'fx_eval', 'fx_fitness', 'fx_fitness_store', and fitness record
-		self.fx_tree_archive(self.population_b, 'a') # archive the current, evolved generation of Trees
+		self.fx_tree_archive(self.population_b, 'a') # archive the current, evolved generation of Trees as the next foundation population
 		
 		if self.display != 's':
 			print '\n Copy gp.population_b to gp.population_a\n'
@@ -1529,16 +1566,15 @@ class Base_GP(object):
 		Select one Tree by means of a Tournament in which 'tourn_size' contenders are randomly selected and then 
 		compared for their respective fitness (as determined in 'fx_fitness_gym'). The tournament is engaged for each 
 		of the four types of inter-generational evolution: reproduction, point mutation, branch (full and grow)
-		mutation, and crossover (sexual) reproduction.
+		mutation, and crossover (sexual reproduction).
 		
 		The original Tournament Selection drew directly from the foundation generation (gp.generation_a). However, 
-		with the introduction of a minimum boundary condition as defined by the user ('gp.tree_depth_min'), 
+		with the introduction of a minimum number of nodes as defined by the user ('gp.tree_depth_min'), 
 		'gp.gene_pool' provides only from those Trees which meet all criteria.
 		
-		With upper (max depth) and lower (min nodes) boundary conditions invoked, one may enjoy interesting results. 
-		Stronger boundary conditions (a reduced gap between the min and max number of nodes) typically forces more 
-		creative solutions, but also runs the risk of elitism, even total population die-off where a healthy 
-		population once existed.
+		With upper (max depth) and lower (min nodes) invoked, one may enjoy interesting results. Stronger boundary 
+		parameters (a reduced gap between the min and max number of nodes) may invoke more compact solutions, but also 
+		runs the risk of elitism, even total population die-off where a healthy population once existed.
 		'''
 		
 		tourn_test = 0
@@ -1617,12 +1653,12 @@ class Base_GP(object):
 	def fx_fitness_gene_pool(self):
 	
 		'''		
-		With the introduction of the minimum boundary condition (gp.tree_depth_min), the means by which the lower node 
-		count is enforced is through the creation of a gene pool from those Trees which contain equal or greater nodes 
-		to the user defined limit.
+		With the introduction of the minimum number of nodes parameter (gp.tree_depth_min), the means by which the 
+		lower node count is enforced is through the creation of a gene pool from those Trees which contain equal or 
+		greater nodes to the user defined limit.
 		
 		What's more, the gene pool also keeps the solution from defaulting to a simple t/t as with the Kepler problem.
-		Howevr, the ramifications of this further limitation on the evolutionary process has not been full studied.
+		However, the ramifications of this further limitation on the evolutionary process has not been fully studied.
 		
 		This method is automatically invoked with every Tournament Selection ('fx_fitness_tournament').
 		
@@ -1726,7 +1762,9 @@ class Base_GP(object):
 		mutation and replace it with another randomly chosen terminal.
 		'''
 		
-		branch_depth = int(tree[2][1]) - int(tree[4][branch[0]]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch
+		branch_top = int(branch[0]) # added and tested 2016 07/09
+		branch_depth = int(tree[2][1]) - int(tree[4][branch_top]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch
+		branch_depth = branch_depth + self.tree_depth_adj # enable the branch to grow beyond the initial tree depth - tested 2016 07/09
 		
 		if branch_depth < 0:
 			print '\n\t\033[31mERROR! Captain, this is not logical!\033[0;0m'
@@ -1734,9 +1772,9 @@ class Base_GP(object):
 			
 		elif branch_depth == 0: # check if we are at 'tree_depth_max' (per the notes above), then mutate term to term
 		
-			# if self.display == 'i': print '\t\033[36m max depth mutate\033[1m', branch[0], '\033[0;0m\033[36mfrom \033[1mterm\033[0;0m \033[36mto \033[1mterm\033[0;0m\n'
+			# if self.display == 'i': print '\t\033[36m max depth mutate\033[1m', branch_top, '\033[0;0m\033[36mfrom \033[1mterm\033[0;0m \033[36mto \033[1mterm\033[0;0m\n'
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
-			tree[6][branch[0]] = self.terminals[rnd] # replace terminal (variable)
+			tree[6][branch_top] = self.terminals[rnd] # replace terminal (variable)
 			
 			
 		else: # now we are working with a branch >= depth 1 (min 3 nodes) within 'tourn_winner'
@@ -1748,7 +1786,7 @@ class Base_GP(object):
 			
 			if type_mod == 'term': # mutate 'branch_top' to a terminal and delete all nodes beneath (no subsequent nodes are added to this branch)
 			
-				branch_top = int(branch[0])
+				# branch_top = int(branch[0]) # deemed redundant -- removed and tested 2016 07/09
 				
 				# if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m term \n\033[0;0m'
 				if self.display == 'db': print '\n *** New Branch for Grow - Terminal Mutation *** \n This is the unaltered tourn_winner:\n', tree
@@ -1768,12 +1806,12 @@ class Base_GP(object):
 			
 			if type_mod == 'func': # mutate 'branch_top' to a function (a new 'gp.tree' will be copied, node by node, into 'tourn_winner')
 			
-				branch_top = int(branch[0])
+				# branch_top = int(branch[0])  deemed redundant -- removed and tested 2016 07/09
 				
 				# if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m func \n\033[0;0m'
 				if self.display == 'db': print '\n *** New Branch for Grow - Function Mutation *** \n This is the unaltered tourn_winner:\n', tree
 				
-				branch_depth = int(tree[2][1]) - int(tree[4][branch_top]) # max potential size of 'tree' to insert into array			
+				# branch_depth = int(tree[2][1]) - int(tree[4][branch_top])  deemed redundant -- removed and tested 2016 07/09	
 				self.fx_gen_tree_build('mutant', self.pop_tree_type, branch_depth) # build new tree ('gp.tree') with a maximum depth which matches 'branch'
 				
 				if self.display == 'db': print '\n This is the new tree to be inserted at node', branch_top, 'in tourn_winner:\n', self.tree; self.fx_karoo_pause(0)
@@ -1801,7 +1839,7 @@ class Base_GP(object):
 		
 		Future versions will handle this automatically.
 		
-		In applications of GP, Crossover Reproduction is the most commonly applied evolutionary operator.
+		In applications of GP, Crossover is the most commonly applied evolutionary operator.
 		'''
 		
 		crossover = int(branch_x[0]) # a pointer to the top of the branch in 'parent_x'
@@ -1846,7 +1884,7 @@ class Base_GP(object):
 				
 			parent_y = self.fx_evo_branch_top_copy(parent_y, branch_y) # copy root of 'branch_y' ('gp.tree') to 'parent_y'
 			parent_y = self.fx_evo_branch_body_copy(parent_y) # copy remaining nodes in 'branch_y' ('gp.tree') to 'parent_y'
-			parent_y = self.fx_evo_tree_prune(parent_y, int(parent_y[2][1])) # prune to the user defined maximum depth
+			parent_y = self.fx_evo_tree_prune(parent_y, int(parent_y[2][1]) + self.tree_depth_adj) # prune to the initial max Tree depth + adjustment - tested 2016 07/09
 			
 		parent_y = self.fx_evo_fitness_wipe(parent_y) # wipe fitness data
 		
@@ -1858,9 +1896,9 @@ class Base_GP(object):
 		'''
 		Select all nodes in the 'tourn_winner' Tree at and below the randomly selected starting point.
 		
-		While Grow mutation uses this method to select a region of the 'tourn_winner' to delete, Crossover mutation 
-		uses this method to select a region of the 'tourn_winner' which is then converted to a stand-alone tree. As 
-		such, it is imperative that the nodes be in the correct order, else all kinds of bad things happen.
+		While Grow mutation uses this method to select a region of the 'tourn_winner' to delete, Crossover uses this 
+		method to select a region of the 'tourn_winner' which is then converted to a stand-alone tree. As such, it is 
+		imperative that the nodes be in the correct order, else all kinds of bad things happen.
 		'''
 		
 		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
@@ -1869,7 +1907,7 @@ class Base_GP(object):
 		branch_symp = sp.sympify(branch_eval) # convert string into something useful
 		branch = np.append(branch, branch_symp) # append list to array
 		
-		branch = np.sort(branch) # sort nodes in branch for Crossover Reproduction.
+		branch = np.sort(branch) # sort nodes in branch for Crossover.
 		
 		if self.display == 'i': print '\t \033[36mwith nodes\033[1m', branch, '\033[0;0m\033[36mchosen for mutation\033[0;0m'
 		
@@ -1885,7 +1923,7 @@ class Base_GP(object):
 		will be removed; and global 'gp.tree' (recycling from initial population generation) is the new tree to be 
 		copied into 'tree', replacing 'branch'.
 		
-		This is used in both Grow Mutation and Crossover Reproduction.
+		This is used in both Grow Mutation and Crossover.
 		'''
 		
 		branch_top = int(branch[0])
@@ -1912,7 +1950,7 @@ class Base_GP(object):
 		will be removed; and global 'gp.tree' (recycling from initial population generation) is the new tree to be 
 		copied into 'tree', replacing 'branch'.
 		
-		This is used in both Grow and Crossover Reproduction.
+		This is used in both Grow and Crossover.
 		'''
 				
 		node_count = 2 # set node count for 'gp.tree' to 2 as the new root has already replaced 'branch_top' in 'fx_evo_branch_top_copy'
@@ -1952,7 +1990,7 @@ class Base_GP(object):
 		'''
 		This method prepares a stand-alone tree as a copy of the given branch.
 		
-		This method is used with Crossover Reproduction.
+		This method is used with Crossover.
 		'''
 		
 		new_tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_max'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
@@ -1965,7 +2003,7 @@ class Base_GP(object):
 			
 			TREE_ID = 'copy'
 			tree_type = tree[1][1]
-			tree_depth_max = int(tree[4][branch[-1]]) - int(tree[4][branch[0]]) # subtract depth of the first node from the last in 'branch'
+			tree_depth_max = int(tree[4][branch[-1]]) - int(tree[4][branch_top]) # subtract depth of 'branch_top' from the last in 'branch'
 			NODE_ID = tree[3][node]
 			node_depth = int(tree[4][node]) - int(tree[4][branch_top]) # subtract the depth of 'branch_top' from the current node depth
 			node_type = tree[5][node]
@@ -2131,7 +2169,7 @@ class Base_GP(object):
 		the user a friendly, makes-sense interface which can be read in both directions.
 		'''
 		
-		### THIS METHOD MAY NOT BE NEEDED AS SORTING 'branch' SEEMS TO HAVE FIXED 'parent_id' ###
+		### THIS METHOD MAY NOT BE REQUIRED AS SORTING 'branch' SEEMS TO HAVE FIXED 'parent_id' ###
 		
 		# tested 2015 06/05
 		for node in range(1, len(tree[3])):
@@ -2157,7 +2195,7 @@ class Base_GP(object):
 		In a given Tree, fix 'node_arity' for all nodes labeled 'term' but with arity 2.
 		
 		This is required after a function has been replaced by a terminal, as may occur with both Grow mutation and 
-		Crossover reproduction.
+		Crossover.
 		'''
 		
 		# tested 2015 05/31
@@ -2207,8 +2245,8 @@ class Base_GP(object):
 		'''
 		This method reduces the depth of a given branch.
 				
-		This method is used with Crossover Reproduction. However, the input value 'branch' can be a partial tree 
-		(branch) or a full tree, and it will operate correctly. The input value 'depth' becomes the new maximum depth.
+		This method is used with Crossover. However, the input value 'branch' can be a partial tree (branch) or a full 
+		tree, and it will operate correctly. The input value 'depth' becomes the new maximum depth.
 		'''
 		
 		nodes = []
@@ -2274,8 +2312,9 @@ class Base_GP(object):
 		'''
 		[need to write]
 		'''
-		
-		self.fx_eval_poly(self.population_a[tree_id]) # generate the raw and sympified equation for the given Tree
+
+		# switched from population_a to _b 2016 07/09
+		self.fx_eval_poly(self.population_b[tree_id]) # generate the raw and sympified equation for the given Tree
 		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
@@ -2308,7 +2347,8 @@ class Base_GP(object):
 		[need to write]
 		'''
 		
-		self.fx_eval_poly(self.population_a[tree_id]) # generate the raw and sympified equation for the given Tree
+		# switched from population_a to _b 2016 07/09
+		self.fx_eval_poly(self.population_b[tree_id]) # generate the raw and sympified equation for the given Tree
 		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
@@ -2333,9 +2373,7 @@ class Base_GP(object):
 				fitness = 0 # do not adjust the fitness score
 				print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
 				
-		print '\n\t Tree', tree_id, 'has an accuracy of:', float(self.population_a[tree_id][12][1]) / self.data_test_dict_array.shape[0] * 100
-		
-		# IS THAT ALL ???
+		print '\n\t Tree', tree_id, 'has an accuracy of:', float(self.population_b[tree_id][12][1]) / self.data_test_dict_array.shape[0] * 100
 		
 		return
 		
@@ -2357,12 +2395,11 @@ class Base_GP(object):
 			y_true = solution, the correct target values (labels) associated with the data
 		'''
 		
-		# tested 2015 10/18
-		
+		# tested 2015 10/18; switched from population_a to _b 2016 07/09
 		y_pred = []
 		y_true = []
 		
-		self.fx_eval_poly(self.population_a[tree_id]) # generate the raw and sympified equation for the given Tree
+		self.fx_eval_poly(self.population_b[tree_id]) # generate the raw and sympified equation for the given Tree
 		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
@@ -2411,30 +2448,7 @@ class Base_GP(object):
 		print skm.confusion_matrix(y_true, y_pred)
 		
 		return
-		
-		
-	def fx_test_normalize(self, array):
-	
-		'''
-		This method refits each data point within the given array to within 0 through 1, where 0 is the minimum and 1 
-		is the maximum value.
-		
-		The formula employed was derived from the following website:
-		stn.spotfire.com/spotfire_client_help/norm/norm_normalizing_columns.htm 
-		'''
-		
-		norm = []
-		array_norm = []
-		array_min = np.min(array)
-		array_max = np.max(array)
-		
-		for col in range(1, len(array) + 1):
-			norm = float((array[col - 1] - array_min) / (array_max - array_min))
-			norm = round(norm, 4) # force to 4 decimal points		
-			array_norm = np.append(array_norm, norm)
-			
-		return array_norm
-		
+				
 	
 	def fx_test_plot(self, tree):
 	
