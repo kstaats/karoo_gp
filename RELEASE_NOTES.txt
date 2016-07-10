@@ -1,3 +1,24 @@
+2016 07/07 - version 0.9.1.3
+
+In karoo_gp_base_class.py
+ - added CTRL-C catch to the (pause) menu; removes potential to accidentally kill a run when attempting to 
+   copy/paste an on-screen function to research notes (use the mouse instead).
+ - rebuilt all of the (pause) menu functions for improved exception handling
+ - added the new gp.tree_depth_adj user defined variable to branch mutation and crossover, enabling Trees to grow 
+   beyond their original size which adds opportunity for more complex solutions, as well as the unavoidable bloat
+ - improved a few lines in both branch mutation and crossover
+ - tested, tested, tested
+
+In karoo_gp_main.py
+ - added CTRL-C catch to the at-launch user menu.
+ - renamed the method gp.fx_karoo_crossover_reproduction() to gp.fx_karoo_crossover()
+ - added user input for the new global variable gp.tree_depth_adj
+
+In karoo_go_server.py
+ - added the new gp.tree_depth_adj variable
+ 
+
+
 2016 07/07 - version 0.9.1.2
 
 In preparation for public launch of Karoo GP, a number of updates are complete or underway.
