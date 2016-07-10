@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.2
+# version 0.9.1.3
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -15,11 +15,12 @@ import sys # sys.path.append('modules/') # add the directory 'modules' to the cu
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 
 # parameters configuration
-gp.kernel = 'c' # ['a','c','m'] fitness function: ABS Value, Classification, or Matching
+gp.kernel = 'm' # ['a','c','m'] fitness function: ABS Value, Classification, or Matching
 gp.class_labels = 3 # number of class labels in the feature set
 tree_type = 'r' # ['f','g','r'] Tree type: full, grow, or ramped half/half
 tree_depth_max = 3 # [3,10] maximum tree depth
-gp.tree_depth_min = 3 #[3,100] minimum number of nodes
+gp.tree_depth_adj = 0 # additional depth provided for Tree growth
+gp.tree_depth_min = 3 # [3,100] minimum number of nodes
 gp.tree_pop_max = 100 # [10,1000] maximum population
 gp.generation_max = 10 # [1,1000] number of generations
 gp.display = 'm' # ['i','m','g','s','db','t'] display mode: Interactive, Minimal, Generational, Server, Debug, or Timer
