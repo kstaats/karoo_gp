@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.3
+# version 0.9.1.4
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -62,8 +62,8 @@ class Base_GP(object):
 		'gp.class_method'			select the number of classes (will be automated in future version)
 		'tree_type'					Full, Grow, or Ramped 50/50 (local variable)
 		'gp.tree_depth_min'			minimum number of nodes
-		'tree_depth_max'			maximum number of nodes [nodes = 2^(depth + 1) - 1] (local variable)
-		'gp.tree_depth_adj'			increases the ceiling of tree_depth_max, enabling larger trees (and potential bloat)
+		'tree_depth_base'			maximum Tree depth for the initial population, where nodes = 2^(depth + 1) - 1
+		'gp.tree_depth_max'			maximum Tree depth for the entire run; introduces potential bloat
 		'gp.tree_pop_max'			maximum number of Trees per generation
 		'gp.generation_max'			maximum number of generations
 		'gp.display'				level of on-screen feedback
@@ -121,12 +121,14 @@ class Base_GP(object):
 	#   Methods to Run Karoo GP               |
 	#++++++++++++++++++++++++++++++++++++++++++
 	
-	def karoo_gp(self, run, tree_type, tree_depth_max):
+	def karoo_gp(self, run, tree_type, tree_depth_base):
 	
 		'''
 		This is single method enables the engagement of the entire Karoo GP application. It is used by 
-		karoo_gp_server.py and the single, command line execution, but not by karoo_gp_main.py which engages each
-		of the included functions sequentially.
+		karoo_gp_server.py and the future, single command line executable, but not by karoo_gp_main.py which engages 
+		each of the included functions sequentially.
+		
+		Arguments required: run, tree_type, tree_depth_base
 		'''
 		
 		self.karoo_banner(run)
@@ -135,7 +137,7 @@ class Base_GP(object):
 		self.fx_karoo_data_load()
 		self.generation_id = 1 # set initial generation ID
 		self.population_a = ['Karoo GP by Kai Staats, Generation ' + str(self.generation_id)] # a list which will store all Tree arrays, one generation at a time
-		self.fx_karoo_construct(tree_type, tree_depth_max) # construct the first population of Trees
+		self.fx_karoo_construct(tree_type, tree_depth_base) # construct the first population of Trees
 		
 		# evaluate first generation of Trees	
 		print '\n Evaluate the first generation of Trees ...'	
@@ -169,12 +171,11 @@ class Base_GP(object):
 		'''
 		This method makes Karoo GP look old-school cool!
 		
-		While the banner remains the same, it presents a configuration request unique to a 'server' run.
+		While the banner remains the same, it presents a configuration request unique to a 'server' run. At the time 
+		of this writing, the only options are 'server' or 'main' where 'main' defaults to requests for feedback based 
+		upon the display mode selected by the user. See 'fx_karoo_construct' for examples.
 		
-		At the time of this writing, the only options are 'server' or 'main' where 'main' defaults to requests for 
-		feedback based upon the display mode selected by the user.
-		
-		See 'fx_karoo_construct' for examples.
+		Arguments required: run
 		'''
 		
 		os.system('clear')
@@ -210,6 +211,8 @@ class Base_GP(object):
 		both TRAINING and TEST segments in order to validate the success of the GP training run. Datasets less than
 		10 rows will not be split, rather copied in full to both TRAINING and TEST as it is assumed you are conducting
 		a system validation run, as with the built-in MATCH kernel and associated dataset.
+		
+		Arguments required: none
 		'''
 		
 		### 1) load the data file associated with the user selected fitness kernel ###	
@@ -312,8 +315,10 @@ class Base_GP(object):
 	def fx_karoo_data_recover(self, population):
 	
 		'''
-		This method is used to load a saved population of trees into the current population. As invoked through the
-		(pause) menu, this loads population_s to replace population_a.
+		This method is used to load a saved population of Trees. As invoked through the (pause) menu, this loads 
+		population_s to replace population_a.
+		
+		Arguments required: population size
 		'''
 		
 		with open(population, 'rb') as csv_file:
@@ -330,7 +335,7 @@ class Base_GP(object):
 					
 				else:
 					if row == []:
-						self.tree = np.array([[]]) # initialise tree array
+						self.tree = np.array([[]]) # initialise Tree array
 						
 					else:
 						if self.tree.shape[1] == 0:
@@ -347,12 +352,14 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_karoo_construct(self, tree_type, tree_depth_max):
+	def fx_karoo_construct(self, tree_type, tree_depth_base):
 		
 		'''
 		As used by the method 'fx_karoo_gp', this method constructs the initial population based upon the user-defined 
 		Tree type and initial, maximum Tree depth. "Ramped half/half" is currently not ramped, rather split 50/50 
 		Full/Grow. This will be updated with a future version of Karoo GP.
+		
+		Arguments required: tree_type, tree_depth_base
 		'''
 		
 		if self.display == 'i' or self.display == 'g':
@@ -365,16 +372,16 @@ class Base_GP(object):
 			
 		if tree_type == 'r': # Ramped 50/50
 			for TREE_ID in range(1, int(self.tree_pop_max / 2) + 1):
-				self.fx_gen_tree_build(TREE_ID, 'f', tree_depth_max) # build 1/2 of the 1st generation of Trees as Full
+				self.fx_gen_tree_build(TREE_ID, 'f', tree_depth_base) # build 1/2 of the 1st generation of Trees as Full
 				self.fx_tree_append(self.tree) # append each Tree in the first generation to the list 'gp.population_a'
 				
 			for TREE_ID in range(int(self.tree_pop_max / 2) + 1, self.tree_pop_max + 1):
-				self.fx_gen_tree_build(TREE_ID, 'g', tree_depth_max) # build 2/2 of the 1st generation of Trees as Grow
+				self.fx_gen_tree_build(TREE_ID, 'g', tree_depth_base) # build 2/2 of the 1st generation of Trees as Grow
 				self.fx_tree_append(self.tree)
 				
 		else: # Full or Grow
 			for TREE_ID in range(1, self.tree_pop_max + 1):
-				self.fx_gen_tree_build(TREE_ID, tree_type, tree_depth_max) # build the 1st generation of Trees
+				self.fx_gen_tree_build(TREE_ID, tree_type, tree_depth_base) # build the 1st generation of Trees
 				self.fx_tree_append(self.tree)
 				
 		return
@@ -383,9 +390,11 @@ class Base_GP(object):
 	def fx_karoo_reproduce(self):
 	
 		'''
-		Through tournament selection, a single tree from the prior generation is copied without mutation to the next 
+		Through tournament selection, a single Tree from the prior generation is copied without mutation to the next 
 		generation. This is analogous to a member of the prior generation directly entering the gene pool of the 
 		subsequent (younger) generation.
+		
+		Arguments required: none
 		'''
 		
 		if self.display != 's':
@@ -397,7 +406,6 @@ class Base_GP(object):
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each reproduction
 			tourn_winner = self.fx_evo_fitness_wipe(tourn_winner) # remove fitness data
 			self.population_b.append(tourn_winner) # append array to next generation population of Trees
-			if self.display == 'i': print '\t\033[36m has been copied to the next Generation\033[0;0m'
 			
 		return
 		
@@ -405,10 +413,12 @@ class Base_GP(object):
 	def fx_karoo_point_mutate(self):
 	
 		'''
-		Through tournament selection, a copy of a tree from the prior generation mutates before being added to the 
+		Through tournament selection, a copy of a Tree from the prior generation mutates before being added to the 
 		next generation. In this method, a single point is selected for mutation while maintaining function nodes as 
-		functions (operands) and terminal nodes as terminals (variables). The size and shape of the tree will remain 
+		functions (operators) and terminal nodes as terminals (variables). The size and shape of the Tree will remain 
 		identical.
+		
+		Arguments required: none
 		'''
 		
 		if self.display != 's':
@@ -420,19 +430,21 @@ class Base_GP(object):
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each mutation
 			tourn_winner, node = self.fx_evo_point_mutate(tourn_winner) # perform point mutation; return single point for record keeping
 			self.population_b.append(tourn_winner) # append array to next generation population of Trees
-			
+						
 		return
 		
 	
 	def fx_karoo_branch_mutate(self):
 	
 		'''
-		Through tournament selection, a copy of a tree from the prior generation mutates before being added to the 
+		Through tournament selection, a copy of a Tree from the prior generation mutates before being added to the 
 		next generation. Unlike Point Mutation, in this method an entire branch is selected. If the evolutionary run is 
-		designated as Full, the size and shape of the tree will remain identical, each node mutated sequentially, where 
+		designated as Full, the size and shape of the Tree will remain identical, each node mutated sequentially, where 
 		functions remain functions and terminals remain terminals. If the evolutionary run is designated as Grow or 
-		Ramped Half/Half, the size and shape of the tree may grow smaller or larger, but it may not exceed the maximum 
-		depth defined by the user.
+		Ramped Half/Half, the size and shape of the Tree may grow smaller or larger, but it may not exceed
+		tree_depth_max as defined by the user.
+		
+		Arguments required: none
 		'''
 		
 		if self.display != 's':
@@ -458,19 +470,20 @@ class Base_GP(object):
 	def fx_karoo_crossover(self):
 	
 		'''
-		Through tournament selection, two trees are selected as parents to produce a single offspring (future 
-		versions of Karoo GP will produce 2 offspring per set of parent trees). Within each parent tree a branch is
-		selected. Parent A is copied, with its selected branch deleted. Parent B's branch is then copied to the former 
-		location of Parent A's branch, and inserted (grafted). The size and shape of the child tree may be smaller or 
-		larger than either of the parents, but may not exceed the maximum depth defined by the user.
+		Through tournament selection, 2 trees are selected as parents to produce 2 offspring. Within each parent 
+		Tree a branch is selected. Parent A is copied, with its selected branch deleted. Parent B's branch is then 
+		copied to the former location of Parent A's branch and inserted (grafted). The size and shape of the child 
+		Tree may be smaller or larger than either of the parents, but may not exceed 'tree_depth_max' as defined 
+		by the user.
 		
-		This process combines genetic code from two trees, both of which were chosen by the tournament process as 
-		having a higher fitness than the average population. Therefore, there is a chance their offspring will provide 
-		an improvement in total fitness.
-		
-		In most GP applications, Crossover is the most commonly applied evolutionary operator (60-70%).
+		This process combines genetic code from 2 trees, both of which were chosen by the tournament process as having 
+		a higher fitness than the average population. Therefore, there is a chance their offspring will provide an 
+		improvement in total fitness. In most GP applications, Crossover is the most commonly applied evolutionary 
+		operator (~70-80%).
 		
 		For those who like to watch, select 'db' (debug mode) at the launch of Karoo GP or at any (pause).
+		
+		Arguments required: none
 		'''
 		
 		if self.display != 's':
@@ -478,19 +491,22 @@ class Base_GP(object):
 			print '  Perform', self.evolve_cross, 'Crossover ...'
 			if self.display == 'i': self.fx_karoo_pause(0)
 			
-		for n in range(self.evolve_cross): # quantity of Trees to be generated through crossover
+		for n in range(self.evolve_cross / 2): # quantity of Trees to be generated through Crossover, accounting for 2 children each
 		
 			parent_a = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for 'parent_a'
-			branch_a = self.fx_evo_branch_select(parent_a) # select branch within 'parent_a' to crossover to 'parent_b'
+			branch_a = self.fx_evo_branch_select(parent_a) # select branch within 'parent_a', to copy to 'parent_b' and receive a branch from 'parent_b'
 			
 			parent_b = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for 'parent_b'
-			branch_b = self.fx_evo_branch_select(parent_b) # select branch within 'parent_b' to receive crossover
+			branch_b = self.fx_evo_branch_select(parent_b) # select branch within 'parent_b', to copy to 'parent_a' and receive a branch from 'parent_a'
 			
-			# child_1 = self.fx_evo_crossover(parent_a, branch_a, parent_b, branch_b) # perform Crossover
-			# self.population_b.append(child_1) # append the child of Crossover to next generation population of Trees
+			parent_c = np.copy(parent_a); branch_c = np.copy(branch_a) # else the Crossover Trees leak back to the originals (not sure why)
+			parent_d = np.copy(parent_b); branch_d = np.copy(branch_b) # else the Crossover Trees leak back to the originals (not sure why)
 			
-			child_2 = self.fx_evo_crossover(parent_b, branch_b, parent_a, branch_a) # perform Crossover
-			self.population_b.append(child_2) # append the child of Crossover to next generation population of Trees
+			child_1 = self.fx_evo_crossover(parent_a, branch_a, parent_b, branch_b) # perform Crossover
+			self.population_b.append(child_1) # append the 1st child to next generation of Trees
+			
+			child_2 = self.fx_evo_crossover(parent_d, branch_d, parent_c, branch_c) # perform Crossover
+			self.population_b.append(child_2) # append the 2nd child to next generation of Trees
 			
 		return
 		
@@ -498,7 +514,11 @@ class Base_GP(object):
 	def fx_karoo_pause(self, eol):
 	
 		'''
-		Pause the program execution and output to screen until the user selects a valid option.
+		Pause the program execution and output to screen until the user selects a valid option. The "eol" parameter 
+		instructs this method to display a different screen for run-time or end-of-line, and to dive back into the
+		current run, or do nothing, accordingly.
+		
+		Arguments required: eol
 		'''
 		
 		options = ['?','help','i','m','g','s','db','t','ts','min','max','b','c','id','pop','l','p','a','test','cont','load','w','q','']
@@ -522,7 +542,7 @@ class Base_GP(object):
 					print ''
 					print '\t\033[36m\033[1m ts \t\033[0;0m adjust the tournament size'
 					print '\t\033[36m\033[1m min \t\033[0;0m adjust the minimum number of nodes'
-					# print '\t\033[36m\033[1m max \t\033[0;0m adjust the maximum tree depth'
+					# print '\t\033[36m\033[1m max \t\033[0;0m adjust the maximum Tree depth'
 					print '\t\033[36m\033[1m b \t\033[0;0m adjust the balance of genetic operators (sum to 100%)'
 					print '\t\033[36m\033[1m c \t\033[0;0m adjust the number of engaged CPU cores'
 					print ''
@@ -580,14 +600,13 @@ class Base_GP(object):
 					# menu = range(1,11)
 					# while True:
 						# try:
-							# print '\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', self.pop_tree_depth_max + self.tree_depth_adj
+							# print '\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', self.tree_depth_max
 							# query = int(raw_input('\n\t Adjust the global maximum Tree depth to (1 ... 10): '))
 							# if query not in menu: raise ValueError()
-							# if query < self.pop_tree_depth_max + self.tree_depth_adj:
+							# if query < self.tree_depth_max:
 								# print '\n\t\033[32m This value is less than the current value.\033[0;0m'
 								# conf = raw_input('\n\t Are you ok with this? (y/n) ')
 								# if conf == 'n': break
-							# self.tree_depth_adj = int(query - self.pop_tree_depth_max); break
 						# except ValueError: print '\n\t\033[32m Enter a number from 1 including 10. Try again ...\033[0;0m'
 						
 				
@@ -779,7 +798,10 @@ class Base_GP(object):
 	
 		'''
 		This method enables the launch of another full run of Karoo GP, but starting with a seed generation
-		instead of with a randomly generated first population.
+		instead of with a randomly generated first population. This can be used at the end of a standard run to
+		continue the evoluationary process, or after having recovered a set of trees from a prior run.
+		
+		Arguments required: next_gen_start
 		'''
 		
 		for self.generation_id in range(next_gen_start, self.generation_max + 1): # evolve additional generations of Trees
@@ -809,7 +831,9 @@ class Base_GP(object):
 	def fx_karoo_eol(self):
 		
 		'''
-		The very last method to run in Karoo GP.
+		The very last method to run in Karoo GP, thus the "end-of-line" :)
+		
+		Arguments required: none
 		'''
 		
 		print '\n\033[3m "It is not the strongest of the species that survive, nor the most intelligent,\033[0;0m'
@@ -823,10 +847,10 @@ class Base_GP(object):
 		
 	
 	#++++++++++++++++++++++++++++++++++++++++++
-	#   Methods to Generate a Tree            |
+	#   Methods to Generate a new Tree        |
 	#++++++++++++++++++++++++++++++++++++++++++
 	
-	def fx_gen_tree_initialise(self, TREE_ID, tree_type, tree_depth_max):
+	def fx_gen_tree_initialise(self, TREE_ID, tree_type, tree_depth_base):
 
 		'''
 		Assign 13 global variables to the array 'tree'.
@@ -835,16 +859,18 @@ class Base_GP(object):
 		node is appended. The values of this array are stored as string characters. Numbers will be forced to integers
 		at the point of execution.
 		
-		Requires 'TREE_ID', 'tree_type', and 'tree_depth_max'
+		This method is called by 'fx_gen_tree_build'.
+		
+		Arguments required: TREE_ID, tree_type, tree_depth_base
 		'''
 		
-		self.pop_TREE_ID = TREE_ID 					# pos 0: unique identifier for each tree
-		self.pop_tree_type = tree_type				# pos 1: defined in 'User Input' as (f)ull, (g)row, or (r)amped 50/50
-		self.pop_tree_depth_max = tree_depth_max 	# pos 2: defined in 'User Input' as the maximum allowable depth of any given tree
+		self.pop_TREE_ID = TREE_ID 					# pos 0: a unique identifier for each tree
+		self.pop_tree_type = tree_type				# pos 1: a global constant based upon the initial user setting
+		self.pop_tree_depth_base = tree_depth_base	# pos 2: a global variable which conveys 'tree_depth_base' as unique to each new Tree
 		self.pop_NODE_ID = 1 						# pos 3: unique identifier for each node; this is the INDEX KEY to this array
-		self.pop_node_depth = 0 					# pos 4: depth of node when committed to the array
+		self.pop_node_depth = 0 					# pos 4: depth of each node when committed to the array
 		self.pop_node_type = '' 					# pos 5: root, function, or terminal
-		self.pop_node_label = '' 					# pos 6: operand [+, -, *, ...] or terminal [a, b, c, ...]
+		self.pop_node_label = '' 					# pos 6: operator [+, -, *, ...] or terminal [a, b, c, ...]
 		self.pop_node_parent = '' 					# pos 7: parent node
 		self.pop_node_arity = '' 					# pos 8: number of nodes attached to each non-terminal node
 		self.pop_node_c1 = '' 						# pos 9: child node 1
@@ -852,7 +878,7 @@ class Base_GP(object):
 		self.pop_node_c3 = '' 						# pos 11: child node 3 (assumed max of 3 with boolean operator 'if')
 		self.pop_fitness = ''						# pos 12: fitness value following Tree evaluation
 		
-		self.tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_max'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
+		self.tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_base'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
 		
 		return
 				
@@ -862,10 +888,14 @@ class Base_GP(object):
 	def fx_gen_root_node_build(self):
 	
 		'''
-		Build the Root node
+		Build the Root node for the initial population.
+		
+		This method is called by 'fx_gen_tree_build'.
+		
+		Arguments required: none
 		'''
 				
-		self.fx_gen_function_select() # select the operand for root
+		self.fx_gen_function_select() # select the operator for root
 		
 		if self.pop_node_arity == 1: # 1 child
 			self.pop_node_c1 = 2
@@ -894,10 +924,14 @@ class Base_GP(object):
 	def fx_gen_function_node_build(self):
 	
 		'''
-		Build the Function nodes
+		Build the Function nodes for the intial population.
+		
+		This method is called by 'fx_gen_tree_build'.
+		
+		Arguments required: none
 		'''
 		
-		for i in range(1, self.pop_tree_depth_max): # increment depth, from 1 through 'tree_depth_max' - 1
+		for i in range(1, self.pop_tree_depth_base): # increment depth, from 1 through 'tree_depth_base' - 1
 		
 			self.pop_node_depth = i # increment 'node_depth'
 			
@@ -907,14 +941,14 @@ class Base_GP(object):
 			
 			for j in range(1, len(self.tree[3])): # increment through all nodes (exclude 0) in array 'tree'
 			
-				if int(self.tree[4][j]) == self.pop_node_depth-1: # find parent nodes which reside at the prior depth
+				if int(self.tree[4][j]) == self.pop_node_depth - 1: # find parent nodes which reside at the prior depth
 					parent_arity_sum = parent_arity_sum + int(self.tree[8][j]) # sum arities of all parent nodes at the prior depth
 					
 					# (do *not* merge these 2 "j" loops or it gets all kinds of messed up)
 										
 			for j in range(1, len(self.tree[3])): # increment through all nodes (exclude 0) in array 'tree'
 			
-				if int(self.tree[4][j]) == self.pop_node_depth-1: # find parent nodes which reside at the prior depth
+				if int(self.tree[4][j]) == self.pop_node_depth - 1: # find parent nodes which reside at the prior depth
 
 					for k in range(1, int(self.tree[8][j]) + 1): # increment through each degree of arity for each parent node
 						self.pop_node_parent = int(self.tree[3][j]) # set the parent 'NODE_ID' ...
@@ -927,7 +961,11 @@ class Base_GP(object):
 	def fx_gen_function_gen(self, parent_arity_sum, prior_sibling_arity, prior_siblings):
 	
 		'''
-		Generate a single Function node
+		Generate a single Function node for the initial population.
+		
+		This method is called by 'fx_gen_function_node_build'.
+		
+		Arguments required: parent_arity_sum, prior_sibling_arity, prior_siblings
 		'''
 		
 		if self.pop_tree_type == 'f': # user defined as (f)ull
@@ -956,11 +994,15 @@ class Base_GP(object):
 	def fx_gen_function_select(self):
 	
 		'''
-		Define a single Function (operand extracted from the associated functions.csv)
+		Define a single Function (operator extracted from the associated functions.csv) for the initial population.
+		
+		This method is called by 'fx_gen_function_gen' and 'fx_gen_root_node_build'.
+		
+		Arguments required: none
 		'''
 		
 		self.pop_node_type = 'func'
-		rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operands
+		rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
 		self.pop_node_label = self.functions[rnd][0]
 		self.pop_node_arity = int(self.functions[rnd][1])
 		
@@ -972,14 +1014,18 @@ class Base_GP(object):
 	def fx_gen_terminal_node_build(self):
 	
 		'''
-		Build the Terminal nodes
+		Build the Terminal nodes for the intial population.
+		
+		This method is called by 'fx_gen_tree_build'.
+		
+		Arguments required: none
 		'''
 			
-		self.pop_node_depth = self.pop_tree_depth_max # set the final node_depth (same as 'gp.pop_node_depth' + 1)
+		self.pop_node_depth = self.pop_tree_depth_base # set the final node_depth (same as 'gp.pop_node_depth' + 1)
 		
 		for j in range(1, len(self.tree[3]) ): # increment through all nodes (exclude 0) in array 'tree'
 		
-			if int(self.tree[4][j]) == self.pop_node_depth-1: # find parent nodes which reside at the prior depth
+			if int(self.tree[4][j]) == self.pop_node_depth - 1: # find parent nodes which reside at the prior depth
 			
 				for k in range(1,(int(self.tree[8][j]) + 1)): # increment through each degree of arity for each parent node
 					self.pop_node_parent = int(self.tree[3][j]) # set the parent 'NODE_ID'  ...
@@ -991,7 +1037,11 @@ class Base_GP(object):
 	def fx_gen_terminal_gen(self):
 	
 		'''
-		Generate a single Terminal node
+		Generate a single Terminal node for the initial population.
+		
+		This method is called by 'fx_gen_terminal_node_build'.
+		
+		Arguments required: none
 		'''
 		
 		self.fx_gen_terminal_select() # retrieve a terminal
@@ -1008,6 +1058,10 @@ class Base_GP(object):
 	
 		'''
 		Define a single Terminal (variable extracted from the top row of the associated TRAINING data)
+		
+		This method is called by 'fx_gen_terminal_gen' and 'fx_gen_function_gen'.
+		
+		Arguments required: none
 		'''
 				
 		self.pop_node_type = 'term'
@@ -1023,14 +1077,18 @@ class Base_GP(object):
 	def fx_gen_child_link(self, parent_arity_sum, prior_sibling_arity, prior_siblings):
 	
 		'''
-		Link each parent node to its children
+		Link each parent node to its children in the intial population.
+		
+		This method is called by 'fx_gen_function_gen'.
+		
+		Arguments required: parent_arity_sum, prior_sibling_arity, prior_siblings
 		'''
 		
 		c_buffer = 0
 		
 		for n in range(1, len(self.tree[3]) ): # increment through all nodes (exclude 0) in array 'tree'
 		
-			if int(self.tree[4][n]) == self.pop_node_depth-1: # find all nodes that reside at the prior (parent) 'node_depth'
+			if int(self.tree[4][n]) == self.pop_node_depth - 1: # find all nodes that reside at the prior (parent) 'node_depth'
 			
 				c_buffer = self.pop_NODE_ID + (parent_arity_sum + prior_sibling_arity - prior_siblings) # One algo to rule the world!
 				
@@ -1064,28 +1122,36 @@ class Base_GP(object):
 	def fx_gen_node_commit(self):
 	
 		'''
-		Commit the values of a new node (root, function, or terminal) to the array 'tree'
+		Commit the values of a new node (root, function, or terminal) to the array 'tree'.
+		
+		This method is called by 'fx_gen_root_node_build' and 'fx_gen_function_gen' and 'fx_gen_terminal_gen'.
+		
+		Arguments required: none
 		'''
 		
-		self.tree = np.append(self.tree, [ [self.pop_TREE_ID],[self.pop_tree_type],[self.pop_tree_depth_max],[self.pop_NODE_ID],[self.pop_node_depth],[self.pop_node_type],[self.pop_node_label],[self.pop_node_parent],[self.pop_node_arity],[self.pop_node_c1],[self.pop_node_c2],[self.pop_node_c3],[self.pop_fitness] ], 1)
+		self.tree = np.append(self.tree, [ [self.pop_TREE_ID],[self.pop_tree_type],[self.pop_tree_depth_base],[self.pop_NODE_ID],[self.pop_node_depth],[self.pop_node_type],[self.pop_node_label],[self.pop_node_parent],[self.pop_node_arity],[self.pop_node_c1],[self.pop_node_c2],[self.pop_node_c3],[self.pop_fitness] ], 1)
 		
 		self.pop_NODE_ID = self.pop_NODE_ID + 1
 		
 		return
 		
 	
-	def fx_gen_tree_build(self, TREE_ID, tree_type, tree_depth_max):
+	def fx_gen_tree_build(self, TREE_ID, tree_type, tree_depth_base):
 	
 		'''
 		This method combines 4 sub-methods into a single method for ease of deployment. It is designed to executed 
 		within a loop such that an entire population is built. However, it may also be run from the command line, 
 		passing a single TREE_ID to the method.
 		
-		'tree_type' is either (f)ull or (g)row. Note, however, that when the user selects 'ramped 50/50' at launch, it 
-		is still (f) or (g) which are passed to this method.
+		'tree_type' is either (f)ull or (g)row. Note, however, that when the user selects 'ramped 50/50' at launch, 
+		it is still (f) or (g) which are passed to this method.
+		
+		This method is called by a 'fx_evo_crossover' and 'fx_evo_grow_mutate' and 'fx_karoo_construct'.
+		
+		Arguments required: TREE_ID, tree_type, tree_depth_base
 		'''
 		
-		self.fx_gen_tree_initialise(TREE_ID, tree_type, tree_depth_max) # initialise a new Tree
+		self.fx_gen_tree_initialise(TREE_ID, tree_type, tree_depth_base) # initialise a new Tree
 		self.fx_gen_root_node_build() # build the Root node
 		self.fx_gen_function_node_build() # build the Function nodes
 		self.fx_gen_terminal_node_build() # build the Terminal nodes
@@ -1100,10 +1166,12 @@ class Base_GP(object):
 	def fx_eval_poly(self, tree):
 	
 		'''
-		Generate the polynomial (both raw and sympified)
+		Generate the polynomial (both raw and sympified).
+		
+		Arguments required: tree
 		'''
 		
-		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the tree to a string
+		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the Tree to a string
 		self.algo_sym = sp.sympify(self.algo_raw) # string converted to a functional polynomial (the coolest line in the script! :)
 						
 		return
@@ -1115,10 +1183,12 @@ class Base_GP(object):
 		Evaluate all or part of a Tree and return a raw polynomial ('algo_raw').
 		
 		In the main code, this method is called once per Tree, but may be called at any time to prepare a polynomial 
-		for any full or partial (branch) tree contained in 'population'.
+		for any full or partial (branch) Tree contained in 'population'.
 		
 		Pass the starting node for recursion via the local variable 'node_id' where the local variable 'tree' is a 
 		copy of the Tree you desire to evaluate.
+		
+		Arguments required: tree, node_id
 		'''
 		
 		if tree[8, node_id] == '0': # arity of 0 for the pattern '[term]'
@@ -1145,7 +1215,8 @@ class Base_GP(object):
 	
 		Pass the starting node for recursion via the local variable 'node_id' where the local variable 'tree' is a copy 
 		of the Tree you desire to evaluate.
-	
+		
+		Arguments required: tree, node_id	
 		'''
 		
 		if tree[8, node_id] == '0': # arity of 0 for the pattern '[NODE_ID]'
@@ -1168,12 +1239,15 @@ class Base_GP(object):
 		Display all or part of a Tree on-screen.
 		
 		This method displays all sequential node_ids from 'start' node through bottom, within the given tree.
+		
+		Arguments required: tree
 		'''
 		
 		ind = ''
 		print '\n\033[1m\033[36m Tree ID', int(tree[0][1]), '\033[0;0m'
 		
-		for depth in range(0, int(tree[2][1]) + self.tree_depth_adj + 1): # increment through all Tree depths - tested 2016 07/09
+		#for depth in range(0, int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
+		for depth in range(0, self.tree_depth_max + 1): # increment through all possible Tree depths - tested 2016 07/09
 			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
 			for node in range(1, len(tree[3])): # increment through all nodes (redundant, I know)
@@ -1200,6 +1274,8 @@ class Base_GP(object):
 		Display a Tree branch on-screen.
 		
 		This method displays all sequential node_ids from 'start' node through bottom, within the given branch.
+		
+		Arguments required: tree, start
 		'''
 		
 		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
@@ -1208,7 +1284,8 @@ class Base_GP(object):
 		branch = np.append(branch, branch_symp) # append list to array
 		ind = ''
 		
-		for depth in range(int(tree[4][start]), int(tree[2][1]) + self.tree_depth_adj + 1): # increment through all Tree depths - tested 2016 07/09
+		# for depth in range(int(tree[4][start]), int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
+		for depth in range(int(tree[4][start]), self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
 			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
 			for n in range(0, len(branch)): # increment through all nodes listed in the branch
@@ -1231,24 +1308,6 @@ class Base_GP(object):
 		return
 		
 	
-	#def fx_eval_accuracy(self, tree_id):
-	
-	#	'''
-	#	Evaluate Accuracy of a single Tree during training.
-		
-	#	This method compares the stored, total fitness score for all rows of a single Tree to the total number of rows 
-	#	in the associated dataset.
-		
-	#	For this method to provide meaningful output, the fitness function must be maximising and the desired solution 
-	#	an exact Match. This method will not provide meaningful output for a minimisation (Absolute Diff) nor 
-	#	Classification function.
-	#	'''
-		
-	#	print '\n\t Tree', tree_id, 'has an accuracy of:', float(self.population_a[tree_id][12][1]) / self.data_train_dict_array.shape[0] * 100
-	#	
-	#	return
-		
-	
 	def fx_eval_generation(self):
 	
 		'''
@@ -1256,6 +1315,8 @@ class Base_GP(object):
 		equation by means of a recursive algorithm and subsequent processing by the Sympy library. Sympy simultaneously 
 		evaluates the Tree for its results, returns null for divide by zero, reorganises and then rewrites the 
 		expression in its simplest form.
+		
+		Arguments required: none
 		'''
 		
 		if self.display != 's':
@@ -1295,6 +1356,8 @@ class Base_GP(object):
 		than one solution. For minimisation and maximisation functions, the final Tree should present the best overall 
 		fitness for that generation. It is important to note that Part 3 does *not* in any way influence the Tournament 
 		Selection which is a stand-alone process.
+		
+		Arguments required: population
 		'''
 		
 		fitness_best = 0
@@ -1383,6 +1446,8 @@ class Base_GP(object):
 		variable 'fitness'.
 		
 		[need to write more]
+		
+		Arguments required: row
 		'''
 		
 		# We need to extract the variables from the polynomial. However, these variables are no longer correlated
@@ -1431,9 +1496,9 @@ class Base_GP(object):
 		
 		This is a minimisation function which seeks a result which is closest to the solution.
 		
-		[result is close to solution]
-		
 		[need to write more]
+		
+		Arguments required: row, result, solution
 		'''
 		
 		fitness = abs(result - solution) # this is a Minimisation function which seeks the smallest fitness
@@ -1451,6 +1516,8 @@ class Base_GP(object):
 		This is a maximization function which seeks an exact solution (a perfect match).
 		
 		[need to write more]
+		
+		Arguments required: row, result, solution
 		'''
 		
 		if result == solution:
@@ -1480,6 +1547,8 @@ class Base_GP(object):
 		origin. At the time of this writing, an odd number of class labels will generate an extra bin on the positive 
 		side of origin as it has not yet been determined the effect of enabling the middle bin to include both a 
 		negative and positive space.
+		
+		Arguments required: row, result, solution
 		'''
 		
 		# tested 2015 10/18
@@ -1513,9 +1582,9 @@ class Base_GP(object):
 		
 		This is a maximization function which seeks an exact solution (a perfect match).
 		
-		result = solution
-		
 		[need to write more]
+		
+		Arguments required: row, result, solution
 		'''
 		
 		if result == solution:
@@ -1575,6 +1644,8 @@ class Base_GP(object):
 		With upper (max depth) and lower (min nodes) invoked, one may enjoy interesting results. Stronger boundary 
 		parameters (a reduced gap between the min and max number of nodes) may invoke more compact solutions, but also 
 		runs the risk of elitism, even total population die-off where a healthy population once existed.
+		
+		Arguments required: tourn_size
 		'''
 		
 		tourn_test = 0
@@ -1584,7 +1655,7 @@ class Base_GP(object):
 		
 		for n in range(tourn_size):
 			# tree_id = np.random.randint(1, self.tree_pop_max + 1) # former method of selection from the unfiltered population
-			rnd = np.random.randint(len(self.gene_pool)) # select one tree at random from the gene pool
+			rnd = np.random.randint(len(self.gene_pool)) # select one Tree at random from the gene pool
 			tree_id = int(self.gene_pool[rnd])
 			
 			fitness = float(self.population_a[tree_id][12][1]) # extract the fitness from the array
@@ -1643,7 +1714,7 @@ class Base_GP(object):
 					print '\n\t\033[31mERROR! Minimising fx_fitness_tournament is all kinds of messed up!\033[0;0m'
 					print '\t fitness =', fitness, 'and tourn_test =', tourn_test; self.fx_karoo_pause(0)
 		
-		tourn_winner = np.copy(self.population_a[tourn_lead]) # copy full tree so as to not inadvertantly modify the original tree
+		tourn_winner = np.copy(self.population_a[tourn_lead]) # copy full Tree so as to not inadvertantly modify the original tree
 		
 		if self.display == 'i': print '\n\t\033[36mThe winner of the tournament is Tree:\033[1m', tourn_winner[0][1], '\033[0;0m'
 		
@@ -1664,6 +1735,8 @@ class Base_GP(object):
 		
 		At this point in time, the gene pool does *not* limit the number of times any given Tree may be selected for 
 		mutation or reproduction.
+		
+		Arguments required: none
 		'''
 		
 		self.gene_pool = []
@@ -1694,18 +1767,20 @@ class Base_GP(object):
 	
 		'''
 		Mutate a single point in any Tree (Grow or Full).
+		
+		Arguments required: tree
 		'''
 		
 		node = np.random.randint(1, len(tree[3])) # randomly select a point in the Tree (including root)
 		if self.display == 'i': print '\t\033[36m with', tree[5][node], 'node\033[1m', tree[3][node], '\033[0;0m\033[36mchosen for mutation\n\033[0;0m'		
 		
 		if tree[5][node] == 'root':
-			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operands
-			tree[6][node] = self.functions[rnd][0] # replace function (operand)
+			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
+			tree[6][node] = self.functions[rnd][0] # replace function (operator)
 			
 		if tree[5][node] == 'func':
-			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operands
-			tree[6][node] = self.functions[rnd][0] # replace function (operand)
+			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
+			tree[6][node] = self.functions[rnd][0] # replace function (operator)
 			
 		if tree[5][node] == 'term':
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
@@ -1721,9 +1796,11 @@ class Base_GP(object):
 		'''
 		Mutate a branch of a Full method Tree.
 		
-		The full mutate method is straight-forward. A branch was selected and passed to this method. As the size and 
-		shape of the Tree must remain identical, each node is mutated sequentially, where functions remain functions 
-		and terminals remain terminals.
+		The full mutate method is straight-forward. A branch was generated and passed to this method. As the size and 
+		shape of the Tree must remain identical, each node is mutated sequentially (copied from the new Tree to replace
+		the old, node for node), where functions remain functions and terminals remain terminals.
+		
+		Arguments required: tree, branch
 		'''
 		
 		for n in range(len(branch)):
@@ -1731,12 +1808,12 @@ class Base_GP(object):
 			# 'root' is not made available for Full mutation as this would build an entirely new Tree
 			
 			if tree[5][branch[n]] == 'func':
-				# if self.display == 'i': print '\t\033[36m from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m func \033[0;0m'
-				rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operands
-				tree[6][branch[n]] = self.functions[rnd][0] # replace function (operand)
+				# if self.display == 'i': print '\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m func \033[0;0m'
+				rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
+				tree[6][branch[n]] = self.functions[rnd][0] # replace function (operator)
 				
 			if tree[5][branch[n]] == 'term':
-				# if self.display == 'i': print '\t\033[36m from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m term \033[0;0m'
+				# if self.display == 'i': print '\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m term \033[0;0m'
 				rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 				tree[6][branch[n]] = self.terminals[rnd] # replace terminal (variable)
 				
@@ -1750,53 +1827,55 @@ class Base_GP(object):
 		'''
 		Mutate a branch of a Grow method Tree.
 		
-		A branch is selected within a given tree. If the top of that branch is a terminal which does not reside at 
-		'tree_depth_max', then it may either remain a terminal (in which case a new value is randomly assigned) or it 
-		may mutate into a function. If it becomes a function, a new branch (mini-tree) is generated to be appended to 
-		that terminal's current location. The same is true for function-to-function mutation. If however a function 
-		mutates into a terminal, then the entire branch beneath the function is deleted from the array.
+		A branch is selected within a given tree.
 		
 		If the point of mutation ('branch_top') resides at 'tree_depth_max', we do not need to grow a new tree. As the 
-		methods for building trees always assume root (node 0) to be a function, this would force our tree beyond its 
-		maximum depth. To avoid pain and suffering, we intercept any Grow method, 'branch_depth' = 0 (maximum depth) 
-		mutation and replace it with another randomly chosen terminal.
+		methods for building trees always assume root (node 0) to be a function, we need only mutate this terminal node
+		to another terminal node, and this branch mutate method is complete.
+
+		If the top of that branch is a terminal which does not reside at 'tree_depth_max', then it may either remain a 
+		terminal (in which case a new value is randomly assigned) or it may mutate into a function. If it becomes a 
+		function, a new branch (mini-tree) is generated to be appended to that nodes current location. The same is true 
+		for function-to-function mutation. Either way, the new branch will be only as deep as allowed by the distance 
+		from it's branch_top to the bottom of the tree.
+		
+		If however a function mutates into a terminal, the entire branch beneath the function is deleted from the array
+		and the entire array is updated, to fix parent/child links, associated arities, and node IDs.
+		
+		Arguments required: tree, branch		
 		'''
 		
-		branch_top = int(branch[0]) # added and tested 2016 07/09
-		branch_depth = int(tree[2][1]) - int(tree[4][branch_top]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch
-		branch_depth = branch_depth + self.tree_depth_adj # enable the branch to grow beyond the initial tree depth - tested 2016 07/09
+		branch_top = int(branch[0]) # replaces 2 instances, below; tested 2016 07/09
+		# branch_depth = int(tree[2][1]) - int(tree[4][branch_top]) # 'tree_depth_base' - depth at 'branch_top' to set max potential size of new branch - ORIGINAL
+		branch_depth = self.tree_depth_max - int(tree[4][branch_top]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch - 2016 07/10
 		
-		if branch_depth < 0:
+		if branch_depth < 0: # this has not occured yet !!!
 			print '\n\t\033[31mERROR! Captain, this is not logical!\033[0;0m'
 			print '\t branch_depth =', branch_depth; self.fx_karoo_pause(0)
 			
-		elif branch_depth == 0: # check if we are at 'tree_depth_max' (per the notes above), then mutate term to term
+		elif branch_depth == 0: # the point of mutation ('branch_top') chosen resides at the maximum allowable depth, so mutate term to term
 		
-			# if self.display == 'i': print '\t\033[36m max depth mutate\033[1m', branch_top, '\033[0;0m\033[36mfrom \033[1mterm\033[0;0m \033[36mto \033[1mterm\033[0;0m\n'
+			if self.display == 'i': print '\t\033[36m max depth node\033[1m', branch_top, '\033[0;0m\033[36mmutates from \033[1mterm\033[0;0m \033[36mto \033[1mterm\033[0;0m\n'
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 			tree[6][branch_top] = self.terminals[rnd] # replace terminal (variable)
 			
-			
-		else: # now we are working with a branch >= depth 1 (min 3 nodes) within 'tourn_winner'
+		else: # the point of mutation ('branch_top') chosen is at least one degree of depth from the maximum allowed
 		
-			# type_mod = 'func' # force to 'func' or 'term' and comment the next 3 lines for test runs and debug
+			# type_mod = '[func or term]' # TEST AND DEBUG: force to 'func' or 'term' and comment the next 3 lines
 			rnd = np.random.randint(2)
 			if rnd == 0: type_mod = 'func' # randomly selected as Function
 			elif rnd == 1: type_mod = 'term' # randomly selected as Terminal
 			
 			if type_mod == 'term': # mutate 'branch_top' to a terminal and delete all nodes beneath (no subsequent nodes are added to this branch)
-			
-				# branch_top = int(branch[0]) # deemed redundant -- removed and tested 2016 07/09
 				
-				# if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m term \n\033[0;0m'
-				if self.display == 'db': print '\n *** New Branch for Grow - Terminal Mutation *** \n This is the unaltered tourn_winner:\n', tree
+				if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m term \n\033[0;0m'
+				if self.display == 'db': print '\n *** New branch for a Grow method / terminal mutation *** \n This is the unaltered tourn_winner:\n', tree
 				
 				rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 				tree[5][branch_top] = 'term' # replace type ('func' to 'term' or 'term' to 'term')
 				tree[6][branch_top] = self.terminals[rnd] # replace label
 				
 				tree = np.delete(tree, branch[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
-				
 				tree = self.fx_evo_node_arity_fix(tree) # fix all node arities
 				tree = self.fx_evo_child_link_fix(tree) # fix all child links
 				tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
@@ -1805,17 +1884,15 @@ class Base_GP(object):
 				
 			
 			if type_mod == 'func': # mutate 'branch_top' to a function (a new 'gp.tree' will be copied, node by node, into 'tourn_winner')
-			
-				# branch_top = int(branch[0])  deemed redundant -- removed and tested 2016 07/09
 				
-				# if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m func \n\033[0;0m'
-				if self.display == 'db': print '\n *** New Branch for Grow - Function Mutation *** \n This is the unaltered tourn_winner:\n', tree
+				if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m func \n\033[0;0m'
+				if self.display == 'db': print '\n *** New branch for a Grow method / function mutation *** \n This is the unaltered tourn_winner:\n', tree
 				
-				# branch_depth = int(tree[2][1]) - int(tree[4][branch_top])  deemed redundant -- removed and tested 2016 07/09	
-				self.fx_gen_tree_build('mutant', self.pop_tree_type, branch_depth) # build new tree ('gp.tree') with a maximum depth which matches 'branch'
+				self.fx_gen_tree_build('mutant', self.pop_tree_type, branch_depth) # build new Tree ('gp.tree') with a maximum depth which matches 'branch'
 				
-				if self.display == 'db': print '\n This is the new tree to be inserted at node', branch_top, 'in tourn_winner:\n', self.tree; self.fx_karoo_pause(0)
+				if self.display == 'db': print '\n This is the new Tree to be inserted at node', branch_top, 'in tourn_winner:\n', self.tree; self.fx_karoo_pause(0)
 				
+				# because we already know the maximum depth to which this branch can grow, there is no need to prune after insertion
 				tree = self.fx_evo_branch_top_copy(tree, branch) # copy root of new 'gp.tree' to point of mutation ('branch_top') in 'tree' ('tourn_winner')
 				tree = self.fx_evo_branch_body_copy(tree) # copy remaining nodes in new 'gp.tree' to 'tree' ('tourn_winner')
 				
@@ -1827,64 +1904,55 @@ class Base_GP(object):
 	def fx_evo_crossover(self, parent_x, branch_x, parent_y, branch_y):
 	
 		'''
-		Through tournament selection, two trees are selected as parents for a single offspring. Within each tree a 
-		branch is selected and copied. One tree's branch is then grafted onto a copy of the other parent tree. The 
-		resulting, new tree is moved into the new generation.
-		
-		Currently, each pair of parent Trees produces only one offspring.
+		Refer to the method 'fx_karoo_crossover' for a full description of the genetic operator Crossover.
 		
 		This method may be called twice to produce a second children per pair of parent Trees. However, 'parent_a'
 		will be passed to 'parent_x' and 'parent_b' to 'parent_y' for the first child, and then 'parent_b' to 
 		'parent_x' and 'parent_a' to 'parent_y' (and their branches) for the second child accordingly.
 		
-		Future versions will handle this automatically.
-		
-		In applications of GP, Crossover is the most commonly applied evolutionary operator.
+		Arguments required: parent_x, branch_x, parent_y, branch_y
 		'''
 		
 		crossover = int(branch_x[0]) # a pointer to the top of the branch in 'parent_x'
 		branch_top = int(branch_y[0]) # a pointer to the top of the branch in 'parent_y'
-		
-		# As the 'fx_evo_branch_select' method recursively chases a branch from top to bottom,
-		# a branch of one node must be a terminal. Therefore a branch of len 1 may be immediately 
-		# applied to Crossover without the hassle of generating a new, stand-alone tree.
-		
+				
 		if len(branch_x) == 1: # if the branch from 'parent_x' contains only one node (terminal)
 		
-			if self.display == 'i': print '\t\033[36m terminal crossover from \033[1mparent', parent_x[0][1], '\033[0;0m\033[36mto \033[1mparent', parent_y[0][1], '\033[0;0m\033[36mat node\033[1m', branch_top, '\033[0;0m'
+			if self.display == 'i': print '\t\033[36m  terminal crossover from \033[1mparent', parent_x[0][1], '\033[0;0m\033[36mto \033[1mparent', parent_y[0][1], '\033[0;0m\033[36mat node\033[1m', branch_top, '\033[0;0m'
 			
 			if self.display == 'db':
-				print '\nFrom parent_y:\n', parent_y
-				print '\n ... we will remove nodes', branch_y, 'and replace node', branch_top, 'with a terminal from branch_x'; self.fx_karoo_pause(0)
+				print '\n In a copy of parent_y:\n', parent_y
+				print '\n ... we remove nodes', branch_y, 'and replace node', branch_top, 'with a terminal from branch_x'; self.fx_karoo_pause(0)
 				
 			parent_y[5][branch_top] = 'term' # replace type
-			parent_y[6][branch_top] = parent_x[6][crossover] # replace label
+			parent_y[6][branch_top] = parent_x[6][crossover] # replace label with that of a particular node in branch_x
 			parent_y[8][branch_top] = 0 # set terminal arity
 			
 			parent_y = np.delete(parent_y, branch_y[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
 			parent_y = self.fx_evo_child_link_fix(parent_y) # fix all child links
 			parent_y = self.fx_evo_node_renum(parent_y) # renumber all 'NODE_ID's
 			
-			if self.display == 'db': print parent_y; self.fx_karoo_pause(0)
-				
+			if self.display == 'db': print 'This is the resulting offspring:\n', parent_y; self.fx_karoo_pause(0)
+			
+		
 		else: # we are working with a branch from 'parent_x' >= depth 1 (min 3 nodes)
 		
-			if self.display == 'i': print '\t\033[36m branch crossover from \033[1mparent', parent_x[0][1], '\033[0;0m\033[36mto \033[1mparent', parent_y[0][1], '\033[0;0m\033[36mat node\033[1m', branch_top, '\033[0;0m'
+			if self.display == 'i': print '\t\033[36m  branch crossover from \033[1mparent', parent_x[0][1], '\033[0;0m\033[36mto \033[1mparent', parent_y[0][1], '\033[0;0m\033[36mat node\033[1m', branch_top, '\033[0;0m'
 			
-			# self.fx_gen_tree_build('test', 'f', 2) # to use for debug, disable the next 'self.tree ...' line
+			# self.fx_gen_tree_build('test', 'f', 2) # TEST AND DEBUG: disable the next 'self.tree ...' line
 			self.tree = self.fx_evo_branch_copy(parent_x, branch_x) # generate stand-alone 'gp.tree' with properties of 'branch_x'
 			
 			if self.display == 'db':
-				print '\nFrom parent_x:\n', parent_x
-				print '\n ... we extract branch_x', branch_x, 'as a new tree:\n', self.tree; self.fx_karoo_pause(0)
+				print '\n From parent_x:\n', parent_x
+				print '\n ... we copy branch_x', branch_x, 'as a new tree:\n', self.tree; self.fx_karoo_pause(0)
 				
 			if self.display == 'db':
-				print ' ... to be inserted into parent_y:\n', parent_y
-				print '\n ... in place of branch_y:', branch_y; self.fx_karoo_pause(0)
+				print ' ... and insert it into a copy of parent_y in place of branch', branch_y,':\n', parent_y; self.fx_karoo_pause(0)
 				
 			parent_y = self.fx_evo_branch_top_copy(parent_y, branch_y) # copy root of 'branch_y' ('gp.tree') to 'parent_y'
 			parent_y = self.fx_evo_branch_body_copy(parent_y) # copy remaining nodes in 'branch_y' ('gp.tree') to 'parent_y'
-			parent_y = self.fx_evo_tree_prune(parent_y, int(parent_y[2][1]) + self.tree_depth_adj) # prune to the initial max Tree depth + adjustment - tested 2016 07/09
+			# parent_y = self.fx_evo_tree_prune(parent_y, int(parent_y[2][1]) + self.tree_depth_max) # prune to the initial max Tree depth + adjustment - tested 2016 07/09
+			parent_y = self.fx_evo_tree_prune(parent_y, self.tree_depth_max) # prune to the max Tree depth + adjustment - tested 2016 07/10
 			
 		parent_y = self.fx_evo_fitness_wipe(parent_y) # wipe fitness data
 		
@@ -1899,6 +1967,8 @@ class Base_GP(object):
 		While Grow mutation uses this method to select a region of the 'tourn_winner' to delete, Crossover uses this 
 		method to select a region of the 'tourn_winner' which is then converted to a stand-alone tree. As such, it is 
 		imperative that the nodes be in the correct order, else all kinds of bad things happen.
+		
+		Arguments required: tree
 		'''
 		
 		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
@@ -1920,10 +1990,12 @@ class Base_GP(object):
 		Copy the point of mutation ('branch_top') from 'gp.tree' to 'tree'.
 		
 		This method works with 3 inputs: local 'tree' is being modified; local 'branch' is a section of 'tree' which 
-		will be removed; and global 'gp.tree' (recycling from initial population generation) is the new tree to be 
+		will be removed; and global 'gp.tree' (recycling from initial population generation) is the new Tree to be 
 		copied into 'tree', replacing 'branch'.
 		
-		This is used in both Grow Mutation and Crossover.
+		This method is used in both Grow Mutation and Crossover.
+		
+		Arguments required: tree, branch
 		'''
 		
 		branch_top = int(branch[0])
@@ -1947,15 +2019,17 @@ class Base_GP(object):
 		Copy the body of 'gp.tree' to 'tree', one node at a time.
 		
 		This method works with 3 inputs: local 'tree' is being modified; local 'branch' is a section of 'tree' which 
-		will be removed; and global 'gp.tree' (recycling from initial population generation) is the new tree to be 
+		will be removed; and global 'gp.tree' (recycling from initial population generation) is the new Tree to be 
 		copied into 'tree', replacing 'branch'.
 		
-		This is used in both Grow and Crossover.
+		This method is used in both Grow Mutation and Crossover.
+		
+		Arguments required: tree
 		'''
 				
 		node_count = 2 # set node count for 'gp.tree' to 2 as the new root has already replaced 'branch_top' in 'fx_evo_branch_top_copy'
 		
-		while node_count < len(self.tree[3]): # increment through all nodes in the new tree ('gp.tree'), starting with node 2
+		while node_count < len(self.tree[3]): # increment through all nodes in the new Tree ('gp.tree'), starting with node 2
 		
 			for j in range(1, len(tree[3])): # increment through all nodes in tourn_winner ('tree')
 			
@@ -1977,8 +2051,8 @@ class Base_GP(object):
 						tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
 						
 					if self.display == 'db':
-						print '\t inserted new tree node', node_count, 'of', len(self.tree[3])-1
-						print '\n This is tourn_winner after the new nodes are inserted and updated:\n', tree; self.fx_karoo_pause(0)
+						print '\n\t ... inserted node', node_count, 'of', len(self.tree[3])-1
+						print '\n This is the Tree after a new node is inserted:\n', tree; self.fx_karoo_pause(0)
 						
 					node_count = node_count + 1 # exit loop when 'node_count' reaches the number of columns in the array 'gp.tree'
 							
@@ -1988,12 +2062,14 @@ class Base_GP(object):
 	def fx_evo_branch_copy(self, tree, branch):
 	
 		'''
-		This method prepares a stand-alone tree as a copy of the given branch.
+		This method prepares a stand-alone Tree as a copy of the given branch.
 		
 		This method is used with Crossover.
+		
+		Arguments required: tree, branch
 		'''
 		
-		new_tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_max'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
+		new_tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_base'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
 		
 		# tested 2015 06/08
 		for n in range(len(branch)):
@@ -2003,7 +2079,7 @@ class Base_GP(object):
 			
 			TREE_ID = 'copy'
 			tree_type = tree[1][1]
-			tree_depth_max = int(tree[4][branch[-1]]) - int(tree[4][branch_top]) # subtract depth of 'branch_top' from the last in 'branch'
+			tree_depth_base = int(tree[4][branch[-1]]) - int(tree[4][branch_top]) # subtract depth of 'branch_top' from the last in 'branch'
 			NODE_ID = tree[3][node]
 			node_depth = int(tree[4][node]) - int(tree[4][branch_top]) # subtract the depth of 'branch_top' from the current node depth
 			node_type = tree[5][node]
@@ -2015,7 +2091,7 @@ class Base_GP(object):
 			node_c3 = ''
 			fitness = ''
 			
-			new_tree = np.append(new_tree, [ [TREE_ID],[tree_type],[tree_depth_max],[NODE_ID],[node_depth],[node_type],[node_label],[node_parent],[node_arity],[node_c1],[node_c2],[node_c3],[fitness] ], 1)
+			new_tree = np.append(new_tree, [ [TREE_ID],[tree_type],[tree_depth_base],[NODE_ID],[node_depth],[node_type],[node_label],[node_parent],[node_arity],[node_c1],[node_c2],[node_c3],[fitness] ], 1)
 			
 		new_tree = self.fx_evo_node_renum(new_tree)
 		new_tree = self.fx_evo_child_link_fix(new_tree)
@@ -2035,6 +2111,8 @@ class Base_GP(object):
 		
 		This method is currently called from the evolution methods, but will soon (I hope) be called from the first 
 		generation Tree generation methods (above) such that the same method may be used repeatedly.
+		
+		Arguments required: tree, node
 		'''
 		
 		parent_arity_sum = 0
@@ -2059,6 +2137,8 @@ class Base_GP(object):
 	
 		'''
 		Link each parent node to its children.
+		
+		Arguments required: tree, node, c_buffer
 		'''
 		
 		if int(tree[3][node]) == 1: c_buffer = c_buffer + 1 # if root (node 1) is passed through this method
@@ -2098,6 +2178,8 @@ class Base_GP(object):
 		In a given Tree, fix 'node_c1', 'node_c2', 'node_c3' for all nodes.
 		
 		This is required anytime the size of the array 'gp.tree' has been modified, as with both Grow and Full mutation.
+		
+		Arguments required: tree
 		'''
 		
 		# tested 2015 06/04
@@ -2113,6 +2195,8 @@ class Base_GP(object):
 	
 		'''
 		Insert child nodes.
+		
+		Arguments required: tree, node, c_buffer
 		'''
 		
 		if int(tree[8][node]) == 0: # if arity = 0
@@ -2167,6 +2251,8 @@ class Base_GP(object):
 		Technically speaking, the 'node_parent' value is not used by any methods. The parent ID can be completely out 
 		of whack and the polynomial expression will work perfectly. This is maintained for the sole purpose of granting 
 		the user a friendly, makes-sense interface which can be read in both directions.
+		
+		Arguments required: tree
 		'''
 		
 		### THIS METHOD MAY NOT BE REQUIRED AS SORTING 'branch' SEEMS TO HAVE FIXED 'parent_id' ###
@@ -2196,6 +2282,8 @@ class Base_GP(object):
 		
 		This is required after a function has been replaced by a terminal, as may occur with both Grow mutation and 
 		Crossover.
+		
+		Arguments required: tree
 		'''
 		
 		# tested 2015 05/31
@@ -2217,6 +2305,8 @@ class Base_GP(object):
 		
 		This is required after a new generation is evolved as the NODE_ID numbers are carried forward from the previous 
 		generation but are no longer in order.
+		
+		Arguments required: tree
 		'''
 		
 		for n in range(1, len(tree[3])):
@@ -2231,8 +2321,10 @@ class Base_GP(object):
 		'''
 		Remove all fitness data from a given tree.
 		
-		This is required after a new generation is evolved as the fitness of the same tree prior to its mutation will 
+		This is required after a new generation is evolved as the fitness of the same Tree prior to its mutation will 
 		no longer apply.
+		
+		Arguments required: tree
 		'''
 		
 		tree[12][1:] = '' # remove all 'fitness' data
@@ -2243,10 +2335,11 @@ class Base_GP(object):
 	def fx_evo_tree_prune(self, tree, depth):
 	
 		'''
-		This method reduces the depth of a given branch.
-				
-		This method is used with Crossover. However, the input value 'branch' can be a partial tree (branch) or a full 
-		tree, and it will operate correctly. The input value 'depth' becomes the new maximum depth.
+		This method reduces the depth of a Tree. Used with Crossover, the input value 'branch' can be a partial Tree 
+		(branch) or a full tree, and it will operate correctly. The input value 'depth' becomes the new maximum depth,
+		where depth is defined as the local maximum + the user defined adjustment.
+		
+		Arguments required: tree, depth
 		'''
 		
 		nodes = []
@@ -2259,10 +2352,12 @@ class Base_GP(object):
 				tree[5][n] = 'term' # mutate type 'func' to 'term'
 				tree[6][n] = self.terminals[rnd] # replace label
 				
-			elif int(tree[4][n]) > depth:
+			elif int(tree[4][n]) > depth: # record nodes deeper than the maximum allowed Tree depth
 				nodes.append(n)
 				
-		tree = np.delete(tree, nodes, axis = 1) # delete nodes whose depth is greater than 'depth'
+			else: pass # as int(tree[4][n]) < depth and will remain untouched
+			
+		tree = np.delete(tree, nodes, axis = 1) # delete nodes deeper than the maximum allowed Tree depth
 		tree = self.fx_evo_node_arity_fix(tree) # fix all node arities
 		
 		return tree
@@ -2275,6 +2370,8 @@ class Base_GP(object):
 		
 		This is required after a new generation is evolved as the TREE_ID numbers are carried forward from the previous 
 		generation but are no longer in order.
+		
+		Arguments required: population
 		'''
 		
 		for tree_id in range(1, len(population)):
@@ -2291,6 +2388,8 @@ class Base_GP(object):
 		
 		Simply copying a list of arrays generates a pointer to the original list. Therefore we must append each array 
 		to a new, empty array and then build a list of those new arrays.
+		
+		Arguments required: pop_a, title
 		'''
 		
 		pop_b = [title] # an empty list stores a copy of the prior generation
@@ -2310,7 +2409,9 @@ class Base_GP(object):
 	def fx_test_abs(self, tree_id):
 	
 		'''
-		[need to write]
+		A validation of an absolute value fitness function.
+		
+		Arguments required: tree_id
 		'''
 
 		# switched from population_a to _b 2016 07/09
@@ -2344,7 +2445,9 @@ class Base_GP(object):
 	def fx_test_match(self, tree_id):
 	
 		'''
-		[need to write]
+		A validation of a matching fitness function.
+		
+		Arguments required: tree_id
 		'''
 		
 		# switched from population_a to _b 2016 07/09
@@ -2393,6 +2496,8 @@ class Base_GP(object):
 		From scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
 			y_pred = result, the estimated target values (labels) generated by Karoo GP
 			y_true = solution, the correct target values (labels) associated with the data
+			
+		Arguments required: tree_id
 		'''
 		
 		# tested 2015 10/18; switched from population_a to _b 2016 07/09
@@ -2454,6 +2559,8 @@ class Base_GP(object):
 	
 		'''
 		# [need to build]
+		
+		Arguments required: tree
 		'''
 		
 		return
@@ -2466,7 +2573,9 @@ class Base_GP(object):
 	def fx_tree_clean(self, tree):
 	
 		'''
-		Clean the Tree array
+		This method aesthetically cleans the Tree array, removing redundant data.
+		
+		Arguments required: tree
 		'''
 		
 		tree[0][2:] = '' # A little clean-up to make things look pretty :)
@@ -2479,7 +2588,9 @@ class Base_GP(object):
 	def fx_tree_append(self, tree):
 	
 		'''
-		Append Tree array to the foundation Population 
+		Append Tree array to the foundation Population.
+		
+		Arguments required: tree
 		'''
 		
 		self.fx_tree_clean(tree) # clean 'tree' prior to storing
@@ -2491,7 +2602,9 @@ class Base_GP(object):
 	def fx_tree_archive(self, population, key):
 	
 		'''
-		Save Population list to disk
+		Save Population list to disk.
+		
+		Arguments required: population, key
 		'''
 		
 		with open(self.filename[key], 'a') as csv_file:

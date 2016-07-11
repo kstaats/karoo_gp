@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.3
+# version 0.9.1.4
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -59,6 +59,7 @@ if gp.kernel == 'c': # if the Classification kernel is selected (above)
 		# except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
 		# except KeyboardInterrupt: sys.exit()
 		
+
 menu = ['f','g','r','']
 while True:
 	try:
@@ -71,32 +72,34 @@ while True:
 menu = range(1,11)
 while True:
 	try:
-		tree_depth_max = raw_input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
-		if tree_depth_max not in str(menu) or tree_depth_max == '0': raise ValueError()
-		tree_depth_max = tree_depth_max or 3; tree_depth_max = int(tree_depth_max); break
-	except ValueError: print '\t\033[32m Enter a number from 3 including 10. Try again ...\n\033[0;0m'
+		tree_depth_base = raw_input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
+		if tree_depth_base not in str(menu) or tree_depth_base == '0': raise ValueError()
+		tree_depth_base = tree_depth_base or 3; tree_depth_base = int(tree_depth_base); break
+	except ValueError: print '\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m'
 	except KeyboardInterrupt: sys.exit()
 	
 
 
 if gp.kernel == 'p': # if the Play kernel is selected
+	gp.tree_depth_max = tree_depth_base
 	gp.tree_pop_max = 1
-	gp.tree_depth_adj = 0
 	gp.display = 'm'
 
 else: # if any other kernel is selected
 
-	menu = range(tree_depth_max,11)
-	while True:
-		try:
-			gp.tree_depth_adj = raw_input('\t Enter maximum Tree depth (default matches \033[3minitial\033[0;0m): ')
-			if gp.tree_depth_adj not in str(menu) or gp.tree_depth_adj == '0': raise ValueError()
-			gp.tree_depth_adj = gp.tree_depth_adj or tree_depth_max; gp.tree_depth_adj = int(gp.tree_depth_adj)
-			gp.tree_depth_adj = int(gp.tree_depth_adj) - tree_depth_max; break
-			print gp.tree_depth_adj, tree_depth_max
-		except ValueError: print '\t\033[32m Enter a number >= the maximum Tree depth. Try again ...\n\033[0;0m'
-		except KeyboardInterrupt: sys.exit()
-
+	if tree_type == 'f': gp.tree_depth_max = tree_depth_base
+	else: # if type is Full, the maximum Tree depth for the full run is equal to the initial population
+	
+		menu = range(tree_depth_base,11)
+		while True:
+			try:
+				gp.tree_depth_max = raw_input('\t Enter maximum Tree depth (default matches \033[3minitial\033[0;0m): ')
+				if gp.tree_depth_max not in str(menu) or gp.tree_depth_max == '0': raise ValueError()
+				gp.tree_depth_max = gp.tree_depth_max or tree_depth_base; gp.tree_depth_max = int(gp.tree_depth_max); break
+				# gp.tree_depth_max = int(gp.tree_depth_max) - tree_depth_base; break
+			except ValueError: print '\t\033[32m Enter a number >= the maximum Tree depth. Try again ...\n\033[0;0m'
+			except KeyboardInterrupt: sys.exit()
+			
 	menu = range(3,101)
 	while True:
 		try:
@@ -136,9 +139,9 @@ else: # if any other kernel is selected
 
 # define the ratio between types of mutation, where all sum to 1.0; can be adjusted in 'i'nteractive mode
 gp.evolve_repro = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
-gp.evolve_point = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
+gp.evolve_point = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
 gp.evolve_branch = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
-gp.evolve_cross = int(0.8 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover Reproduction
+gp.evolve_cross = int(0.7 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover Reproduction
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
 gp.cores = 1 # replace '1' with 'int(gp.core_count)' to auto-set to max; can be adjusted in 'i'nteractive mode
@@ -164,7 +167,7 @@ gp.generation_id = 1 # set initial generation ID
 
 gp.population_a = ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)] # an empty list which will store all Tree arrays, one generation at a time
 
-gp.fx_karoo_construct(tree_type, tree_depth_max) # construct the first population of Trees	
+gp.fx_karoo_construct(tree_type, tree_depth_base) # construct the first population of Trees	
 
 if gp.kernel != 'p': print '\n We have constructed a population of', gp.tree_pop_max,'Trees for Generation 1\n'
 
