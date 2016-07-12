@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.4
+# version 0.9.1.5
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -30,10 +30,10 @@ gp.karoo_banner('main')
 
 print ''
 
-menu = ['a','b','c','m','p','']
+menu = ['r','b','c','m','p','']
 while True:
 	try:
-		gp.kernel = raw_input('\t Select (a)bs diff, (c)lassify, (m)atch, or (p)lay (default m): ')
+		gp.kernel = raw_input('\t Select (r)egression, (c)lassification, (m)atching, or (p)lay (default m): ')
 		if gp.kernel not in menu: raise ValueError()
 		gp.kernel = gp.kernel or 'm'; break
 	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
@@ -48,17 +48,7 @@ if gp.kernel == 'c': # if the Classification kernel is selected (above)
 			if gp.class_labels not in str(menu) or gp.class_labels == '0': raise ValueError()
 			gp.class_labels = gp.class_labels or 3; gp.class_labels = int(gp.class_labels); break
 		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
-		except KeyboardInterrupt: sys.exit()
-	
-	# menu = ['f','i','']
-	# while True:
-		# try:
-			# gp.class_type = raw_input('\t Select (f)inite or (i)finite classification (default i): ')
-			# if gp.class_type not in menu: raise ValueError()
-			# gp.class_type = gp.class_type or 'i'; break
-		# except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
-		# except KeyboardInterrupt: sys.exit()
-		
+		except KeyboardInterrupt: sys.exit()		
 
 menu = ['f','g','r','']
 while True:
@@ -112,7 +102,7 @@ else: # if any other kernel is selected
 	menu = range(10,1001)
 	while True:
 		try:
-			gp.tree_pop_max = raw_input('\t Enter number of Trees in each Generation (default 100): ')
+			gp.tree_pop_max = raw_input('\t Enter number of Trees in each population (default 100): ')
 			if gp.tree_pop_max not in str(menu) or gp.tree_pop_max == '0': raise ValueError()
 			gp.tree_pop_max = gp.tree_pop_max or 100; gp.tree_pop_max = int(gp.tree_pop_max); break
 		except ValueError: print '\t\033[32m Enter a number from 10 including 1000. Try again ...\n\033[0;0m'
@@ -121,7 +111,7 @@ else: # if any other kernel is selected
 	menu = range(1,101)
 	while True:
 		try:
-			gp.generation_max = raw_input('\t Enter max number of Generations (default 10): ')
+			gp.generation_max = raw_input('\t Enter max number of generations (default 10): ')
 			if gp.generation_max not in str(menu) or gp.generation_max == '0': raise ValueError()
 			gp.generation_max = gp.generation_max or 10; gp.generation_max = int(gp.generation_max); break
 		except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
@@ -138,10 +128,10 @@ else: # if any other kernel is selected
 		
 
 # define the ratio between types of mutation, where all sum to 1.0; can be adjusted in 'i'nteractive mode
-gp.evolve_repro = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
-gp.evolve_point = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
-gp.evolve_branch = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
-gp.evolve_cross = int(0.7 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover Reproduction
+gp.evolve_repro = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
+gp.evolve_point = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
+gp.evolve_branch = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
+gp.evolve_cross = int(1.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover Reproduction
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
 gp.cores = 1 # replace '1' with 'int(gp.core_count)' to auto-set to max; can be adjusted in 'i'nteractive mode
