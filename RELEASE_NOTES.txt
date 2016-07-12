@@ -1,15 +1,32 @@
+2016 07/11 - version 0.9.1.5
+
+In karoo_gp_base_class.py
+ - renamed kernel (fitness function) type from 'a' to 'r' for regression
+ - renamed all associated variable and methods to match switch from 'abs_value' to 'regression'
+ - reorganised validation methods to match order of fitness functions
+ - added [other] place holder to validation methods
+ 
+In karoo_gp_main.py
+ - renamed kernel (fitness function) type from 'a' to 'r' for regression
+ - adjusted upper boundary for qty of generations from 1000 to 100
+ 
+In karoo_go_server.py
+ - renamed kernel (fitness function) type from 'a' to 'r' for regression
+ 
+In files/ data_ABS.csv and functions_ABS.csv were rename data_REGRESS.csv and functions_REGRESS.csv accordingly.
+
 2016 07/10-11 - version 0.9.1.4
 
 In karoo_gp_base_class.py
- - renamed variable "tree_depth_max" to "tree_depth_base"
- - renamed variable "tree_depth_adj" to "tree_depth_max"
- - renamed variable "gp.pop_tree_depth_max" to "gp.pop_tree_depth_base"
+ - renamed variable 'tree_depth_max' to 'tree_depth_base'
+ - renamed variable 'tree_depth_adj' to 'tree_depth_max'
+ - renamed variable 'gp.pop_tree_depth_max' to 'gp.pop_tree_depth_base'
  - enabled 2 children to be produced by each Crossover function
  - extensive testing of Crossover in debug to validate process
  - reduced # of crossover functions per run by 1/2
  - improved on-screen output for all 4 genetic operators
- - removed not-in-use "accuracy" test
- - added "Arguments required:" to each method notes
+ - removed not-in-use 'accuracy' test
+ - added 'Arguments required:' to each method notes
  - edited a number of method notes
  
 In karoo_gp_main.py
@@ -73,29 +90,24 @@ conform to the GP standards, as follows:
 
 1) Karoo GP currently produces only 1 offspring for each parent, where it should produce 2.
 
-2) The tree generation method "Ramped Half/Half" is in its current form only a 50/50 split of Full and Grow methods 
-without a graduated scaling.
+2) The tree generation method 'Ramped Half/Half', in its current state, produces a 50/50 split of Full and Grow 
+methods, not a graduated ramp through all depths.
 
 3) Karoo GP currently engages a bloat inhibitor, that is, an upper limit on tree depth which is maintained through 
-all modes of mutation and crossover. This will become a user defined switch such that it can be active or deactive, 
-enabling growth of trees beyond the original, user defined limit.
+all modes of mutation and crossover. This will become a user defined setting such that it can be adjusted, enabling 
+growth of trees beyond the original, user defined limit.
 
 4) Karoo GP will be made to launch as a single, command-line function with all required parameters included, SciKit 
 Learn style.
 
 
-Stay tuned for more updates, soon! --kai
-
-
 
 2015 12/23 - version 0.9.1.1
 
-It was iscovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in 
+It was discovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in 
 the files/ directory, according to the selected kernel.
 
-This is now fixed.
-
-Happy holidays! --kai
+This is fixed.
 
 
 
@@ -118,4 +130,7 @@ With all development to date conducted locally, this version 0.9 marks the first
 This initial github release is private, shared with select collaborators only. Please do not distribute any part of 
 the code until it is made public.
 
-Thank you! --kai
+Kai Staats
+
+www.kaistaats.com/research/
+www.kaistaats.com/film/
