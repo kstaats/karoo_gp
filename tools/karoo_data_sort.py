@@ -1,6 +1,6 @@
 # Karoo Dataset Builder
 # by Kai Staats, MSc UCT / AIMS and Arun Kumar, PhD
-# version 0.9.1.2
+# version 0.9.1.6
 
 import sys
 import numpy as np
@@ -21,14 +21,14 @@ if len(sys.argv) == 1: print '\n\t\033[31mERROR! You have not assigned an input 
 elif len(sys.argv) > 2: print '\n\t\033[31mERROR! You have assigned too many command line arguments. Try again ...\033[0;0m'; sys.exit()
 else: filename = sys.argv[1]
 
-n = range(1,101)
-while True:
-	try:
-		labels = raw_input('\n\tEnter number of unique class labels, or 0 for a regression dataset (default 2): ')
-		if labels not in str(n) and labels not in '': raise ValueError()
-		# if labels == '0': labels = 1; break
-		labels = labels or 2; labels = int(labels); break
-	except ValueError: print '\n\t\033[32mEnter a number from 0 including 100. Try again ...\033[0;0m'
+#n = range(1,101)
+#while True:
+#	try:
+#		labels = raw_input('\n\tEnter number of unique class labels, or 0 for a regression dataset (default 2): ')
+#		if labels not in str(n) and labels not in '': raise ValueError()
+#		# if labels == '0': labels = 1; break
+#		labels = labels or 2; labels = int(labels); break
+#	except ValueError: print '\n\t\033[32mEnter a number from 0 including 100. Try again ...\033[0;0m'
 
 n = range(10,10001)
 while True:
@@ -47,6 +47,8 @@ data_sort = np.empty(shape = [0, data.shape[1]]) # build an empty array of the p
 
 
 ### SORT DATA by LABEL ###
+labels = len(np.unique(data[:,-1]))
+
 for label in range(labels):
 	data_list = np.where(data[:,-1] == label) # build a list of all rows which end in the current label
 
