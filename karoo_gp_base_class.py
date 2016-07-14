@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.5
+# version 0.9.1.6
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -16,7 +16,6 @@ import os
 import sys
 import time
 
-import argparse
 import numpy as np
 import pprocess as pp
 import sklearn.metrics as skm
@@ -36,7 +35,8 @@ class Base_GP(object):
 	will 'print' to screen.
 	
 	The categories (denoted by #+++++++ banners) are as follows:
-		'fx_karoo_'		Methods to Run Karoo GP (with the exception of top-level 'karoo_gp' itself)
+		'karoo_gp'		A single, top-level method which conducts an entire run. Used by karoo_gp_server.py
+		'fx_karoo_'		Methods to Run Karoo GP
 		'fx_gen_'		Methods to Generate a Tree
 		'fx_eval_'		Methods to Evaluate a Tree
 		'fx_fitness_'	Methods to Evaluate Tree Fitness
@@ -114,6 +114,7 @@ class Base_GP(object):
 		self.fittest_dict = {} # temp store all Trees which share the best fitness score
 		self.gene_pool = [] # temp store all Tree IDs for use by Tournament
 		self.core_count = pp.get_number_of_cores() # pprocess
+		self.class_labels = 0 # temp set a variable which will be assigned the number of class labels (data_y)
 		
 		return
 		
@@ -122,20 +123,19 @@ class Base_GP(object):
 	#   Methods to Run Karoo GP               |
 	#++++++++++++++++++++++++++++++++++++++++++
 	
-	def karoo_gp(self, run, tree_type, tree_depth_base):
+	def karoo_gp(self, tree_type, tree_depth_base, filename):
 	
 		'''
-		This is single method enables the engagement of the entire Karoo GP application. It is used by 
-		karoo_gp_server.py and the future, single command line executable, but not by karoo_gp_main.py which engages 
-		each of the included functions sequentially.
+		This single method enables the engagement of the entire Karoo GP application. It is used by karoo_gp_server.py
+		for both scripted and command line execution, but not by karoo_gp_main.py.
 		
-		Arguments required: run, tree_type, tree_depth_base
+		Arguments required: tree_type, tree_depth_base
 		'''
 		
-		self.karoo_banner(run)
+		self.karoo_banner()
 		
 		# construct first generation of Trees
-		self.fx_karoo_data_load()
+		self.fx_karoo_data_load(tree_type, tree_depth_base, filename)
 		self.generation_id = 1 # set initial generation ID
 		self.population_a = ['Karoo GP by Kai Staats, Generation ' + str(self.generation_id)] # a list which will store all Tree arrays, one generation at a time
 		self.fx_karoo_construct(tree_type, tree_depth_base) # construct the first population of Trees
@@ -167,16 +167,12 @@ class Base_GP(object):
 		return
 		
 	
-	def karoo_banner(self, run):
+	def karoo_banner(self):
 	
 		'''
 		This method makes Karoo GP look old-school cool!
 		
-		While the banner remains the same, it presents a configuration request unique to a 'server' run. At the time 
-		of this writing, the only options are 'server' or 'main' where 'main' defaults to requests for feedback based 
-		upon the display mode selected by the user. See 'fx_karoo_construct' for examples.
-		
-		Arguments required: run
+		Arguments required: none
 		'''
 		
 		os.system('clear')
@@ -191,20 +187,12 @@ class Base_GP(object):
 		print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 		print '\t **    ** **    **  **    **  ******    ******       ******   **'
 		print '\033[0;0m'
-		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9\033[0;0m'
-		
-		if run == 'server':
-			print '\n\t Type \033[1m?\033[0;0m to configure Karoo GP before your run, or \033[1mENTER\033[0;0m to continue.\033[0;0m'
-			self.fx_karoo_pause(0)
-			
-		elif run == 'main': pass
-		
-		else: pass
-		
+		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9.1.6\033[0;0m'
+				
 		return
 		
 	
-	def fx_karoo_data_load(self):
+	def fx_karoo_data_load(self, tree_type, tree_depth_base, filename):
 	
 		'''
 		The data and function .csv files are loaded according to the fitness function kernel selected by the user. An
@@ -221,9 +209,10 @@ class Base_GP(object):
 		func_dict = {'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
 		fitt_dict = {'b':'max', 'c':'max', 'r':'min', 'm':'max', 'p':''}
 		
-		if len(sys.argv) == 1: # load data in the karoo_gp/files/ directory
+		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
+			self.class_labels = len(np.unique(data_y))
 			
 			header = open(data_dict[self.kernel],'r')
 			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
@@ -232,9 +221,9 @@ class Base_GP(object):
 			self.fitness_type = fitt_dict[self.kernel]
 			
 		elif len(sys.argv) == 2: # load an external data file
-			print '\n\t\033[36m You have opted to load an alternative dataset:', sys.argv[1], '\033[0;0m'
 			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
+			self.class_labels = len(np.unique(data_y))
 			
 			header = open(sys.argv[1],'r')
 			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
@@ -242,7 +231,17 @@ class Base_GP(object):
 			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 			self.fitness_type = fitt_dict[self.kernel]
 			
-		else: print '\n\t\033[31mERROR! You have assigned too many command line arguments at launch. Try again ...\033[0;0m'; sys.exit()
+		elif len(sys.argv) > 2: # receive filename and additional flags from karoo_gp_server.py via argparse
+					
+			data_x = np.loadtxt(filename, skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
+			data_y = np.loadtxt(filename, skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
+			self.class_labels = len(np.unique(data_y))
+			
+			header = open(filename,'r')
+			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
+			
+			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
+			self.fitness_type = fitt_dict[self.kernel]
 		
 		
 		### 2) from the dataset, generate TRAINING and TEST data ###
@@ -356,7 +355,7 @@ class Base_GP(object):
 	def fx_karoo_construct(self, tree_type, tree_depth_base):
 		
 		'''
-		As used by the method 'fx_karoo_gp', this method constructs the initial population based upon the user-defined 
+		As used by the method 'karoo_gp', this method constructs the initial population based upon the user-defined 
 		Tree type and initial, maximum Tree depth. "Ramped half/half" is currently not ramped, rather split 50/50 
 		Full/Grow. This will be updated with a future version of Karoo GP.
 		
@@ -366,11 +365,7 @@ class Base_GP(object):
 		if self.display == 'i' or self.display == 'g':
 			print '\n\t Type \033[1m?\033[0;0m at any (pause) to review your options, or \033[1mENTER\033[0;0m to continue.\033[0;0m'
 			self.fx_karoo_pause(0)
-			
-		if self.display == 's':
-			print '\n\t Type \033[1m?\033[0;0m to configure Karoo GP before your run, or \033[1mENTER\033[0;0m to continue.\033[0;0m'
-			self.fx_karoo_pause(0)
-			
+						
 		if tree_type == 'r': # Ramped 50/50
 			for TREE_ID in range(1, int(self.tree_pop_max / 2) + 1):
 				self.fx_gen_tree_build(TREE_ID, 'f', tree_depth_base) # build 1/2 of the 1st generation of Trees as Full
@@ -537,7 +532,7 @@ class Base_GP(object):
 					print '\t\033[36m\033[1m i \t\033[0;0m interactive display mode'
 					print '\t\033[36m\033[1m m \t\033[0;0m minimal display mode'
 					print '\t\033[36m\033[1m g \t\033[0;0m generation display mode'
-					print '\t\033[36m\033[1m s \t\033[0;0m silent (server) display mode'
+					print '\t\033[36m\033[1m s \t\033[0;0m silent display mode'
 					print '\t\033[36m\033[1m db \t\033[0;0m debug display mode'
 					print '\t\033[36m\033[1m t \t\033[0;0m timer display mode'
 					print ''
@@ -566,7 +561,7 @@ class Base_GP(object):
 				elif pause == 'i': self.display = 'i'; print '\t Interactive mode engaged (for control freaks)'
 				elif pause == 'm': self.display = 'm'; print '\t Minimal mode engaged (for recovering control freaks)'
 				elif pause == 'g': self.display = 'g'; print '\t Generation mode engaged (for GP gurus)'
-				elif pause == 's': self.display = 's'; print '\t Server mode engaged (for zen masters)'
+				# elif pause == 's': self.display = 's'; print '\t Server mode engaged (for zen masters)'
 				elif pause == 'db': self.display = 'db'; print '\t Debug mode engaged (for vouyers)'
 				elif pause == 't': self.display = 't'; print '\t Timer mode engaged (for managers)'
 				

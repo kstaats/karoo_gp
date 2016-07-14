@@ -2,16 +2,36 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.5
+# version 0.9.1.6
 
 '''
-A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
-Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo Quick Start' before running 
-this application. While your computer will not burst into flames nor will the sun collapse into a black hole if you do not, you will 
-likely find more enjoyment of this particular flavour of GP with a little understanding of its intent and design.
+A word to the newbie, expert, and brave--
+Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo Quick Start' 
+before running this application. While your computer will not burst into flames nor will the sun collapse into a black 
+hole if you do not, you will likely find more enjoyment of this particular flavour of GP with a little understanding 
+of its intent and design.
+
+KAROO GP DESKTOP
+This is the Karoo GP desktop application. It presents a simple yet functional user interface for configuring each
+Karoo GP run. While this can be launched on a remote server, you may find that once you get the hang of using Karoo, 
+and are in more of a production mode than one of experimentation, using karoo_gp_server.py is more to your liking as 
+it provides both a scripted and/or command-line launch vehicle.
+
+To launch Karoo GP desktop:
+
+	$ python karoo_gp_main.py
+	
+	  (or from iPython)
+	
+	$ run karoo_gp_main.py
+
+
+If you include the path to an external dataset, it will auto-load at launch:
+
+	$ python karoo_gp_main.py /[path]/[to_your]/[filename].csv
 '''
 
-import sys # sys.path.append('modules/') # add the directory 'modules' to the current path 
+import sys # sys.path.append('modules/') to add the directory 'modules' to the current path 
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -26,7 +46,7 @@ Future versions will enable all of these parameters to be configured via an exte
 command-line arguments passed at launch.
 '''
 
-gp.karoo_banner('main')
+gp.karoo_banner()
 
 print ''
 
@@ -39,17 +59,6 @@ while True:
 	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
 	except KeyboardInterrupt: sys.exit()
 	
-if gp.kernel == 'c': # if the Classification kernel is selected (above)
-	
-	menu = range(1,101)
-	while True:
-		try:
-			gp.class_labels = raw_input('\t Enter the number of class labels (default 3): ')
-			if gp.class_labels not in str(menu) or gp.class_labels == '0': raise ValueError()
-			gp.class_labels = gp.class_labels or 3; gp.class_labels = int(gp.class_labels); break
-		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
-		except KeyboardInterrupt: sys.exit()		
-
 menu = ['f','g','r','']
 while True:
 	try:
@@ -117,10 +126,10 @@ else: # if any other kernel is selected
 		except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
-	menu = ['i','m','g','s','db','t','']
+	menu = ['i','g','m','s','db','t','']
 	while True:
 		try:
-			gp.display = raw_input('\t Display (i)nteractive, (m)iminal, (g)eneration, or (s)ilent (default m): ')
+			gp.display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, or (s)ilent (default m): ')
 			if gp.display not in menu: raise ValueError()
 			gp.display = gp.display or 'm'; break
 		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
@@ -128,17 +137,14 @@ else: # if any other kernel is selected
 		
 
 # define the ratio between types of mutation, where all sum to 1.0; can be adjusted in 'i'nteractive mode
-gp.evolve_repro = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
-gp.evolve_point = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
-gp.evolve_branch = int(0.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
-gp.evolve_cross = int(1.0 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover Reproduction
+gp.evolve_repro = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
+gp.evolve_point = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
+gp.evolve_branch = int(0.2 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
+gp.evolve_cross = int(0.6 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
 gp.cores = 1 # replace '1' with 'int(gp.core_count)' to auto-set to max; can be adjusted in 'i'nteractive mode
 gp.precision = 4 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
-
-# if len(sys.argv) == 2: # look for an argument when Karoo GP is launched
-# 	gp.data_load = int(sys.argv[1]) # assign file for the data load method in karoo_base_class
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -152,7 +158,8 @@ constructed from scratch. All parameters which define the Trees were set by the 
 If the user has selected 'Play' mode, this is the only generation to be constructed, and then GP Karoo terminates.
 '''
 
-gp.fx_karoo_data_load()
+filename = '' # temp place holder
+gp.fx_karoo_data_load(tree_type, tree_depth_base, filename)
 gp.generation_id = 1 # set initial generation ID
 
 gp.population_a = ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)] # an empty list which will store all Tree arrays, one generation at a time
