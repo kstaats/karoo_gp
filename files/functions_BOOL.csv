@@ -1,4 +1,4 @@
-operand, arity
+operator, arity
 and,2
 or,2
 not,1
