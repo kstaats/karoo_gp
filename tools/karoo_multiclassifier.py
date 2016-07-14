@@ -1,6 +1,6 @@
 # Karoo Multiclass Classifer Test
 # by Kai Staats, MSc UCT / AIMS
-# version 0.9.1.2
+# version 0.9.1.6
 
 '''
 This is a toy script, designed to allow you to play with multiclass classification using the same underlying function
