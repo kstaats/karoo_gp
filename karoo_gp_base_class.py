@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.6b
+# version 0.9.1.6c
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -102,15 +102,15 @@ class Base_GP(object):
 		'gp.pop_*'					13 elements which define each Tree (see 'fx_gen_tree_initialise' below)
 		
 		### Fishing nets ###
-		You can insert a "fishing net" to search for a specific polynomial expression when you fear the evolutionary
-		process or something in the code may not be working. Search for "fishing net" and follow the directions.
+		You can insert a "fishing net" to search for a specific expression when you fear the evolutionary process or 
+		something in the code may not be working. Search for "fishing net" and follow the directions.
 		
 		### Error checks ###
 		You can quickly find all places in which error checks have been inserted by searching for "ERROR!"
 		'''
 		
-		self.algo_raw = 0 # temp store the raw polynomial -- CONSIDER MAKING THIS VARIABLE LOCAL
-		self.algo_sym = 0 # temp store the sympified polynomial-- CONSIDER MAKING THIS VARIABLE LOCAL
+		self.algo_raw = 0 # temp store the raw expression -- CONSIDER MAKING THIS VARIABLE LOCAL
+		self.algo_sym = 0 # temp store the sympified expression-- CONSIDER MAKING THIS VARIABLE LOCAL
 		self.fittest_dict = {} # temp store all Trees which share the best fitness score
 		self.gene_pool = [] # temp store all Tree IDs for use by Tournament
 		self.core_count = pp.get_number_of_cores() # pprocess
@@ -680,12 +680,12 @@ class Base_GP(object):
 					print ''
 					if self.generation_id == 1:
 						for tree_id in range(1, len(self.population_a)):
-							self.fx_eval_poly(self.population_a[tree_id]) # extract the Polynomial
+							self.fx_eval_poly(self.population_a[tree_id]) # extract the expression
 							print '\t\033[36m Tree', self.population_a[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 							
 					elif self.generation_id > 1:
 						for tree_id in range(1, len(self.population_b)):
-							self.fx_eval_poly(self.population_b[tree_id]) # extract the Polynomial
+							self.fx_eval_poly(self.population_b[tree_id]) # extract the expression
 							print '\t\033[36m Tree', self.population_b[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 							
 					else: print '\n\t\033[36m There is nor forest for which to see the Trees.\033[0;0m'
@@ -912,6 +912,8 @@ class Base_GP(object):
 			self.pop_node_c2 = 3
 			self.pop_node_c3 = 4
 
+		else: print '\n\t\033[31mERROR! In fx_gen_root_node_build: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
+
 		self.pop_node_type = 'root'
 			
 		self.fx_gen_node_commit()
@@ -1112,8 +1114,7 @@ class Base_GP(object):
 					self.pop_node_c2 = c_buffer + 1
 					self.pop_node_c3 = c_buffer + 2
 					
-				else:
-					print '\n\t\033[31mERROR! In fx_gen_child_link: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
+				else: print '\n\t\033[31mERROR! In fx_gen_child_link: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
 					
 		return
 		
@@ -1165,13 +1166,13 @@ class Base_GP(object):
 	def fx_eval_poly(self, tree):
 	
 		'''
-		Generate the polynomial (both raw and sympified).
+		Generate the expression (both raw and sympified).
 		
 		Arguments required: tree
 		'''
 		
 		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the Tree to a string
-		self.algo_sym = sp.sympify(self.algo_raw) # string converted to a functional polynomial (the coolest line in the script! :)
+		self.algo_sym = sp.sympify(self.algo_raw) # string converted to a functional expression (the coolest line in the script! :)
 						
 		return
 		
@@ -1179,9 +1180,9 @@ class Base_GP(object):
 	def fx_eval_label(self, tree, node_id):
 	
 		'''
-		Evaluate all or part of a Tree and return a raw polynomial ('algo_raw').
+		Evaluate all or part of a Tree and return a raw expression ('algo_raw').
 		
-		In the main code, this method is called once per Tree, but may be called at any time to prepare a polynomial 
+		In the main code, this method is called once per Tree, but may be called at any time to prepare an expression 
 		for any full or partial (branch) Tree contained in 'population'.
 		
 		Pass the starting node for recursion via the local variable 'node_id' where the local variable 'tree' is a 
@@ -1343,7 +1344,7 @@ class Base_GP(object):
 		This method combines 3 methods into one: 'fx_eval', 'fx_fitness', 'fx_fitness_store', and then displays the 
 		results to the user. It's a hard-core, all-out GP workout!
 		
-		Part 1 evaluates each polynomial against the data, line for line. This is the most time consuming and CPU 
+		Part 1 evaluates each expression against the data, line for line. This is the most time consuming and CPU 
 		engaging of the entire Genetic Program.
 		
 		Part 2 evaluates every Tree in each generation to determine which have the best, overall fitness score. This 
@@ -1365,8 +1366,8 @@ class Base_GP(object):
 		
 		for tree_id in range(1, len(population)):
 		
-			### PART 1 - EXTRACT POLYNOMIAL FROM EACH TREE ###
-			self.fx_eval_poly(population[tree_id]) # extract the Polynomial
+			### PART 1 - EXTRACT EXPRESSION FROM EACH TREE ###
+			self.fx_eval_poly(population[tree_id]) # extract the expression
 			if self.display not in ('s','t'): print '\t\033[36mTree', population[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 			
 			
@@ -1440,7 +1441,7 @@ class Base_GP(object):
 		'''
 		Evaluate the fitness of the Tree.
 		
-		This method uses the 'sympified' (SymPy) polynomial ('algo_sym') created in 'fx_eval_poly' and the data set 
+		This method uses the 'sympified' (SymPy) expression ('algo_sym') created in 'fx_eval_poly' and the data set 
 		loaded at run-time to evaluate the fitness of the selected kernel. The output is returned as the global 
 		variable 'fitness'.
 		
@@ -1449,9 +1450,9 @@ class Base_GP(object):
 		Arguments required: row
 		'''
 		
-		# We need to extract the variables from the polynomial. However, these variables are no longer correlated
+		# We need to extract the variables from the expression. However, these variables are no longer correlated
 		# to the original variables listed across the top of each column of data.csv, so we must re-assign their 
-		# respective values for each subsequent row in the data .csv, for each Tree's unique polynomial.
+		# respective values for each subsequent row in the data .csv, for each Tree's unique expression.
 		
 		data_train_dict = self.data_train_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
 		
@@ -1459,7 +1460,7 @@ class Base_GP(object):
 			result = self.algo_sym.subs(data_train_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
 			
 		else:
-			result = float(self.algo_sym.subs(data_train_dict)) # process the polynomial to produce the result
+			result = float(self.algo_sym.subs(data_train_dict)) # process the expression to produce the result
 			result = round(result, self.precision) # force 'result' and 'solution' to the same number of floating points
 			
 		solution = float(data_train_dict['s']) # extract the desired solution from the data
@@ -1520,14 +1521,12 @@ class Base_GP(object):
 		'''
 		
 		if result == solution:
+			if self.display == 'i': print '\t\033[36m data row', row, '\033[0;0m\033[36myields:\033[1m', result, '\033[0;0m'
 			fitness = 1 # improve the fitness score by 1
 			
-			if self.display == 'i': print '\t\033[36m data row', row, '\033[0;0m\033[36myields:\033[1m', result, '\033[0;0m' # bold font face
-			
 		else:
+			if self.display == 'i': print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
 			fitness = 0 # do not adjust the fitness score
-			
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m' # standard font face
 			
 		return fitness
 		
@@ -1556,20 +1555,20 @@ class Base_GP(object):
 		# skew = 0 # for code testing
 		
 		if solution == 0 and result <= 0 - skew: # check for first class
-			fitness = 1
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '<=', int(0 - skew), '\033[0;0m'
+			fitness = 1
 			
 		elif solution == self.class_labels - 1 and result > solution - 1 - skew: # check for last class
-			fitness = 1
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '>', int(solution - 1 - skew), '\033[0;0m'
+			fitness = 1
 			
 		elif solution - 1 - skew < result <= solution - skew: # check for class bins between first and last
-			fitness = 1
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', int(solution - 1 - skew), '<', result, '<=', int(solution - skew), '\033[0;0m'
+			fitness = 1
 			
 		else: # no class match
-			fitness = 0
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields: no match \033[0;0m'
+			fitness = 0
 			
 		return fitness
 		
@@ -1587,14 +1586,12 @@ class Base_GP(object):
 		'''
 		
 		if result == solution:
-			fitness = 1 # improve the fitness score by 1
-				
 			if self.display == 'i': print '\t\033[36m data row', row, '\033[0;0m\033[36myields:\033[1m', result, '\033[0;0m' # bold font face
+			fitness = 1 # improve the fitness score by 1
 			
 		else:
-			fitness = 0 # do not adjust the fitness score
-			
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m' # standard font face
+			fitness = 0 # do not adjust the fitness score
 			
 		return fitness
 		
@@ -1619,7 +1616,7 @@ class Base_GP(object):
 		# print '\t\033[36m with fitness', fitness, '\033[0;0m'
 		
 		tree[12][1] = fitness # store the fitness with each tree
-		# tree[12][2] = result # store the result of the executed polynomial
+		# tree[12][2] = result # store the result of the executed expression
 		# tree[12][3] = solution # store the desired solution
 		
 		if len(tree[3]) > 4: # if the Tree array is wide enough ...
@@ -1684,8 +1681,7 @@ class Base_GP(object):
 					# tourn_lead remains unchanged
 					# tourn_test remains unchanged
 					
-				else:
-					print '\n\t\033[31mERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
+				else: print '\n\t\033[31mERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
 				
 			
 			elif self.fitness_type == 'min': # if the fitness function is Minimising
@@ -1708,8 +1704,7 @@ class Base_GP(object):
 					# tourn_lead remains unchanged
 					# tourn_test remains unchanged
 					
-				else:
-					print '\n\t\033[31mERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
+				else: print '\n\t\033[31mERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
 					
 		
 		tourn_winner = np.copy(self.population_a[tourn_lead]) # copy full Tree so as to not inadvertantly modify the original tree
@@ -1726,13 +1721,14 @@ class Base_GP(object):
 		lower node count is enforced is through the creation of a gene pool from those Trees which contain equal or 
 		greater nodes to the user defined limit.
 		
-		What's more, the gene pool also keeps the solution from defaulting to a simple t/t as with the Kepler problem.
-		However, the ramifications of this further limitation on the evolutionary process has not been fully studied.
+		When the minimum node count is human guided, it can help keep the solution from defaulting to a local minimum,
+		as with 't/t' in the Kepler problem. However, the ramification of this limitation on the evolutionary process 
+		has not been fully studied.
 		
 		This method is automatically invoked with every Tournament Selection ('fx_fitness_tournament').
 		
 		At this point in time, the gene pool does *not* limit the number of times any given Tree may be selected for 
-		mutation or reproduction.
+		mutation or reproduction nor does it take into account parsimony (seeking the simplest expression).
 		
 		Arguments required: none
 		'''
@@ -1742,19 +1738,18 @@ class Base_GP(object):
 		
 		for tree_id in range(1, len(self.population_a)):
 		
-			self.fx_eval_poly(self.population_a[tree_id]) # extract the Polynomial
+			self.fx_eval_poly(self.population_a[tree_id]) # extract the expression
 			
 			if len(self.population_a[tree_id][3])-1 >= self.tree_depth_min and self.algo_sym != 1: # if Tree meets the min node count and > 1
+				if self.display == 'i': print '\t\033[36m Tree', tree_id, 'has >=', self.tree_depth_min, 'nodes and is added to the gene pool\033[0;0m'
 				self.gene_pool.append(self.population_a[tree_id][0][1])
 				
-				if self.display == 'i': print '\t\033[36m Tree', tree_id, 'has >=', self.tree_depth_min, 'nodes and is added to the gene pool\033[0;0m'
-				
 		if len(self.gene_pool) > 0 and self.display == 'i': print '\n\t The total population of the gene pool is', len(self.gene_pool); self.fx_karoo_pause(0)
-
-		elif len(self.gene_pool) <= 0:
-			self.generation_id = self.generation_id - 1 # catch the hidden increment of the 'generation_id'
-			self.generation_max = self.generation_id # catch the unused "cont" values in the 'fx_karoo_pause' method
-			print '\n\t There are no Trees in the gene pool. Adjust the minimum nodes to a lower value!' #; self.fx_karoo_pause(0)
+		
+		elif len(self.gene_pool) <= 0: # the evolutionary constraints were too tight, killing off the entire population
+			# self.generation_id = self.generation_id - 1 # revert the increment of the 'generation_id'
+			# self.generation_max = self.generation_id # catch the unused "cont" values in the 'fx_karoo_pause' method
+			print "\n\t\033[31m\033[3m 'They're dead Jim. They're all dead!'\033[0;0m There are no Trees in the gene pool. You should archive your populations and (q)uit."; self.fx_karoo_pause(0)
 			
 	
 	#++++++++++++++++++++++++++++++++++++++++++
@@ -2182,8 +2177,7 @@ class Base_GP(object):
 				tree[10][node] = c_buffer + 1
 				tree[11][node] = c_buffer + 2
 				
-			else:
-				print '\n\t\033[31mERROR! In fx_evo_child_link: node', node, 'has arity', tree[8][node]; self.fx_karoo_pause(0)
+			else: print '\n\t\033[31mERROR! In fx_evo_child_link: node', node, 'has arity', tree[8][node]; self.fx_karoo_pause(0)
 				
 		return tree
 		
@@ -2265,8 +2259,8 @@ class Base_GP(object):
 		'b' to their own trees before inserting them into copies of	the parents.
 		
 		Technically speaking, the 'node_parent' value is not used by any methods. The parent ID can be completely out 
-		of whack and the polynomial expression will work perfectly. This is maintained for the sole purpose of granting 
-		the user a friendly, makes-sense interface which can be read in both directions.
+		of whack and the expression will work perfectly. This is maintained for the sole purpose of granting the user 
+		a friendly, makes-sense interface which can be read in both directions.
 		
 		Arguments required: tree
 		'''
@@ -2470,7 +2464,7 @@ class Base_GP(object):
 				result = self.algo_sym.subs(data_test_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
 				
 			else:
-				result = float(self.algo_sym.subs(data_test_dict)) # process the polynomial to produce the result
+				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
 				result = round(result, self.precision) # force 'result' to the set number of floating points
 				
 			label_pred = '' # we can remove this and the associated "if label_pred == ''" (below) once thoroughly tested - 2015 10/19
@@ -2527,7 +2521,7 @@ class Base_GP(object):
 				result = self.algo_sym.subs(data_test_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
 				
 			else:
-				result = float(self.algo_sym.subs(data_test_dict)) # process the polynomial to produce the result
+				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
 				result = round(result, self.precision) # force 'result' and 'solution' to the same number of floating points
 				
 			solution = float(data_test_dict['s']) # extract the desired solution from the data
@@ -2563,7 +2557,7 @@ class Base_GP(object):
 				result = self.algo_sym.subs(data_test_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
 				
 			else:
-				result = float(self.algo_sym.subs(data_test_dict)) # process the polynomial to produce the result
+				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
 				result = round(result, self.precision) # force 'result' and 'solution' to the same number of floating points
 			
 			solution = float(data_test_dict['s']) # extract the desired solution from the data
