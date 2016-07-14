@@ -1771,7 +1771,8 @@ class Base_GP(object):
 		
 		node = np.random.randint(1, len(tree[3])) # randomly select a point in the Tree (including root)
 		if self.display == 'i': print '\t\033[36m with', tree[5][node], 'node\033[1m', tree[3][node], '\033[0;0m\033[36mchosen for mutation\n\033[0;0m'		
-		
+		if self.display == 'db': print '\n\n\033[33m *** Point Mutation *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
+			
 		if tree[5][node] == 'root':
 			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
 			tree[6][node] = self.functions[rnd][0] # replace function (operator)
@@ -1786,6 +1787,8 @@ class Base_GP(object):
 
 		tree = self.fx_evo_fitness_wipe(tree) # remove fitness data
 
+		if self.display == 'db': print '\n\033[36m This is tourn_winner after node\033[1m', node, '\033[0;0m\033[36mmutation and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
+				
 		return tree, node # 'node' is returned only to be assigned to the 'tourn_trees' record keeping
 		
 	
@@ -1806,17 +1809,23 @@ class Base_GP(object):
 			# 'root' is not made available for Full mutation as this would build an entirely new Tree
 			
 			if tree[5][branch[n]] == 'func':
-				# if self.display == 'i': print '\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m func \033[0;0m'
+				if self.display == 'i': print '\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m func \033[0;0m'
+				if self.display == 'db': print '\n\n\033[33m *** Full Mutation: function to function *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
+							
 				rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
 				tree[6][branch[n]] = self.functions[rnd][0] # replace function (operator)
 				
 			if tree[5][branch[n]] == 'term':
-				# if self.display == 'i': print '\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m term \033[0;0m'
+				if self.display == 'i': print '\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m term \033[0;0m'
+				if self.display == 'db': print '\n\n\033[33m *** Full Mutation: terminal to terminal *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
+							
 				rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 				tree[6][branch[n]] = self.terminals[rnd] # replace terminal (variable)
 				
 		tree = self.fx_evo_fitness_wipe(tree) # remove fitness data
-		
+
+		if self.display == 'db': print '\n\033[36m This is tourn_winner after node\033[1m', tree[3][branch[n]], '\033[0;0m\033[36mmutation and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
+				
 		return tree
 		
 	
@@ -1847,15 +1856,19 @@ class Base_GP(object):
 		# branch_depth = int(tree[2][1]) - int(tree[4][branch_top]) # 'tree_depth_base' - depth at 'branch_top' to set max potential size of new branch - ORIGINAL
 		branch_depth = self.tree_depth_max - int(tree[4][branch_top]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch - 2016 07/10
 		
-		if branch_depth < 0: # this has not occured yet !!!
+		if branch_depth < 0: # this has never occured ... yet
 			print '\n\t\033[31mERROR! Captain, this is not logical!\033[0;0m'
 			print '\t branch_depth =', branch_depth; self.fx_karoo_pause(0)
 			
 		elif branch_depth == 0: # the point of mutation ('branch_top') chosen resides at the maximum allowable depth, so mutate term to term
 		
-			if self.display == 'i': print '\t\033[36m max depth node\033[1m', branch_top, '\033[0;0m\033[36mmutates from \033[1mterm\033[0;0m \033[36mto \033[1mterm\033[0;0m\n'
+			if self.display == 'i': print '\t\033[36m max depth branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from \033[1mterm\033[0;0m \033[36mto \033[1mterm\033[0;0m\n'
+			if self.display == 'db': print '\n\n\033[33m *** Grow Mutation: terminal to terminal *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
+			
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 			tree[6][branch_top] = self.terminals[rnd] # replace terminal (variable)
+
+			if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 			
 		else: # the point of mutation ('branch_top') chosen is at least one degree of depth from the maximum allowed
 		
@@ -1867,7 +1880,7 @@ class Base_GP(object):
 			if type_mod == 'term': # mutate 'branch_top' to a terminal and delete all nodes beneath (no subsequent nodes are added to this branch)
 				
 				if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m term \n\033[0;0m'
-				if self.display == 'db': print '\n *** New branch for a Grow method / terminal mutation *** \n This is the unaltered tourn_winner:\n', tree
+				if self.display == 'db': print '\n\n\033[33m *** Grow Mutation: branch_top to terminal *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
 				
 				rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 				tree[5][branch_top] = 'term' # replace type ('func' to 'term' or 'term' to 'term')
@@ -1878,17 +1891,17 @@ class Base_GP(object):
 				tree = self.fx_evo_child_link_fix(tree) # fix all child links
 				tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
 				
-				if self.display == 'db': print '\n This is tourn_winner after terminal', branch_top, 'mutation, branch deletion, and updates:\n', tree; self.fx_karoo_pause(0)
+				if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 				
 			
 			if type_mod == 'func': # mutate 'branch_top' to a function (a new 'gp.tree' will be copied, node by node, into 'tourn_winner')
 				
 				if self.display == 'i': print '\t\033[36m branch node\033[1m', tree[3][branch_top], '\033[0;0m\033[36mmutates from\033[1m', tree[5][branch_top], '\033[0;0m\033[36mto\033[1m func \n\033[0;0m'
-				if self.display == 'db': print '\n *** New branch for a Grow method / function mutation *** \n This is the unaltered tourn_winner:\n', tree
+				if self.display == 'db': print '\n\n\033[33m *** Grow Mutation: branch_top to function *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
 				
 				self.fx_gen_tree_build('mutant', self.pop_tree_type, branch_depth) # build new Tree ('gp.tree') with a maximum depth which matches 'branch'
 				
-				if self.display == 'db': print '\n This is the new Tree to be inserted at node', branch_top, 'in tourn_winner:\n', self.tree; self.fx_karoo_pause(0)
+				if self.display == 'db': print '\n\033[36m This is the new Tree to be inserted at node\033[1m', branch_top, '\033[0;0m\033[36min tourn_winner:\033[0;0m\n', self.tree; self.fx_karoo_pause(0)
 				
 				# because we already know the maximum depth to which this branch can grow, there is no need to prune after insertion
 				tree = self.fx_evo_branch_top_copy(tree, branch) # copy root of new 'gp.tree' to point of mutation ('branch_top') in 'tree' ('tourn_winner')
@@ -2008,6 +2021,10 @@ class Base_GP(object):
 		c_buffer = self.fx_evo_c_buffer(tree, branch_top) # generate c_buffer for point of mutation ('branch_top')
 		tree = self.fx_evo_child_insert(tree, branch_top, c_buffer) # insert new nodes
 		tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
+
+		if self.display == 'db':
+			print '\n\t ... inserted node 1 of', len(self.tree[3])-1
+			print '\n\033[36m This is the Tree after a new node is inserted:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 		
 		return tree
 		
