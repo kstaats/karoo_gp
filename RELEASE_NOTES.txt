@@ -1,3 +1,20 @@
+2016 07/13 - version 0.9.1.6
+
+In karoo_gp_base_class.py
+ - enabled auto counting of labels (right column) in loaded data (data_y)
+ - re-ordered presentation of screen modes, in order of decreasing feedback [i, g, m, s]
+ - added argparse to further enhance karoo_gp_server.py as a scriptable tool --FINALLY! :)
+ 
+In karoo_gp_main.py
+ - removed user query for number of class labels
+ - re-ordered presentation of screen modes, in order of decreasing feedback [i, g, m, s]
+
+In karoo_go_server.py
+ - re-ordered presentation of screen modes, in order of decreasing feedback [i, g, m, s]
+ - argparse to further enhance karoo_gp_server.py as a scriptable tool
+
+
+
 2016 07/11 - version 0.9.1.5
 
 In karoo_gp_base_class.py
@@ -14,6 +31,8 @@ In karoo_go_server.py
  - renamed kernel (fitness function) type from 'a' to 'r' for regression
  
 In files/ data_ABS.csv and functions_ABS.csv were rename data_REGRESS.csv and functions_REGRESS.csv accordingly.
+
+
 
 2016 07/10-11 - version 0.9.1.4
 
