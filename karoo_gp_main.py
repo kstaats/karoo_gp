@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.6
+# version 0.9.1.6b
 
 '''
 A word to the newbie, expert, and brave--
@@ -139,8 +139,8 @@ else: # if any other kernel is selected
 # define the ratio between types of mutation, where all sum to 1.0; can be adjusted in 'i'nteractive mode
 gp.evolve_repro = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
 gp.evolve_point = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
-gp.evolve_branch = int(0.2 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
-gp.evolve_cross = int(0.6 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover
+gp.evolve_branch = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
+gp.evolve_cross = int(0.7 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
 gp.cores = 1 # replace '1' with 'int(gp.core_count)' to auto-set to max; can be adjusted in 'i'nteractive mode
