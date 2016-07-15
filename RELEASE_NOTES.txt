@@ -1,3 +1,25 @@
+2016 07/15 - version 0.9.1.7
+
+In karoo_gp_base_class.py
+ - Ramped Half/Half, as originally designed by John Koza is now implemented!
+ - this offers a greater diversity of trees in the initial population
+ - added *** Crossover *** to this method for debug display mode
+ 
+ 
+
+2016 07/14 - version 0.9.1.6b
+
+In karoo_gp_base_class.py
+ - fixed 'debug' display output for branch mutation
+ - fixed a few bugs in branch mutation that reduced evolutionary efficiency
+ - updated all ERROR messages to be uniform in output
+ - added (y/n) to "Are you certain you want to quit?" message --thanks Hunter!
+ 
+In karoo_gp_main.py
+ - reset default evoluationary balance to .1/.1/.1/.7
+
+
+
 2016 07/13 - version 0.9.1.6
 
 In karoo_gp_base_class.py
