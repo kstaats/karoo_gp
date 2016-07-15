@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.6c
+# version 0.9.1.7
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -356,8 +356,9 @@ class Base_GP(object):
 		
 		'''
 		As used by the method 'karoo_gp', this method constructs the initial population based upon the user-defined 
-		Tree type and initial, maximum Tree depth. "Ramped half/half" is currently not ramped, rather split 50/50 
-		Full/Grow. This will be updated with a future version of Karoo GP.
+		Tree type and initial, maximum Tree depth ('tree_depth_base'). "Ramped half/half" was defined by John Koza as 
+		a means of building maximum diversity in the initial population. There are equal numbers of Full and Grow 
+		methods trees, and an equal spread of Trees across depths 1 to 'tree_depth_base'.
 		
 		Arguments required: tree_type, tree_depth_base
 		'''
@@ -367,14 +368,26 @@ class Base_GP(object):
 			self.fx_karoo_pause(0)
 						
 		if tree_type == 'r': # Ramped 50/50
-			for TREE_ID in range(1, int(self.tree_pop_max / 2) + 1):
-				self.fx_gen_tree_build(TREE_ID, 'f', tree_depth_base) # build 1/2 of the 1st generation of Trees as Full
-				self.fx_tree_append(self.tree) # append each Tree in the first generation to the list 'gp.population_a'
-				
-			for TREE_ID in range(int(self.tree_pop_max / 2) + 1, self.tree_pop_max + 1):
-				self.fx_gen_tree_build(TREE_ID, 'g', tree_depth_base) # build 2/2 of the 1st generation of Trees as Grow
-				self.fx_tree_append(self.tree)
-				
+			
+			TREE_ID = 1
+			for n in range(1, int((self.tree_pop_max / 2) / tree_depth_base) + 1): # split the population into equal parts
+				for depth in range(1, tree_depth_base + 1): # build 2 Trees ats each depth
+					self.fx_gen_tree_build(TREE_ID, 'f', depth) # build a Full Tree
+					self.fx_tree_append(self.tree) # append Tree to the list 'gp.population_a'
+					TREE_ID = TREE_ID + 1
+					
+					self.fx_gen_tree_build(TREE_ID, 'g', depth) # build a Grow Tree
+					self.fx_tree_append(self.tree) # append Tree to the list 'gp.population_a'
+					TREE_ID = TREE_ID + 1
+						
+			if TREE_ID < self.tree_pop_max: # eg: split 100 by 2*3 and it will produce only 96 Trees ...
+				for n in range(self.tree_pop_max - TREE_ID + 1): # ... so we complete the run
+					self.fx_gen_tree_build(TREE_ID, 'g', tree_depth_base)
+					self.fx_tree_append(self.tree)
+					TREE_ID = TREE_ID + 1
+					
+			else: pass
+									
 		else: # Full or Grow
 			for TREE_ID in range(1, self.tree_pop_max + 1):
 				self.fx_gen_tree_build(TREE_ID, tree_type, tree_depth_base) # build the 1st generation of Trees
@@ -1924,6 +1937,8 @@ class Base_GP(object):
 		
 		crossover = int(branch_x[0]) # pointer to the top of the 1st parent branch passed from 'fx_karoo_crossover'
 		branch_top = int(branch_y[0]) # pointer to the top of the 2nd parent branch passed from 'fx_karoo_crossover'
+		
+		if self.display == 'db': print '\n\n\033[33m *** Crossover *** \033[0;0m'
 		
 		if len(branch_x) == 1: # if the branch from the parent contains only one node (terminal)
 		
