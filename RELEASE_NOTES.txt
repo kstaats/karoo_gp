@@ -1,4 +1,13 @@
-2016 07/15 - version 0.9.1.7
+2016 07/18 - version 0.9.1.8
+
+In karoo_gp_base_class.py
+ - removed some programmer's comments from experiments resolved
+ - modified the screen output for the multi-class classifier such that it is more clear that p (a) is actually
+ 	predicted (actual) with the addition of the tag "label"
+ 
+ 
+ 
+ 2016 07/15 - version 0.9.1.7
 
 In karoo_gp_base_class.py
  - Ramped Half/Half, as originally designed by John Koza is now implemented!
