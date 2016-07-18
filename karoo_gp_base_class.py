@@ -2,11 +2,11 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.7
+# version 0.9.1.8
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
-Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo Quick Start' before running 
+Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo User Guide' before running 
 this application. While your computer will not burst into flames nor will the sun collapse into a black hole if you do not, you will 
 likely find more enjoyment of this particular flavour of GP with a little understanding of its intent and design.
 '''
@@ -35,7 +35,7 @@ class Base_GP(object):
 	will 'print' to screen.
 	
 	The categories (denoted by #+++++++ banners) are as follows:
-		'karoo_gp'		A single, top-level method which conducts an entire run. Used by karoo_gp_server.py
+		'karoo_gp'		A single, top-level method which conducts an entire run. Used only by karoo_gp_server.py
 		'fx_karoo_'		Methods to Run Karoo GP
 		'fx_gen_'		Methods to Generate a Tree
 		'fx_eval_'		Methods to Evaluate a Tree
@@ -109,8 +109,8 @@ class Base_GP(object):
 		You can quickly find all places in which error checks have been inserted by searching for "ERROR!"
 		'''
 		
-		self.algo_raw = 0 # temp store the raw expression -- CONSIDER MAKING THIS VARIABLE LOCAL
-		self.algo_sym = 0 # temp store the sympified expression-- CONSIDER MAKING THIS VARIABLE LOCAL
+		self.algo_raw = [] # temp store the raw expression -- CONSIDER MAKING THIS VARIABLE LOCAL
+		self.algo_sym = [] # temp store the sympified expression-- CONSIDER MAKING THIS VARIABLE LOCAL
 		self.fittest_dict = {} # temp store all Trees which share the best fitness score
 		self.gene_pool = [] # temp store all Tree IDs for use by Tournament
 		self.core_count = pp.get_number_of_cores() # pprocess
@@ -205,9 +205,9 @@ class Base_GP(object):
 		'''
 		
 		### 1) load the data file associated with the user selected fitness kernel ###	
-		data_dict = {'b':'files/data_BOOL.csv', 'c':'files/data_CLASSIFY.csv', 'r':'files/data_REGRESS.csv', 'm':'files/data_MATCH.csv', 'p':'files/data_PLAY.csv'}
-		func_dict = {'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
-		fitt_dict = {'b':'max', 'c':'max', 'r':'min', 'm':'max', 'p':''}
+		data_dict = {'c':'files/data_CLASSIFY.csv', 'l':'files/data_LOGIC.csv', 'r':'files/data_REGRESS.csv', 'm':'files/data_MATCH.csv', 'p':'files/data_PLAY.csv'}
+		func_dict = {'c':'files/functions_CLASSIFY.csv', 'l':'files/functions_LOGIC.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
+		fitt_dict = {'c':'max', 'l':'max', 'r':'min', 'm':'max', 'p':''}
 		
 		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
@@ -465,7 +465,7 @@ class Base_GP(object):
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each mutation
 			branch = self.fx_evo_branch_select(tourn_winner) # select point of mutation and all nodes beneath
 			
-			# TEST AND DEBUG: comment the top or bottom to force all Full or all Grow methods
+			# TEST & DEBUG: comment the top or bottom to force all Full or all Grow methods
 			
 			if tourn_winner[1][1] == 'f': # perform Full method mutation on 'tourn_winner'
 				tourn_winner = self.fx_evo_full_mutate(tourn_winner, branch)
@@ -605,7 +605,7 @@ class Base_GP(object):
 						except ValueError: print '\n\t\033[32m Enter a number from 3 including 1000. Try again ...\033[0;0m'
 						
 				
-				### this needs a new, static global variable in order to function properly ###
+				# NEED TO ADD: adjustable tree_depth_max
 				# elif pause == 'max': # adjust the global, adjusted maximum Tree depth
 				
 					# menu = range(1,11)
@@ -711,7 +711,7 @@ class Base_GP(object):
 						print '\t  ', self.fittest_dict.keys()[n], ':', self.fittest_dict.values()[n]
 					
 					
-				elif pause == 'p': # print a Tree to screen; need to add a SymPy graphical print option
+				elif pause == 'p': # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
 				
 					if self.generation_id == 1:
 						menu = range(1,len(self.population_a))
@@ -745,8 +745,8 @@ class Base_GP(object):
 								query = raw_input('\n\t Select a Tree in population_b to evaluate for Precision & Recall: ')
 								if query not in str(menu) or query == '0': raise ValueError()
 								elif query == '': break
-								if self.kernel == 'b': self.fx_test_boolean(int(query)); break
-								elif self.kernel == 'c': self.fx_test_classify(int(query)); break
+								if self.kernel == 'c': self.fx_test_classify(int(query)); break
+								elif self.kernel == 'l': self.fx_test_logic(int(query)); break
 								elif self.kernel == 'r': self.fx_test_regress(int(query)); break
 								elif self.kernel == 'm': self.fx_test_match(int(query)); break
 								# elif self.kernel == '[other]': self.fx_test_[other](int(query)); break
@@ -888,7 +888,7 @@ class Base_GP(object):
 		self.pop_node_arity = '' 					# pos 8: number of nodes attached to each non-terminal node
 		self.pop_node_c1 = '' 						# pos 9: child node 1
 		self.pop_node_c2 = '' 						# pos 10: child node 2
-		self.pop_node_c3 = '' 						# pos 11: child node 3 (assumed max of 3 with boolean operator 'if')
+		self.pop_node_c3 = '' 						# pos 11: child node 3 (assumed max of 3 with logic operator 'if')
 		self.pop_fitness = ''						# pos 12: fitness value following Tree evaluation
 		
 		self.tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_base'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
@@ -1186,7 +1186,7 @@ class Base_GP(object):
 		
 		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the Tree to a string
 		self.algo_sym = sp.sympify(self.algo_raw) # string converted to a functional expression (the coolest line in the script! :)
-						
+		
 		return
 		
 	
@@ -1204,12 +1204,14 @@ class Base_GP(object):
 		Arguments required: tree, node_id
 		'''
 		
+		if tree[6, node_id] == 'not': tree[6, node_id] = ', not' # temp until this can be fixed at data_load
+		
 		if tree[8, node_id] == '0': # arity of 0 for the pattern '[term]'
 			return '(' + tree[6, node_id] + ')' # 'node_label' (function or terminal)
 			
 		else:
-			if tree[8, node_id] == '1': # arity of 1 for the pattern '[func] [term]'
-				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id]
+			if tree[8, node_id] == '1': # arity of 1 for the explicit pattern 'not [term]'
+				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id] # original code
 				
 			elif tree[8, node_id] == '2': # arity of 2 for the pattern '[func] [term] [func]'
 				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id] + self.fx_eval_label(tree, tree[10, node_id])
@@ -1413,13 +1415,13 @@ class Base_GP(object):
 			
 			
 			### PART 3 - COMPARE TREE FITNESS FOR DISPLAY ###
-			if self.kernel == 'b': # display best fit Trees for the BOOLEAN kernel
-				if fitness == self.data_train_rows: # find the Tree with a perfect match for all data rows
+			if self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
+				if fitness >= fitness_best: # find the Tree with Maximum fitness score
 					fitness_best = fitness # set best fitness score
 					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
 					
-			elif self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
-				if fitness >= fitness_best: # find the Tree with Maximum fitness score
+			elif self.kernel == 'l': # display best fit Trees for the LOGIC kernel
+				if fitness == self.data_train_rows: # find the Tree with a perfect match for all data rows
 					fitness_best = fitness # set best fitness score
 					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
 					
@@ -1458,7 +1460,7 @@ class Base_GP(object):
 		loaded at run-time to evaluate the fitness of the selected kernel. The output is returned as the global 
 		variable 'fitness'.
 		
-		[need to write more]
+		[need to write more about capturing 'zoo' and 'false']
 		
 		Arguments required: row
 		'''
@@ -1470,7 +1472,7 @@ class Base_GP(object):
 		data_train_dict = self.data_train_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
 		
 		if str(self.algo_sym.subs(data_train_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-			result = self.algo_sym.subs(data_train_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
+			result = self.algo_sym.subs(data_train_dict) # skip
 			
 		else:
 			result = float(self.algo_sym.subs(data_train_dict)) # process the expression to produce the result
@@ -1479,16 +1481,16 @@ class Base_GP(object):
 		solution = float(data_train_dict['s']) # extract the desired solution from the data
 		solution = round(solution, self.precision) # force 'result' and 'solution' to the same number of floating points
 		
-		# if str(self.algo_sym) == 'a + b/c': # a temp fishing net to catch a specific result
+		# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a temp fishing net to catch a specific result
 			# print 'algo_sym', self.algo_sym
 			# print 'result', result, 'solution', solution
 			# self.fx_karoo_pause(0)
-			
-		if self.kernel == 'b': # BOOLEAN kernel
-			fitness = self.fx_fitness_function_bool(row, result, solution)
-			
-		elif self.kernel == 'c': # CLASSIFY kernel
+						
+		if self.kernel == 'c': # CLASSIFY kernel
 			fitness = self.fx_fitness_function_classify(row, result, solution)
+			
+		elif self.kernel == 'l': # LOGIC kernel
+			fitness = self.fx_fitness_function_logic(row, result, solution)
 			
 		elif self.kernel == 'r': # REGRESSION kernel
 			fitness = self.fx_fitness_function_regress(row, result, solution)
@@ -1521,10 +1523,10 @@ class Base_GP(object):
 		return fitness
 		
 	
-	def fx_fitness_function_bool(self, row, result, solution):
+	def fx_fitness_function_logic(self, row, result, solution):
 	
 		'''
-		A boolean kernel used within the 'fitness_eval' function.
+		A logic kernel used within the 'fitness_eval' function.
 		
 		This is a maximization function which seeks an exact solution (a perfect match).
 		
@@ -1626,7 +1628,6 @@ class Base_GP(object):
 	
 		fitness = float(fitness)
 		fitness = round(fitness, self.precision)
-		# print '\t\033[36m with fitness', fitness, '\033[0;0m'
 		
 		tree[12][1] = fitness # store the fitness with each tree
 		# tree[12][2] = result # store the result of the executed expression
@@ -1685,6 +1686,7 @@ class Base_GP(object):
 					tourn_lead = tree_id # in case there is no variance in this tournament
 					# tourn_test remains unchanged
 					
+					# NEED TO ADD: option for parsimony
 					# if int(self.population_a[tree_id][12][4]) < short_test:
 						# short_test = int(self.population_a[tree_id][12][4]) # set len(algo_raw) of new leader
 						# print '\t\033[36m with improved parsimony score of:\033[1m', short_test, '\033[0;0m'
@@ -1881,7 +1883,7 @@ class Base_GP(object):
 			
 		else: # the point of mutation ('branch_top') chosen is at least one degree of depth from the maximum allowed
 		
-			# type_mod = '[func or term]' # TEST AND DEBUG: force to 'func' or 'term' and comment the next 3 lines
+			# type_mod = '[func or term]' # TEST & DEBUG: force to 'func' or 'term' and comment the next 3 lines
 			rnd = np.random.randint(2)
 			if rnd == 0: type_mod = 'func' # randomly selected as Function
 			elif rnd == 1: type_mod = 'term' # randomly selected as Terminal
@@ -1963,7 +1965,7 @@ class Base_GP(object):
 		
 			if self.display == 'i': print '\t\033[36m  branch crossover from \033[1mparent', parent[0][1], '\033[0;0m\033[36mto \033[1moffspring', offspring[0][1], '\033[0;0m\033[36mat node\033[1m', branch_top, '\033[0;0m'
 			
-			# self.fx_gen_tree_build('test', 'f', 2) # TEST AND DEBUG: disable the next 'self.tree ...' line
+			# self.fx_gen_tree_build('test', 'f', 2) # TEST & DEBUG: disable the next 'self.tree ...' line
 			self.tree = self.fx_evo_branch_copy(parent, branch_x) # generate stand-alone 'gp.tree' with properties of 'branch_x'
 			
 			if self.display == 'db':
@@ -2431,7 +2433,7 @@ class Base_GP(object):
 	#   Methods to Validate a Tree            |
 	#++++++++++++++++++++++++++++++++++++++++++		
 	
-	def fx_test_boolean(self, tree_id):
+	def fx_test_logic(self, tree_id):
 	
 		'''
 		# [need to build]
@@ -2476,7 +2478,7 @@ class Base_GP(object):
 			data_test_dict = self.data_test_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
 			
 			if str(self.algo_sym.subs(data_test_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-				result = self.algo_sym.subs(data_test_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
+				result = self.algo_sym.subs(data_test_dict) # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
 				
 			else:
 				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
@@ -2487,18 +2489,18 @@ class Base_GP(object):
 			
 			if result <= 0 - skew: # test for the first class
 				label_pred = 0
-				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, ') as', result, '<=', 0 - skew, '\033[0;0m'
+				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', result, '<=', 0 - skew, '\033[0;0m'
 								
 			elif result > (self.class_labels - 2) - skew: # test for last class (the right-most bin
 				label_pred = self.class_labels - 1
-				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, ') as', result, '>', (self.class_labels - 2) - skew, '\033[0;0m'
+				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', result, '>', (self.class_labels - 2) - skew, '\033[0;0m'
 				
 			else:
 				for class_label in range(1, self.class_labels - 1): # increment through all class labels, skipping first and last
 				
 					if (class_label - 1) - skew < result <= class_label - skew: # test for classes between first and last
 						label_pred = class_label
-						print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, ') as', (class_label - 1) - skew, '<', result, '<=', class_label - skew, '\033[0;0m'
+						print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', (class_label - 1) - skew, '<', result, '<=', class_label - skew, '\033[0;0m'
 						
 					else: pass # print '\t\033[36m data row', row, 'predicts no class with label', class_label, '(', label_true, ') and result', result, '\033[0;0m'
 					
@@ -2533,7 +2535,7 @@ class Base_GP(object):
 			data_test_dict = self.data_test_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
 			
 			if str(self.algo_sym.subs(data_test_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-				result = self.algo_sym.subs(data_test_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
+				result = self.algo_sym.subs(data_test_dict) # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
 				
 			else:
 				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
@@ -2569,7 +2571,7 @@ class Base_GP(object):
 			data_test_dict = self.data_test_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
 			
 			if str(self.algo_sym.subs(data_test_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-				result = self.algo_sym.subs(data_test_dict) # print 'divide by zero', result; self.fx_karoo_pause(0)
+				result = self.algo_sym.subs(data_test_dict) # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
 				
 			else:
 				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
@@ -2636,7 +2638,7 @@ class Base_GP(object):
 			target = csv.writer(csv_file, delimiter=',')
 			if self.generation_id != 1: target.writerows(['']) # empty row before each generation
 			target.writerows([['Karoo GP by Kai Staats', 'Generation:', str(self.generation_id)]])
-			# need to add date / time to file header
+			# NEED TO ADD: time to file header
 			
 			for tree in range(1, len(population)):
 				target.writerows(['']) # empty row before each Tree

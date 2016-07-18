@@ -2,11 +2,11 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc UCT / AIMS
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.7
+# version 0.9.1.8
 
 '''
 A word to the newbie, expert, and brave--
-Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo Quick Start' 
+Even if you are highly experienced in Genetic Programming, it is recommended that you review the 'Karoo User Guide' 
 before running this application. While your computer will not burst into flames nor will the sun collapse into a black 
 hole if you do not, you will likely find more enjoyment of this particular flavour of GP with a little understanding 
 of its intent and design.
@@ -50,7 +50,7 @@ gp.karoo_banner()
 
 print ''
 
-menu = ['r','b','c','m','p','']
+menu = ['r','c','l','m','p','']
 while True:
 	try:
 		gp.kernel = raw_input('\t Select (r)egression, (c)lassification, (m)atching, or (p)lay (default m): ')
