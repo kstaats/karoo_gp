@@ -1,3 +1,8 @@
+2016 07/24 - version 0.9.1.8b
+
+Sorry. Switched all references to "LOGIC" back to "BOOLEAN". Don't ask.
+
+
 2016 07/18 - version 0.9.1.8
 
 In karoo_gp_base_class.py
