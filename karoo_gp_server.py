@@ -1,8 +1,8 @@
 # Karoo GP Server
 # Use Genetic Programming for Classification and Symbolic Regression
-# by Kai Staats, MSc UCT / AIMS
+# by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.8
+# version 0.9.1.9
 
 '''
 A word to the newbie, expert, and brave--

@@ -1,8 +1,8 @@
 # Karoo GP Base Class
 # Define the methods and global variables used by Karoo GP
-# by Kai Staats, MSc UCT / AIMS
+# by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.8
+# version 0.9.1.9
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -187,7 +187,7 @@ class Base_GP(object):
 		print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 		print '\t **    ** **    **  **    **  ******    ******       ******   **'
 		print '\033[0;0m'
-		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9.1.6\033[0;0m'
+		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9.1.8b\033[0;0m'
 				
 		return
 		
@@ -205,9 +205,9 @@ class Base_GP(object):
 		'''
 		
 		### 1) load the data file associated with the user selected fitness kernel ###	
-		data_dict = {'c':'files/data_CLASSIFY.csv', 'l':'files/data_LOGIC.csv', 'r':'files/data_REGRESS.csv', 'm':'files/data_MATCH.csv', 'p':'files/data_PLAY.csv'}
-		func_dict = {'c':'files/functions_CLASSIFY.csv', 'l':'files/functions_LOGIC.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
-		fitt_dict = {'c':'max', 'l':'max', 'r':'min', 'm':'max', 'p':''}
+		data_dict = {'b':'files/data_BOOL.csv', 'c':'files/data_CLASSIFY.csv', 'r':'files/data_REGRESS.csv', 'm':'files/data_MATCH.csv', 'p':'files/data_PLAY.csv'}
+		func_dict = {'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
+		fitt_dict = {'b':'max', 'c':'max', 'r':'min', 'm':'max', 'p':''}
 		
 		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
@@ -745,8 +745,8 @@ class Base_GP(object):
 								query = raw_input('\n\t Select a Tree in population_b to evaluate for Precision & Recall: ')
 								if query not in str(menu) or query == '0': raise ValueError()
 								elif query == '': break
-								if self.kernel == 'c': self.fx_test_classify(int(query)); break
-								elif self.kernel == 'l': self.fx_test_logic(int(query)); break
+								if self.kernel == 'b': self.fx_test_bool(int(query)); break								
+								elif self.kernel == 'c': self.fx_test_classify(int(query)); break
 								elif self.kernel == 'r': self.fx_test_regress(int(query)); break
 								elif self.kernel == 'm': self.fx_test_match(int(query)); break
 								# elif self.kernel == '[other]': self.fx_test_[other](int(query)); break
@@ -888,7 +888,7 @@ class Base_GP(object):
 		self.pop_node_arity = '' 					# pos 8: number of nodes attached to each non-terminal node
 		self.pop_node_c1 = '' 						# pos 9: child node 1
 		self.pop_node_c2 = '' 						# pos 10: child node 2
-		self.pop_node_c3 = '' 						# pos 11: child node 3 (assumed max of 3 with logic operator 'if')
+		self.pop_node_c3 = '' 						# pos 11: child node 3 (assumed max of 3 with boolean operator 'if')
 		self.pop_fitness = ''						# pos 12: fitness value following Tree evaluation
 		
 		self.tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_base'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
@@ -1190,6 +1190,21 @@ class Base_GP(object):
 		return
 		
 	
+	def fx_eval_subs(self, data):
+	
+		'''
+		Process the sympified expression against the current data row.
+		
+		Arguments required: data (typically a single row from the associated [data].csv)
+		'''
+		
+		subs = self.algo_sym.subs(data) # process the expression against the data
+		if str(subs) == 'zoo': result = 1 # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
+		else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
+			
+		return result
+		
+		
 	def fx_eval_label(self, tree, node_id):
 	
 		'''
@@ -1415,13 +1430,13 @@ class Base_GP(object):
 			
 			
 			### PART 3 - COMPARE TREE FITNESS FOR DISPLAY ###
-			if self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
-				if fitness >= fitness_best: # find the Tree with Maximum fitness score
+			if self.kernel == 'b': # display best fit Trees for the BOOLEAN kernel
+				if fitness == self.data_train_rows: # find the Tree with a perfect match for all data rows
 					fitness_best = fitness # set best fitness score
 					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
 					
-			elif self.kernel == 'l': # display best fit Trees for the LOGIC kernel
-				if fitness == self.data_train_rows: # find the Tree with a perfect match for all data rows
+			elif self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
+				if fitness >= fitness_best: # find the Tree with Maximum fitness score
 					fitness_best = fitness # set best fitness score
 					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
 					
@@ -1466,31 +1481,22 @@ class Base_GP(object):
 		'''
 		
 		# We need to extract the variables from the expression. However, these variables are no longer correlated
-		# to the original variables listed across the top of each column of data.csv, so we must re-assign their 
-		# respective values for each subsequent row in the data .csv, for each Tree's unique expression.
+		# to the original variables listed across the top of each column of data.csv. Therefore, we must re-assign 
+		# the respective values for each subsequent row in the data .csv, for each Tree's unique expression.
 		
-		data_train_dict = self.data_train_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
-		
-		if str(self.algo_sym.subs(data_train_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-			result = self.algo_sym.subs(data_train_dict) # skip
-			
-		else:
-			result = float(self.algo_sym.subs(data_train_dict)) # process the expression to produce the result
-			result = round(result, self.precision) # force 'result' and 'solution' to the same number of floating points
-			
-		solution = float(data_train_dict['s']) # extract the desired solution from the data
-		solution = round(solution, self.precision) # force 'result' and 'solution' to the same number of floating points
+		result = self.fx_eval_subs(self.data_train_dict_array[row]) # process the expression against the training data		
+		solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
 		
 		# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a temp fishing net to catch a specific result
 			# print 'algo_sym', self.algo_sym
 			# print 'result', result, 'solution', solution
 			# self.fx_karoo_pause(0)
 						
-		if self.kernel == 'c': # CLASSIFY kernel
-			fitness = self.fx_fitness_function_classify(row, result, solution)
+		if self.kernel == 'b': # BOOLEAN kernel
+			fitness = self.fx_fitness_function_bool(row, result, solution)
 			
-		elif self.kernel == 'l': # LOGIC kernel
-			fitness = self.fx_fitness_function_logic(row, result, solution)
+		elif self.kernel == 'c': # CLASSIFY kernel
+			fitness = self.fx_fitness_function_classify(row, result, solution)
 			
 		elif self.kernel == 'r': # REGRESSION kernel
 			fitness = self.fx_fitness_function_regress(row, result, solution)
@@ -1523,10 +1529,10 @@ class Base_GP(object):
 		return fitness
 		
 	
-	def fx_fitness_function_logic(self, row, result, solution):
+	def fx_fitness_function_bool(self, row, result, solution):
 	
 		'''
-		A logic kernel used within the 'fitness_eval' function.
+		A Boolean kernel used within the 'fitness_eval' function.
 		
 		This is a maximization function which seeks an exact solution (a perfect match).
 		
@@ -2433,7 +2439,7 @@ class Base_GP(object):
 	#   Methods to Validate a Tree            |
 	#++++++++++++++++++++++++++++++++++++++++++		
 	
-	def fx_test_logic(self, tree_id):
+	def fx_test_bool(self, tree_id):
 	
 		'''
 		# [need to build]
@@ -2474,18 +2480,10 @@ class Base_GP(object):
 		skew = (self.class_labels / 2) - 1 # '-1' keeps a binary classification splitting over the origin
 		# skew = 0 # for code testing
 		
-		for row in range(0, self.data_test_rows): # test against data_test_dict
-			data_test_dict = self.data_test_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
-			
-			if str(self.algo_sym.subs(data_test_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-				result = self.algo_sym.subs(data_test_dict) # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
-				
-			else:
-				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
-				result = round(result, self.precision) # force 'result' to the set number of floating points
-				
-			label_pred = '' # we can remove this and the associated "if label_pred == ''" (below) once thoroughly tested - 2015 10/19
-			label_true = int(data_test_dict['s'])
+		for row in range(0, self.data_test_rows):
+			result = self.fx_eval_subs(self.data_test_dict_array[row]) # process the expression against the test data
+			label_pred = '' # sets the label_pred to a known state (see 'if label_pred ==' below)
+			label_true = int(self.data_test_dict_array[row]['s'])
 			
 			if result <= 0 - skew: # test for the first class
 				label_pred = 0
@@ -2531,18 +2529,9 @@ class Base_GP(object):
 		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
-		for row in range(0, self.data_test_rows): # test against data_test_dict
-			data_test_dict = self.data_test_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
-			
-			if str(self.algo_sym.subs(data_test_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-				result = self.algo_sym.subs(data_test_dict) # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
-				
-			else:
-				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
-				result = round(result, self.precision) # force 'result' and 'solution' to the same number of floating points
-				
-			solution = float(data_test_dict['s']) # extract the desired solution from the data
-			solution = round(solution, self.precision) # force 'result' and 'solution' to the same number of floating points
+		for row in range(0, self.data_test_rows):
+			result = self.fx_eval_subs(self.data_test_dict_array[row]) # process the expression against the test data
+			solution = round(float(self.data_test_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
 			
 			# fitness = abs(result - solution) # this is a Minimisation function (seeking smallest fitness)
 			print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
@@ -2567,18 +2556,9 @@ class Base_GP(object):
 		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
-		for row in range(0, self.data_test_rows): # test against data_test_dict
-			data_test_dict = self.data_test_dict_array[row] # re-assign (unpack) a temp dictionary to each row of data
-			
-			if str(self.algo_sym.subs(data_test_dict)) == 'zoo': # divide by zero demands we avoid use of the 'float' function
-				result = self.algo_sym.subs(data_test_dict) # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
-				
-			else:
-				result = float(self.algo_sym.subs(data_test_dict)) # process the expression to produce the result
-				result = round(result, self.precision) # force 'result' and 'solution' to the same number of floating points
-			
-			solution = float(data_test_dict['s']) # extract the desired solution from the data
-			solution = round(solution, self.precision) # force 'result' and 'solution' to the same number of floating points
+		for row in range(0, self.data_test_rows):
+			result = self.fx_eval_subs(self.data_test_dict_array[row]) # process the expression against the test data
+			solution = round(float(self.data_test_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
 			
 			if result == solution:
 				fitness = 1 # improve the fitness score by 1		

@@ -1,8 +1,8 @@
-# Karoo GP Main
+# Karoo GP Main (desktop)
 # Use Genetic Programming for Classification and Symbolic Regression
-# by Kai Staats, MSc UCT / AIMS
+# by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.8
+# version 0.9.1.9
 
 '''
 A word to the newbie, expert, and brave--
@@ -50,7 +50,7 @@ gp.karoo_banner()
 
 print ''
 
-menu = ['r','c','l','m','p','']
+menu = ['b','r','c','m','p','']
 while True:
 	try:
 		gp.kernel = raw_input('\t Select (r)egression, (c)lassification, (m)atching, or (p)lay (default m): ')
@@ -59,14 +59,27 @@ while True:
 	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
 	except KeyboardInterrupt: sys.exit()
 	
-menu = ['f','g','r','']
-while True:
-	try:
-		tree_type = raw_input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
-		if tree_type not in menu: raise ValueError()
-		tree_type = tree_type or 'r'; break
-	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
-	except KeyboardInterrupt: sys.exit()
+if gp.kernel == 'p':
+
+	menu = ['f','g','']
+	while True:
+		try:
+			tree_type = raw_input('\t Select (f)ull or (g)row method (default f): ')
+			if tree_type not in menu: raise ValueError()
+			tree_type = tree_type or 'f'; break
+		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+		except KeyboardInterrupt: sys.exit()
+
+else:
+
+	menu = ['f','g','r','']
+	while True:
+		try:
+			tree_type = raw_input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
+			if tree_type not in menu: raise ValueError()
+			tree_type = tree_type or 'r'; break
+		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+		except KeyboardInterrupt: sys.exit()
 	
 menu = range(1,11)
 while True:
