@@ -1,3 +1,13 @@
+2016 08/08 - version 0.9.1.9
+
+In karoo_gp_base_class.py
+ - Created a new method 'fx_eval_subs' which conducts the SymPy subs function for both train and test data.
+ - Consolidated duplicate SymPy sub calls in both Train and Test methods, at Erik H. suggestion --thank you!
+ - Consolidated duplicate lines into single lines in both Train and Test methods.
+ - Fixed bug in which Ramped 50/50 trees would not print in Play mode; removed Ramped 50/50 option from Play mode as 
+   it does not make sense for a single Tree
+
+
 2016 07/24 - version 0.9.1.8b
 
 Sorry. Switched all references to "LOGIC" back to "BOOLEAN". Don't ask.
@@ -12,7 +22,7 @@ In karoo_gp_base_class.py
  
  
  
- 2016 07/15 - version 0.9.1.7
+2016 07/15 - version 0.9.1.7
 
 In karoo_gp_base_class.py
  - Ramped Half/Half, as originally designed by John Koza is now implemented!
