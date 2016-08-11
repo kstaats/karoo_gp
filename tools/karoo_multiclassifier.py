@@ -27,11 +27,12 @@ while True:
 
 skew = (class_labels / 2) - 1
 min_val = 0 - skew - 1 # add a data point to the left
+
 if class_labels & 1: max_val = 0 + skew + 3 # add a data point to the right if odd number of class labels
 else: max_val = 0 + skew + 2 # add a data point to the right if even number of class labels
 
 print '\n\t class_labels =', range(class_labels)
-print '\t solutions = [', min_val, '...', max_val - .5,']'
+print '\t solutions = [', min_val, '...', max_val,']'
 print '\t skew =', skew, '\n'
 
 if class_type == 'i':

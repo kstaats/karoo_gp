@@ -1,10 +1,11 @@
 # Karoo Iris Plot
 # by Kai Staats, MSc UCT / AIMS and Arun Kumar, PhD
-# version 0.9.1.3
+# version 0.9.1.4
 
 import sys
 import numpy as np
 import matplotlib.pyplot as mpl
+from mpl_toolkits.mplot3d import Axes3D
 
 np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
 
@@ -60,7 +61,7 @@ b, c = np.meshgrid(b, c)
 a = -b + c**2
 
 
-### PLOT THE FUNCTION and DATA###
+### PLOT THE FUNCTION and DATA ###
 fig = mpl.figure()
 
 ax = fig.add_subplot(111, projection = '3d')

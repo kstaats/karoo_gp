@@ -1,6 +1,6 @@
 # Karoo Data Normalisation
 # by Kai Staats, MSc UCT
-# version 0.9.1.6
+# version 0.9.1.9
 
 import sys
 import numpy as np
