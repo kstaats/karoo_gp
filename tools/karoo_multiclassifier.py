@@ -4,7 +4,8 @@
 
 '''
 This is a toy script, designed to allow you to play with multiclass classification using the same underlying function
-as employed by Karoo GP.
+as employed by Karoo GP. Keep in mind that a linear multiclass classifier such as this is suited only for data which
+itself has a linear (eg: time series) component, else GP will struggle to force the data to fit.
 '''
 
 from numpy import arange
