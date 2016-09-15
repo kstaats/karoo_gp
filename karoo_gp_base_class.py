@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.1.9
+# version 0.9.2.0
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -56,9 +56,9 @@ class Base_GP(object):
 		'''
 		All Karoo GP global variables are named with the prefix 'gp.' All Karoo GP methods are named with the prefix 
 		'gp.fx_'. The 13 variables which begin with 'gp.pop_' are used specifically to define the 13 parameters for 
-		each GP as stored in the axis-1 (expanding horizontally on-screen) 'gp.population' Numpy array.
+		each tree as stored in the axis-1 (expand horizontally) 'gp.population' Numpy array.
 		
-		### Variables defined by the user in karoo_gp_main.py (in order of appearence) ###
+		### Global and local variables defined by the user in karoo_gp_main.py (in order of appearence) ###
 		'gp.kernel'					fitness function
 		'gp.class_method'			select the number of classes (will be automated in future version)
 		'tree_type'					Full, Grow, or Ramped 50/50 (local variable)
@@ -78,21 +78,26 @@ class Base_GP(object):
 		'gp.cores'					user defined or default to 1; can be set to auto-detect number of cores instead
 		'gp.precision'				the number of floating points for the round function in 'fx_fitness_eval'
 		
-		### Variables initiated elsewhere, as used for data management ###		
+		### Global variables used for data management ###		
 		'gp.data_train_cols'		number of cols in the TRAINING data (see 'fx_karoo_data_load', below)
 		'gp.data_train_rows'		number of rows in the TRAINING data (see 'fx_karoo_data_load', below)
-		'data_train_dict'			temporary dictionary which stores the data row-by-row (local variable)
 		'gp.data_train_dict_array'	array of dictionaries which stores the TRAINING data, through all generations
 		
 		'gp.data_test_cols'			number of cols in the TEST data (see 'fx_karoo_data_load', below)
 		'gp.data_test_rows'			number of rows in the TEST data (see 'fx_karoo_data_load', below)
-		'data_test_dict'			temporary dictionary which stores the data row-by-row (local variable)
 		'gp.data_test_dict_array'	array of dictionaries which stores the TEST data for the very end
 		
-		'gp.functions'				loaded from the associated [functions].csv
-		'gp.terminals'				the top row of the associated [data].csv
+		'gp.functions'				user defined functions (operators) from the associated files/[functions].csv
+		'gp.terminals'				user defined variables (operands) from the top row of the associated [data].csv
+		'gp.coeff'					user defined coefficients (constants)
+		'gp.fitness_type'			fitness type
 		
-		### Variables initiated elsewhere, as used for evolutionary management ###
+		### Global variables initiated and/or used by Sympy ###
+		'gp.algo_raw'				a Sympy string which represents a flattened tree
+		'gp.algo_sym'				a Sympy executable version of algo_raw
+		'gp.algo_ops'				a Sympy list of available operators
+
+		### Variables used for evolutionary management ###
 		'gp.population_a'			the root generation from which Trees are chosen for mutation and reproduction
 		'gp.population_b'			the generation constructed from gp.population_a (recyled)
 		'gp.gene_pool'				once-per-generation assessment of trees that meet min and max boundary conditions
@@ -187,7 +192,7 @@ class Base_GP(object):
 		print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 		print '\t **    ** **    **  **    **  ******    ******       ******   **'
 		print '\033[0;0m'
-		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9.1.8b\033[0;0m'
+		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9.2.0\033[0;0m'
 				
 		return
 		
@@ -201,47 +206,38 @@ class Base_GP(object):
 		10 rows will not be split, rather copied in full to both TRAINING and TEST as it is assumed you are conducting
 		a system validation run, as with the built-in MATCH kernel and associated dataset.
 		
-		Arguments required: none
+		Arguments required: tree_type, tree_depth_base, filename (of the dataset)
 		'''
 		
-		### 1) load the data file associated with the user selected fitness kernel ###	
+		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###			
 		data_dict = {'b':'files/data_BOOL.csv', 'c':'files/data_CLASSIFY.csv', 'r':'files/data_REGRESS.csv', 'm':'files/data_MATCH.csv', 'p':'files/data_PLAY.csv'}
-		func_dict = {'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
-		fitt_dict = {'b':'max', 'c':'max', 'r':'min', 'm':'max', 'p':''}
 		
 		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
-			self.class_labels = len(np.unique(data_y))
-			
 			header = open(data_dict[self.kernel],'r')
-			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
-			
-			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
-			self.fitness_type = fitt_dict[self.kernel]
 			
 		elif len(sys.argv) == 2: # load an external data file
 			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
-			self.class_labels = len(np.unique(data_y))
-			
 			header = open(sys.argv[1],'r')
-			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
-			
-			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
-			self.fitness_type = fitt_dict[self.kernel]
 			
 		elif len(sys.argv) > 2: # receive filename and additional flags from karoo_gp_server.py via argparse
-					
 			data_x = np.loadtxt(filename, skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(filename, skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
-			self.class_labels = len(np.unique(data_y))
-			
 			header = open(filename,'r')
-			self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the variables across the top of the .csv
 			
-			self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
-			self.fitness_type = fitt_dict[self.kernel]
+		fitt_dict = {'b':'max', 'c':'max', 'r':'min', 'm':'max', 'p':''}
+		self.fitness_type = fitt_dict[self.kernel] # load fitness type
+		
+		func_dict = {'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
+		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
+		
+		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the user defined terminals (operands)
+		self.algo_ops = sp.symbols(self.terminals) # convert a string of terminals to sympy executables - tested 2016 08/29
+		
+		self.class_labels = len(np.unique(data_y)) # load the user defined labels for classification or solutions for regression
+		self.coeff = np.loadtxt('files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients (constants)
 		
 		
 		### 2) from the dataset, generate TRAINING and TEST data ###
@@ -268,6 +264,8 @@ class Base_GP(object):
 		### 3) copy TRAINING data into an array (rows) of dictionaries (columns) ###
 		data_train_dict = {}
 		self.data_train_dict_array = np.array([])
+		
+		# potential place to insert 'coeff' for a static variable 'v': 2016 08/22
 		
 		for row in range(0, self.data_train_rows): # increment through each row of data
 			for col in range(0, self.data_train_cols): # increment through each column
@@ -1185,7 +1183,7 @@ class Base_GP(object):
 		'''
 		
 		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the Tree to a string
-		self.algo_sym = sp.sympify(self.algo_raw) # string converted to a functional expression (the coolest line in the script! :)
+		self.algo_sym = sp.sympify(self.algo_raw) # converted string to a functional expression (the coolest line in Karoo! :)
 		
 		return
 		
@@ -1196,15 +1194,24 @@ class Base_GP(object):
 		Process the sympified expression against the current data row.
 		
 		Arguments required: data (typically a single row from the associated [data].csv)
+		
 		'''
 		
-		subs = self.algo_sym.subs(data) # process the expression against the data
-		if str(subs) == 'zoo': result = 1 # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
-		else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
-			
+		### OLD .subs method ###
+		#result = self.algo_sym.subs(data) # process the expression against the data
+		#if str(result) == 'zoo': result = 1 # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
+		#else: result = round(float(result), self.precision) # force 'result' to the set number of floating points
+		
+		### NEW .lambdify method ###
+		f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
+		with np.errstate(divide = 'ignore'): # do not raise 'divide by zero' errors
+			result = f(*sp.flatten(data.values())) # execute the function against the given data row; which currently remains a dictionary
+		# if str(subs) == 'inf' or str(subs) == '-inf': print subs; self.fx_karoo_pause(0) # TEST & DEBUG catch divide by zero
+		result = round(float(result), self.precision) # force 'result' to the set number of floating points
+		
 		return result
 		
-		
+	
 	def fx_eval_label(self, tree, node_id):
 	
 		'''
@@ -1303,7 +1310,8 @@ class Base_GP(object):
 		'''
 		Display a Tree branch on-screen.
 		
-		This method displays all sequential node_ids from 'start' node through bottom, within the given branch.
+		This method displays all sequential node_ids from 'start' node through bottom, within the given branch. This
+		is not used by Karoo GP at this time.
 		
 		Arguments required: tree, start
 		'''
@@ -1341,10 +1349,9 @@ class Base_GP(object):
 	def fx_eval_generation(self):
 	
 		'''
-		Karoo GP evaluates each subsequent generation of Trees. This process flattens each GP Tree into a standard 
-		equation by means of a recursive algorithm and subsequent processing by the Sympy library. Sympy simultaneously 
-		evaluates the Tree for its results, returns null for divide by zero, reorganises and then rewrites the 
-		expression in its simplest form.
+		Karoo GP evaluates each generation of Trees. This process flattens each GP Tree into a standard equation by 
+		means of a recursive algorithm and subsequent processing by Sympy. Sympy simultaneously evaluates the Tree for 
+		its results, reorganises and then rewrites the expression in its simplest form.
 		
 		Arguments required: none
 		'''
@@ -1396,7 +1403,7 @@ class Base_GP(object):
 		
 		for tree_id in range(1, len(population)):
 		
-			### PART 1 - EXTRACT EXPRESSION FROM EACH TREE ###
+			### PART 1 - EXTRACT EXPRESSION FROM TREE ###
 			self.fx_eval_poly(population[tree_id]) # extract the expression
 			if self.display not in ('s','t'): print '\t\033[36mTree', population[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 			
@@ -1484,10 +1491,10 @@ class Base_GP(object):
 		# to the original variables listed across the top of each column of data.csv. Therefore, we must re-assign 
 		# the respective values for each subsequent row in the data .csv, for each Tree's unique expression.
 		
-		result = self.fx_eval_subs(self.data_train_dict_array[row]) # process the expression against the training data		
+		result = self.fx_eval_subs(self.data_train_dict_array[row]) # process the expression against the training data - tested 2016 07
 		solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
 		
-		# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a temp fishing net to catch a specific result
+		# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a fishing net to catch a specific result
 			# print 'algo_sym', self.algo_sym
 			# print 'result', result, 'solution', solution
 			# self.fx_karoo_pause(0)
@@ -1575,11 +1582,11 @@ class Base_GP(object):
 		skew = (self.class_labels / 2) - 1 # '-1' keeps a binary classification splitting over the origin
 		# skew = 0 # for code testing
 		
-		if solution == 0 and result <= 0 - skew: # check for first class
+		if solution == 0 and result <= 0 - skew: # check for first class (the left-most bin)
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '<=', int(0 - skew), '\033[0;0m'
 			fitness = 1
 			
-		elif solution == self.class_labels - 1 and result > solution - 1 - skew: # check for last class
+		elif solution == self.class_labels - 1 and result > solution - 1 - skew: # check for last class (the right-most bin)
 			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '>', int(solution - 1 - skew), '\033[0;0m'
 			fitness = 1
 			
@@ -2485,11 +2492,11 @@ class Base_GP(object):
 			label_pred = '' # sets the label_pred to a known state (see 'if label_pred ==' below)
 			label_true = int(self.data_test_dict_array[row]['s'])
 			
-			if result <= 0 - skew: # test for the first class
+			if result <= 0 - skew: # test for the first class (the left-most bin)
 				label_pred = 0
 				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', result, '<=', 0 - skew, '\033[0;0m'
 								
-			elif result > (self.class_labels - 2) - skew: # test for last class (the right-most bin
+			elif result > (self.class_labels - 2) - skew: # test for last class (the right-most bin)
 				label_pred = self.class_labels - 1
 				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', result, '>', (self.class_labels - 2) - skew, '\033[0;0m'
 				

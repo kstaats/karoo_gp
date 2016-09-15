@@ -1,3 +1,35 @@
+2016 09/14 - version 0.9.2.0
+
+In karoo_gp_base_class.py
+ - Merged 2 instances of 'algo_sym.subs(data)' into a single, new method 'fx_eval_subs'
+ - Removed redundant lines in the method 'fx_karoo_data_load'
+ - Added support for the Sympy 'lambdify' function in 'fx_karoo_data_load' (see explanation below)
+ - Added a draft means of catching divide-by-zero errors in the new 'lambdify' function
+ - Discovered the prior 'fx_eval_subs' incorrected applied a value of 1 to the variable 'result' as a means to
+ 	replace the 'zoo' function for divide by zero errors. However, this could inadvertantly undermine the success of
+ 	Classification and Regression runs. My apology for not catching this sooner.
+
+"While attending the CHEAPR 2016 workshop hosted by the Center for Cosmology and Astro-Particle Physics, The Ohio State
+University, Erik Hemberg of MIT suggested that I could improve the performance by combining what were to Sympy.subs
+calls into one. This was successfully completed and the new method 'fx_eval_subs' was created.
+
+Michael Zevin of Northwestern University proposed that Karoo GP *should* be able to process trees far faster than what 
+we were seeing. I looked into the Sympy functions I was at that time using. Indeed, '.subs' is noted as easy to use, 
+but terribly slow as it relies upon an internal, Python mathematical library. I therefore replaced '.subs' with
+'.lambdify' which calls upon the C-based Numpy maths library. It is slated to be 500x faster than '.subs', but I am 
+seeing only a 2x performance increase. Clearly, there are yet other barriers to remove.
+
+In the new 'fx_eval_subs' method you will find both sympy.subs (active) and sympy.lambdify. While preliminary tests 
+worked well, I witnessed an erractic outcome which I yet need to reproduce and investigate. Feel free to comment the
+.subs and uncomment the .lambdify sections and take it for a spin.
+
+I believe there are 2 more steps to increase performance: removing the dictionaries which contain each row, such that
+Karoo is working directly with the Numpy array again, and then processing the array as a vector instead. But this will
+require substantial recoding.
+
+I'll keep you informed ..." --kai
+
+
 2016 08/08 - version 0.9.1.9
 
 In karoo_gp_base_class.py

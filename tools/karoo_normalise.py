@@ -1,6 +1,6 @@
 # Karoo Data Normalisation
 # by Kai Staats, MSc UCT
-# version 0.9.1.9
+# version 0.9.2.0
 
 import sys
 import numpy as np
@@ -27,7 +27,8 @@ def normalise(array):
 	array_max = np.max(array)
 	
 	for col in range(1, len(array) + 1):
-		norm = float((array[col - 1] - array_min) / (array_max - array_min))
+		# norm = float((array[col - 1] - array_min) / (array_max - array_min))
+		norm = float(array[col - 1] - array_min) / float(array_max - array_min)
 		norm = round(norm, fp) # force to 4 decimal points
 		array_norm = np.append(array_norm, norm)
 		
