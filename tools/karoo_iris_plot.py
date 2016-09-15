@@ -1,6 +1,6 @@
 # Karoo Iris Plot
 # by Kai Staats, MSc UCT / AIMS and Arun Kumar, PhD
-# version 0.9.1.9
+# version 0.9.2.0
 
 import sys
 import numpy as np
