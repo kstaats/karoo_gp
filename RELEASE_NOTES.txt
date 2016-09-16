@@ -1,3 +1,19 @@
+2016 09/16
+
+With the 09/14 update I failed to upload the new coefficients.csv file to the files/ directory. While not yet engaged, 
+this will be the means by which the user can define the constants desired for the Karoo GP run. If you had run Karoo GP 
+v0.9.2.0 in the past 24 hours without this file, it would have complained. My apology.
+
+Also, a bit of a roadmap for the 2nd half of 2016, into 2017
+ - validate the new (faster) sympy.lambdify and fully replace the current (slower) sympy.subs
+ - replace the row-by-row dictionaries with vectors for what should be a significant performance increase
+ - complete the introduction of constants in a manner more well defined than is currently supported
+ - investigate replacing pprocess with the multicore library
+ - introduce Theano or Tensor Flow for GPU support
+ 
+I welcome any assistance with these, if anyone has experience and time.
+
+
 2016 09/14 - version 0.9.2.0
 
 In karoo_gp_base_class.py
