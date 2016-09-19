@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.2.0b
+# version 0.9.2.1
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -1188,7 +1188,7 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_eval_subs(self, data):
+	def fx_eval_subs(self, tree_id, data):
 	
 		'''
 		Process the sympified expression against the current data row.
@@ -1199,17 +1199,19 @@ class Base_GP(object):
 		
 		### OLD .subs method ###
 		subs = self.algo_sym.subs(data) # process the expression against the data
-		if str(subs) == 'zoo': pass # TEST & DEBUG: print 'divide by zero', subs; self.fx_karoo_pause(0)
+		if str(subs) == 'zoo': result = subs; self.population_a[tree_id][12][3] = 'error' # print 'divide by zero', subs #TEST & DEBUG 
 		else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
-		result = round(float(subs), self.precision) # force 'result' to the set number of floating points
 		
-		### NEW .lambdify method ###
+		### NEW .lambdify method is UNDER DEVELOPMENT ###
 		# f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
 		# with np.errstate(divide = 'ignore', invalid = 'ignore'): # do not raise 'divide by zero' errors
 		#	lamb = f(*sp.flatten(data.values())) # execute the function against the given data row; which currently remains a dictionary
-		# MAY NOT BE NEEDED - if str(lamb) == 'inf' or str(lamb) == '-inf': pass # TEST & DEBUG: print 'divide by zero', subs; self.fx_karoo_pause(0)
-		# MAY NOT BE NEEDED - else: result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
-		# result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
+		#
+		# if str(lamb) == 'inf' or str(lamb) == '-inf':
+		#	result = lamb; self.population_a[tree_id][12][3] = 'error'
+		#	print 'divide by zero', self.algo_sym; print data; self.fx_karoo_pause(0)
+		#
+		# else: result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
 		
 		return result
 		
@@ -1417,13 +1419,13 @@ class Base_GP(object):
 			
 			if self.cores == 1: # employ only one CPU core and bypass 'pprocess' to avoid overhead
 				for row in range(0, self.data_train_rows): # increment through all rows in the TRAINING data
-					fitness = fitness + self.fx_fitness_eval(row) # evaluate Tree Fitness
+					fitness = fitness + self.fx_fitness_eval(tree_id, row) # evaluate Tree Fitness
 					
 			else: # employ multiple CPU cores using 'pprocess'
 				results = pp.Map(limit = self.cores)
 				parallel_function = results.manage(pp.MakeParallel(self.fx_fitness_eval))
 				for row in range(0, self.data_train_rows): # increment through all rows in TRAINING data
-					parallel_function(row) # evaluate Tree Fitness
+					parallel_function(tree_id, row) # evaluate Tree Fitness
 					
 				fitness = sum(results[:]) # 'pprocess' returns the fitness scores in a single dump
 				
@@ -1475,7 +1477,7 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_fitness_eval(self, row):
+	def fx_fitness_eval(self, tree_id, row):
 	
 		'''
 		Evaluate the fitness of the Tree.
@@ -1493,29 +1495,33 @@ class Base_GP(object):
 		# to the original variables listed across the top of each column of data.csv. Therefore, we must re-assign 
 		# the respective values for each subsequent row in the data .csv, for each Tree's unique expression.
 		
-		result = self.fx_eval_subs(self.data_train_dict_array[row]) # process the expression against the training data - tested 2016 07
-		solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
+		result = self.fx_eval_subs(tree_id, self.data_train_dict_array[row]) # process the expression against the training data - tested 2016 07
 		
-		# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a fishing net to catch a specific result
-			# print 'algo_sym', self.algo_sym
-			# print 'result', result, 'solution', solution
-			# self.fx_karoo_pause(0)
-						
-		if self.kernel == 'b': # BOOLEAN kernel
-			fitness = self.fx_fitness_function_bool(row, result, solution)
-			
-		elif self.kernel == 'c': # CLASSIFY kernel
-			fitness = self.fx_fitness_function_classify(row, result, solution)
-			
-		elif self.kernel == 'r': # REGRESSION kernel
-			fitness = self.fx_fitness_function_regress(row, result, solution)
-			
-		elif self.kernel == 'm': # MATCH kernel
-			fitness = self.fx_fitness_function_match(row, result, solution)
-			
-		# elif: # self.fx_kernel == '[other]': # place-holder for a new kernel
-			# self.fx_kernel_[other](row, result, solution)
-			
+		if self.population_a[tree_id][12][3] == 'error': fitness = 0
+		
+		else:
+			solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
+		
+			# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a fishing net to catch a specific result
+				# print 'algo_sym', self.algo_sym
+				# print 'result', result, 'solution', solution
+				# self.fx_karoo_pause(0)
+				
+			if self.kernel == 'b': # BOOLEAN kernel
+				fitness = self.fx_fitness_function_bool(row, result, solution)
+				
+			elif self.kernel == 'c': # CLASSIFY kernel
+				fitness = self.fx_fitness_function_classify(row, result, solution)
+				
+			elif self.kernel == 'r': # REGRESSION kernel
+				fitness = self.fx_fitness_function_regress(row, result, solution)
+				
+			elif self.kernel == 'm': # MATCH kernel
+				fitness = self.fx_fitness_function_match(row, result, solution)
+				
+			# elif: # self.fx_kernel == '[other]': # place-holder for a new kernel
+				# self.fx_kernel_[other](row, result, solution)
+				
 		return fitness
 		
 	
@@ -1645,12 +1651,10 @@ class Base_GP(object):
 		fitness = round(fitness, self.precision)
 		
 		tree[12][1] = fitness # store the fitness with each tree
-		# tree[12][2] = result # store the result of the executed expression
-		# tree[12][3] = solution # store the desired solution
+		tree[12][2] = len(str(self.algo_raw)) # store the length of the raw algo for the application fo parsimony
+		# tree[12][3] may equal 'error' as recorded by 'fx_eval_subs'
+		# if len(tree[3]) > 4: # if the Tree array is wide enough ...
 		
-		if len(tree[3]) > 4: # if the Tree array is wide enough ...
-			tree[12][4] = len(str(self.algo_raw)) # store the length of the SymPyfied algo (for Tournament selection)
-			
 		return
 		
 	
@@ -1694,7 +1698,7 @@ class Base_GP(object):
 					if self.display == 'i': print '\t\033[36m Tree', tree_id, 'has fitness', fitness, '>', tourn_test, 'and leads\033[0;0m'
 					tourn_lead = tree_id # set 'TREE_ID' for the new leader
 					tourn_test = fitness # set 'fitness' of the new leader
-					# short_test = int(self.population_a[tree_id][12][4]) # set len(algo_raw) of new leader
+					# short_test = int(self.population_a[tree_id][12][2]) # set len(algo_raw) of new leader
 					
 				elif fitness == tourn_test: # if the current Tree's 'fitness' is equal to the priors'
 					if self.display == 'i': print '\t\033[36m Tree', tree_id, 'has fitness', fitness, '=', tourn_test, 'and leads\033[0;0m'
@@ -1702,8 +1706,8 @@ class Base_GP(object):
 					# tourn_test remains unchanged
 					
 					# NEED TO ADD: option for parsimony
-					# if int(self.population_a[tree_id][12][4]) < short_test:
-						# short_test = int(self.population_a[tree_id][12][4]) # set len(algo_raw) of new leader
+					# if int(self.population_a[tree_id][12][2]) < short_test:
+						# short_test = int(self.population_a[tree_id][12][2]) # set len(algo_raw) of new leader
 						# print '\t\033[36m with improved parsimony score of:\033[1m', short_test, '\033[0;0m'
 						
 				elif fitness < tourn_test: # if the current Tree's 'fitness' is less than the priors'
@@ -1758,7 +1762,10 @@ class Base_GP(object):
 		This method is automatically invoked with every Tournament Selection ('fx_fitness_tournament').
 		
 		At this point in time, the gene pool does *not* limit the number of times any given Tree may be selected for 
-		mutation or reproduction nor does it take into account parsimony (seeking the simplest expression).
+		mutation or reproduction nor does it take into account parsimony (seeking the simplest expression). Nor does
+		a 'divide by zero' error keep a tree from entering the gene pool, as it might contain other, beneficial code
+		to contribute to the next generation. However, trees with 'error' are given a fitness score of 0 and therefore
+		will eventually be removed from the gene pool (see 'fx_fitness_eval').
 		
 		Arguments required: none
 		'''
@@ -1770,7 +1777,7 @@ class Base_GP(object):
 		
 			self.fx_eval_poly(self.population_a[tree_id]) # extract the expression
 			
-			if len(self.population_a[tree_id][3])-1 >= self.tree_depth_min and self.algo_sym != 1: # if Tree meets the min node count and > 1
+			if len(self.population_a[tree_id][3])-1 >= self.tree_depth_min and self.algo_sym != 1: # if Tree meets the requirements
 				if self.display == 'i': print '\t\033[36m Tree', tree_id, 'has >=', self.tree_depth_min, 'nodes and is added to the gene pool\033[0;0m'
 				self.gene_pool.append(self.population_a[tree_id][0][1])
 				
@@ -1780,7 +1787,9 @@ class Base_GP(object):
 			# self.generation_id = self.generation_id - 1 # revert the increment of the 'generation_id'
 			# self.generation_max = self.generation_id # catch the unused "cont" values in the 'fx_karoo_pause' method
 			print "\n\t\033[31m\033[3m 'They're dead Jim. They're all dead!'\033[0;0m There are no Trees in the gene pool. You should archive your populations and (q)uit."; self.fx_karoo_pause(0)
-			
+		
+		return
+		
 	
 	#++++++++++++++++++++++++++++++++++++++++++
 	#   Methods to Evolve a Population        |
@@ -2490,7 +2499,7 @@ class Base_GP(object):
 		# skew = 0 # for code testing
 		
 		for row in range(0, self.data_test_rows):
-			result = self.fx_eval_subs(self.data_test_dict_array[row]) # process the expression against the test data
+			result = self.fx_eval_subs(tree_id, self.data_test_dict_array[row]) # process the expression against the test data
 			label_pred = '' # sets the label_pred to a known state (see 'if label_pred ==' below)
 			label_true = int(self.data_test_dict_array[row]['s'])
 			
@@ -2539,7 +2548,7 @@ class Base_GP(object):
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
 		for row in range(0, self.data_test_rows):
-			result = self.fx_eval_subs(self.data_test_dict_array[row]) # process the expression against the test data
+			result = self.fx_eval_subs(tree_id, self.data_test_dict_array[row]) # process the expression against the test data
 			solution = round(float(self.data_test_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
 			
 			# fitness = abs(result - solution) # this is a Minimisation function (seeking smallest fitness)
@@ -2566,7 +2575,7 @@ class Base_GP(object):
 		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
 		for row in range(0, self.data_test_rows):
-			result = self.fx_eval_subs(self.data_test_dict_array[row]) # process the expression against the test data
+			result = self.fx_eval_subs(tree_id, self.data_test_dict_array[row]) # process the expression against the test data
 			solution = round(float(self.data_test_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
 			
 			if result == solution:
