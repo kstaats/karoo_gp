@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.2.0
+# version 0.9.2.0b
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -1198,16 +1198,18 @@ class Base_GP(object):
 		'''
 		
 		### OLD .subs method ###
-		#result = self.algo_sym.subs(data) # process the expression against the data
-		#if str(result) == 'zoo': result = 1 # TEST & DEBUG: print 'divide by zero', result; self.fx_karoo_pause(0)
-		#else: result = round(float(result), self.precision) # force 'result' to the set number of floating points
+		subs = self.algo_sym.subs(data) # process the expression against the data
+		if str(subs) == 'zoo': pass # TEST & DEBUG: print 'divide by zero', subs; self.fx_karoo_pause(0)
+		else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
+		result = round(float(subs), self.precision) # force 'result' to the set number of floating points
 		
 		### NEW .lambdify method ###
-		f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
-		with np.errstate(divide = 'ignore'): # do not raise 'divide by zero' errors
-			result = f(*sp.flatten(data.values())) # execute the function against the given data row; which currently remains a dictionary
-		# if str(subs) == 'inf' or str(subs) == '-inf': print subs; self.fx_karoo_pause(0) # TEST & DEBUG catch divide by zero
-		result = round(float(result), self.precision) # force 'result' to the set number of floating points
+		# f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
+		# with np.errstate(divide = 'ignore', invalid = 'ignore'): # do not raise 'divide by zero' errors
+		#	lamb = f(*sp.flatten(data.values())) # execute the function against the given data row; which currently remains a dictionary
+		# MAY NOT BE NEEDED - if str(lamb) == 'inf' or str(lamb) == '-inf': pass # TEST & DEBUG: print 'divide by zero', subs; self.fx_karoo_pause(0)
+		# MAY NOT BE NEEDED - else: result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
+		# result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
 		
 		return result
 		
