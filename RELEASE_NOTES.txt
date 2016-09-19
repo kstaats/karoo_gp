@@ -1,6 +1,20 @@
 2016 09/19
 
-Minor adjustment to the lambdify test code in 'fx_eval_subs()' method. Testing now ...
+All experiments with lambdify are on hold as it is throwing 'divide by zero' errors when no 0 exists in the data.
+
+In the evaluation of this issue, I returned to the means by which I deal with 'divide by zero', independent of the 
+library used to process the trees. Originally, 'result' was replaced by the value 1. But a colleague suggested that I
+might be tossing genetic material of value to future generations. So, now a tree which produces a 'divide by zero'
+error ('zoo' in .subs) is retained, but given a fitness score of 0.
+
+Method fx_eval_subs() is updated to assign an 'error' tag to any tree which exhibits 'divide by zero' behaviour.
+
+Method fx_fitness_eval() is updated to bypass processing of a tree which has been tagged with an 'error' tag.
+
+Methods fx_test_classify(), fx_test_regress(), and fx_test_match() are each updated to send the 'tree_id' to
+fx_eval_subs() as is now required.
+
+For now, it is not recommended that you use the lambdify function in fx_eval_subs(), unless you know how to fix it.
 
 
 2016 09/16
