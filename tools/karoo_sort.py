@@ -1,6 +1,6 @@
 # Karoo Dataset Builder
 # by Kai Staats, MSc UCT / AIMS and Arun Kumar, PhD
-# version 0.9.2.0
+# version 0.9.2.1
 
 import sys
 import numpy as np
