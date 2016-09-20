@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc UCT / AIMS; see LICENSE.md
 # Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.2.1
+# version 0.9.2.1b
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -1183,7 +1183,7 @@ class Base_GP(object):
 		'''
 		
 		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the Tree to a string
-		self.algo_sym = sp.sympify(self.algo_raw) # converted string to a functional expression (the coolest line in Karoo! :)
+		self.algo_sym = sp.sympify(self.algo_raw) # convert string to a functional expression (the coolest line in Karoo! :)
 		
 		return
 		
@@ -1199,19 +1199,22 @@ class Base_GP(object):
 		
 		### OLD .subs method ###
 		subs = self.algo_sym.subs(data) # process the expression against the data
-		if str(subs) == 'zoo': result = subs; self.population_a[tree_id][12][3] = 'error' # print 'divide by zero', subs #TEST & DEBUG 
-		else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
+		result = round(float(subs), self.precision)		
 		
-		### NEW .lambdify method is UNDER DEVELOPMENT ###
-		# f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
-		# with np.errstate(divide = 'ignore', invalid = 'ignore'): # do not raise 'divide by zero' errors
+		#if str(subs) == 'inf' or str(subs) == '-inf':
+		#	result = subs; self.population_a[tree_id][12][3] = 'error' # tag trees with 'divide by zero' errors
+		#else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
+		
+		### NEW .lambdify method - UNDER DEVELOPMENT ###
+		#f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
+		#with np.errstate(divide = 'ignore', invalid = 'ignore'): # do not raise 'divide by zero' errors
 		#	lamb = f(*sp.flatten(data.values())) # execute the function against the given data row; which currently remains a dictionary
 		#
-		# if str(lamb) == 'inf' or str(lamb) == '-inf':
-		#	result = lamb; self.population_a[tree_id][12][3] = 'error'
+		#if str(lamb) == 'inf' or str(lamb) == '-inf':
+		#	result = lamb; self.population_a[tree_id][12][3] = 'error' # tag trees with 'divide by zero' errors
 		#	print 'divide by zero', self.algo_sym; print data; self.fx_karoo_pause(0)
 		#
-		# else: result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
+		#else: result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
 		
 		return result
 		
@@ -1497,30 +1500,25 @@ class Base_GP(object):
 		
 		result = self.fx_eval_subs(tree_id, self.data_train_dict_array[row]) # process the expression against the training data - tested 2016 07
 		
-		if self.population_a[tree_id][12][3] == 'error': fitness = 0
+		# if self.population_a[tree_id][12][3] == 'error': fitness = 0
+		# else: # a place holder for future treatmemt of trees with errors
 		
-		else:
-			solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
-		
-			# if str(self.algo_sym) == 'a + b/c': # TEST & DEBUG: a fishing net to catch a specific result
-				# print 'algo_sym', self.algo_sym
-				# print 'result', result, 'solution', solution
-				# self.fx_karoo_pause(0)
+		solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
+						
+		if self.kernel == 'b': # BOOLEAN kernel
+			fitness = self.fx_fitness_function_bool(row, result, solution)
 				
-			if self.kernel == 'b': # BOOLEAN kernel
-				fitness = self.fx_fitness_function_bool(row, result, solution)
+		elif self.kernel == 'c': # CLASSIFY kernel
+			fitness = self.fx_fitness_function_classify(row, result, solution)
 				
-			elif self.kernel == 'c': # CLASSIFY kernel
-				fitness = self.fx_fitness_function_classify(row, result, solution)
+		elif self.kernel == 'r': # REGRESSION kernel
+			fitness = self.fx_fitness_function_regress(row, result, solution)
 				
-			elif self.kernel == 'r': # REGRESSION kernel
-				fitness = self.fx_fitness_function_regress(row, result, solution)
+		elif self.kernel == 'm': # MATCH kernel
+			fitness = self.fx_fitness_function_match(row, result, solution)
 				
-			elif self.kernel == 'm': # MATCH kernel
-				fitness = self.fx_fitness_function_match(row, result, solution)
-				
-			# elif: # self.fx_kernel == '[other]': # place-holder for a new kernel
-				# self.fx_kernel_[other](row, result, solution)
+		# elif: # self.fx_kernel == '[other]': # place-holder for a new kernel
+			# self.fx_kernel_[other](row, result, solution)
 				
 		return fitness
 		
@@ -1652,7 +1650,7 @@ class Base_GP(object):
 		
 		tree[12][1] = fitness # store the fitness with each tree
 		tree[12][2] = len(str(self.algo_raw)) # store the length of the raw algo for the application fo parsimony
-		# tree[12][3] may equal 'error' as recorded by 'fx_eval_subs'
+		# tree[12][3] might equal 'error' as recorded by 'fx_eval_subs'
 		# if len(tree[3]) > 4: # if the Tree array is wide enough ...
 		
 		return
