@@ -1,3 +1,11 @@
+2016 09/19b
+
+After another 2 hours of trouble shooting, I learned that sympy.subs throws the 'zoo' error for a divide-by-zero if 
+working with integers--and stalls (as I witnessed last year when developing Karoo), but if throws 'inf' or '-inf' if 
+working with floats and continues to process unencumbered. This means the 'zoo' trap has not been used for over a year. 
+It is now removed from the method fx_eval_subs().
+
+
 2016 09/19
 
 All experiments with lambdify are on hold as it is throwing 'divide by zero' errors when no 0 exists in the data.
