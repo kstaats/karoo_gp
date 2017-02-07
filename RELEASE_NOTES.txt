@@ -1,3 +1,56 @@
+2017 02/06
+
+Graphics Processing Units (GPU) are now supported with the introduction of the Python library TensorFlow. The end 
+result is a staggering improvement in performance. With one comparison of a 10,000 data points (rows) x 9 features
+(columns) dataset on a 40 core Intel Xeon motherboard versus a 2000 core Nvidia GPU card, the wall time as reduced from 
+50 hours to less than 4 minutes. On CPU-only computers, the performance on a single core is as much as 10x improved due 
+to the vectorisation of the data and application of the C-based TensorFlow maths library.
+
+To install TensorFlow, I recommend visiting https://www.tensorflow.org/get_started/ It is straight forward for Ubuntu, 
+but unfortunately can be rather challenging with OSX. Have patience. Review the forums. It's worth the effort.
+
+I owe many thanks to the expertise of Iurii Milovanov, a contract developer whom I engaged for this effort. While the
+number of lines of Karoo GP modified were initially less than a dozen (replacing the multi-core pprocess calls), I asked 
+Iurii to also rewrite the test functions. As such, both Training and Testing are now fully GPU enabled. Thank you!
+
+A number of other changes have been integrated, including:
+
+ - Karoo GP is now developed against Python 2.7 as provided with Ubuntu Desktop 16.04.1.
+   
+ - A number of Python methods have been deleted, added, modified and/or renamed. In particular, in the category 
+   'fx_fitness_' If you have built your own code based on the Karoo methods, please review this section carefully.
+   
+ - The user engaged 'bal'ance function (pause menu) has been rebuilt to anticipate exact quantities instead of 
+   percentages, enabling the user to define precisely how many of each of the four genetic operators will be applied 
+   with the construction of each subsequent population.
+   
+ - Activation of the 'test' is now conducted with only the letter 't' and the option to engage a specific number of 
+   'c'ores is removed. Therefore, the 't'imer mode is also removed, as this was a means to discover the optimal number 
+   for multi-core processing which is now automated by TensorFlow.
+   
+ - The libraries 'pprocess' and 'time' are no longer required nor imported.
+ 
+ - The population_* files (.csv) are now deposited into unique directories created with the launch of each run. A .txt
+ 	 file is also written to each directory which captures the run-time configuration of Karoo GP. This enables truly
+ 	 scriptable runs of Karoo.
+ 	 
+ - The Server interface to Karoo GP (karoo_gp_server.py) now terminates completely, kicking back to the command line.
+   This enables bash or chron launches of multiple sequential or parallel runs, enabling the exploration of multiple 
+   runs with identical configuration, or that of varied configuration parameters.
+   
+Finally, Karoo GP is now a 1.0 release. I never know when to transition from beta to real, so please forgive me if I 
+jumped the gun. But with GPU support and the revised Server script, I have find Karoo GP to be a fully functional, 
+powerful machine learning tool. I hope you will agree --kai
+
+
+2016 09/20
+
+Fixed the genetic operator (b)alance function to work with large than 100 trees per population.
+
+Introduced the pause for all runtime modes in the Desktop application, such that the user can apply configurations prior
+to the run (eg: change the balance of the genetic operators or the number of engaged cores).
+
+
 2016 09/19b
 
 After another 2 hours of trouble shooting, I learned that sympy.subs throws the 'zoo' error for a divide-by-zero if 
@@ -31,11 +84,11 @@ With the 09/14 update I failed to upload the new coefficients.csv file to the fi
 this will be the means by which the user can define the constants desired for the Karoo GP run. If you had run Karoo GP 
 v0.9.2.0 in the past 24 hours without this file, it would have complained. My apology.
 
-Also, a bit of a roadmap for the 2nd half of 2016, into 2017
+Also, a bit of a road map for the 2nd half of 2016, into 2017
  - validate the new (faster) sympy.lambdify and fully replace the current (slower) sympy.subs
  - replace the row-by-row dictionaries with vectors for what should be a significant performance increase
  - complete the introduction of constants in a manner more well defined than is currently supported
- - investigate replacing pprocess with the multicore library
+ - investigate replacing pprocess with the multi-core library
  - introduce Theano or Tensor Flow for GPU support
  
 I welcome any assistance with these, if anyone has experience and time.
@@ -47,8 +100,8 @@ In karoo_gp_base_class.py
  - Removed redundant lines in the method 'fx_karoo_data_load()'
  - Added support for the Sympy 'lambdify' function in 'fx_karoo_data_load' (see explanation below)
  - Added a draft means of catching divide-by-zero errors in the new 'lambdify' function
- - Discovered the prior 'fx_eval_subs' incorrected applied a value of 1 to the variable 'result' as a means to
- 	replace the 'zoo' function for divide by zero errors. However, this could inadvertantly undermine the success of
+ - Discovered the prior 'fx_eval_subs' uncorrectly applied a value of 1 to the variable 'result' as a means to
+ 	replace the 'zoo' function for divide by zero errors. However, this could inadvertently undermine the success of
  	Classification and Regression runs. My apology for not catching this sooner.
 
 "While attending the CHEAPR 2016 workshop hosted by the Center for Cosmology and Astro-Particle Physics, The Ohio State
@@ -59,7 +112,7 @@ to use, but terribly slow as it relies upon an internal, Python mathematical lib
 seeing only a 2x performance increase. Clearly, there are yet other barriers to remove.
 
 In the new 'fx_eval_subs' method you will find both sympy.subs (active) and sympy.lambdify. While preliminary tests 
-worked well, I witnessed an erractic outcome which I yet need to reproduce and investigate. Feel free to comment the
+worked well, I witnessed an erratic outcome which I yet need to reproduce and investigate. Feel free to comment the
 .subs and uncomment the .lambdify sections and take it for a spin.
 
 I believe there are 2 more steps to increase performance: removing the dictionaries which contain each row, such that
@@ -111,7 +164,7 @@ In karoo_gp_base_class.py
  - added (y/n) to "Are you certain you want to quit?" message --thanks Hunter!
  
 In karoo_gp_main.py
- - reset default evoluationary balance to .1/.1/.1/.7
+ - reset default evolutionary balance to .1/.1/.1/.7
 
 
 
@@ -214,7 +267,7 @@ user interface that in the original versions were not present, as follows:
 	This script now auto-scales to any number of columns and rows (within the limit of your computer's capability), 
 	and features a text-based user interface. This script is designed to be used following karoo_data_sort.py.
 
-	karoo_multiclassifier.py
+	karoo_multi-classifier.py
 	This script functions as before, but with a minor bug fixed in which the final class was mislabeled.
 
 	karoo_iris_plot.py

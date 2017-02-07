@@ -1,8 +1,8 @@
 # Karoo GP Base Class
 # Define the methods and global variables used by Karoo GP
-# by Kai Staats, MSc UCT / AIMS; see LICENSE.md
-# Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.2.1b
+# by Kai Staats, MSc; see LICENSE.md
+# Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
+# version 1.0
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -14,35 +14,40 @@ likely find more enjoyment of this particular flavour of GP with a little unders
 import csv
 import os
 import sys
-import time
+import datetime
 
 import numpy as np
-import pprocess as pp
 import sklearn.metrics as skm
 import sklearn.cross_validation as skcv
 import sympy as sp
 
+# TensorFlow-related imports
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+import tensorflow as tf
+import ast
+import operator as op
+operators = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv, ast.Pow: op.pow, ast.BitXor: op.xor, ast.USub: op.neg}
+
 np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
+
 
 class Base_GP(object):
 
 	'''
 	This Base_BP class contains all methods for Karoo GP.
 	
-	Method names are differentiated from global variable names (defined below) by the prefix 'fx_'. Following the 'fx_'
-	the name contains the category, object, and action: fx_[category]_[object]_[action]. For example,
-	'fx_eval_tree_print()' is a method (Python function) denoted by 'fx_', in the category Evaluation, and a 'tree' 
-	will 'print' to screen.
+	Method names are differentiated from global variable names (defined below) by the prefix 'fx_' followed by an object
+	and action, as in 'fx_display_tree()', with a few expections, such as 'fx_fitness_gene_pool'.
 	
-	The categories (denoted by #+++++++ banners) are as follows:
-		'karoo_gp'		A single, top-level method which conducts an entire run. Used only by karoo_gp_server.py
-		'fx_karoo_'		Methods to Run Karoo GP
-		'fx_gen_'		Methods to Generate a Tree
-		'fx_eval_'		Methods to Evaluate a Tree
-		'fx_fitness_'	Methods to Evaluate Tree Fitness
-		'fx_evo_'		Methods to Evolve a Population
-		'fx_test_'		Methods to Validate a Tree
-		'fx_tree_'		Methods to Append & Archive
+	The categories (denoted by +++ banners +++) are as follows:
+		'karoo_gp'						A single method which conducts an entire run. Employed only by karoo_gp_server.py
+		'fx_karoo_'						Methods to Run Karoo GP
+		'fx_gen_'							Methods to Generate a Tree
+		'fx_eval_'						Methods to Evaluate a Tree
+		'fx_fitness_'					Methods to Train and Test a Tree for Fitness
+		'fx_evolve_'					Methods to Evolve a Population
+		'fx_display_'					Methods to Display a Tree
+		'fx_archive_'					Methods to Archive
 		
 	There are no sub-classes at the time of this edit - 2015 09/21
 	'''
@@ -54,57 +59,59 @@ class Base_GP(object):
 	def __init__(self):
 	
 		'''
-		All Karoo GP global variables are named with the prefix 'gp.' All Karoo GP methods are named with the prefix 
-		'gp.fx_'. The 13 variables which begin with 'gp.pop_' are used specifically to define the 13 parameters for 
-		each tree as stored in the axis-1 (expand horizontally) 'gp.population' Numpy array.
+		All Karoo GP global variables are named with the prefix 'gp.' The 13 variables which begin with 'gp.pop_' are 
+		specifically employed to define the 13 parameters for each tree as stored in the axis-1 (expand horizontally) 
+		'gp.population' Numpy array.
 		
 		### Global and local variables defined by the user in karoo_gp_main.py (in order of appearence) ###
-		'gp.kernel'					fitness function
-		'gp.class_method'			select the number of classes (will be automated in future version)
-		'tree_type'					Full, Grow, or Ramped 50/50 (local variable)
+		'gp.kernel'							fitness function
+		'gp.class_method'				select the number of classes (will be automated in future version)
+		'tree_type'							Full, Grow, or Ramped 50/50 (local variable)
 		'gp.tree_depth_min'			minimum number of nodes
-		'tree_depth_base'			maximum Tree depth for the initial population, where nodes = 2^(depth + 1) - 1
+		'tree_depth_base'				maximum Tree depth for the initial population, where nodes = 2^(depth + 1) - 1
 		'gp.tree_depth_max'			maximum Tree depth for the entire run; introduces potential bloat
-		'gp.tree_pop_max'			maximum number of Trees per generation
+		'gp.tree_pop_max'				maximum number of Trees per generation
 		'gp.generation_max'			maximum number of generations
-		'gp.display'				level of on-screen feedback
+		'gp.display'						level of on-screen feedback
 		
-		'gp.evolve_repro'			% of 1.0 expressed as a decimal value
-		'gp.evolve_point'			% of 1.0 expressed as a decimal value
-		'gp.evolve_branch'			% of 1.0 expressed as a decimal value
-		'gp.evolve_cross'			% of 1.0 expressed as a decimal value
+		'gp.evolve_repro'				quantity of a population generated through Reproduction
+		'gp.evolve_point'				quantity of a population generated through Point Mutation
+		'gp.evolve_branch'			quantity of a population generated through Branch Mutation
+		'gp.evolve_cross'				quantity of a population generated through Crossover
 		
-		'gp.tourn_size'				the number of Trees chosen for each tournament
-		'gp.cores'					user defined or default to 1; can be set to auto-detect number of cores instead
-		'gp.precision'				the number of floating points for the round function in 'fx_fitness_eval'
+		'gp.tourn_size'					the number of Trees chosen for each tournament
+		'gp.precision'					the number of floating points for all applications of the round function
 		
-		### Global variables used for data management ###		
+		### Global variables used for data management ###
+		'gp.data_train'					store train data for processing in TF
+		'gp.data_test'					store test data for processing in TF
+		'gp.tf_device'					set TF computation backend device (CPU or GPU)
+		'gp.tf_device_log'			employed for TensorFlow debugging
+		
 		'gp.data_train_cols'		number of cols in the TRAINING data (see 'fx_karoo_data_load', below)
 		'gp.data_train_rows'		number of rows in the TRAINING data (see 'fx_karoo_data_load', below)
-		'gp.data_train_dict_array'	array of dictionaries which stores the TRAINING data, through all generations
-		
 		'gp.data_test_cols'			number of cols in the TEST data (see 'fx_karoo_data_load', below)
 		'gp.data_test_rows'			number of rows in the TEST data (see 'fx_karoo_data_load', below)
-		'gp.data_test_dict_array'	array of dictionaries which stores the TEST data for the very end
 		
-		'gp.functions'				user defined functions (operators) from the associated files/[functions].csv
-		'gp.terminals'				user defined variables (operands) from the top row of the associated [data].csv
-		'gp.coeff'					user defined coefficients (constants)
-		'gp.fitness_type'			fitness type
+		'gp.functions'					user defined functions (operators) from the associated files/[functions].csv
+		'gp.terminals'					user defined variables (operands) from the top row of the associated [data].csv
+		'gp.coeff'							user defined coefficients (NOT YET IN USE)
+		'gp.fitness_type'				fitness type
+		'gp.datetime'						date-time stamp of when the unique directory is created
+		'gp.path'								full path to the unique directory created with each run
 		
 		### Global variables initiated and/or used by Sympy ###
-		'gp.algo_raw'				a Sympy string which represents a flattened tree
-		'gp.algo_sym'				a Sympy executable version of algo_raw
-		'gp.algo_ops'				a Sympy list of available operators
-
+		'gp.algo_raw'						a Sympy string which represents a flattened tree
+		'gp.algo_sym'						a Sympy executable version of algo_raw
+		
 		### Variables used for evolutionary management ###
-		'gp.population_a'			the root generation from which Trees are chosen for mutation and reproduction
-		'gp.population_b'			the generation constructed from gp.population_a (recyled)
-		'gp.gene_pool'				once-per-generation assessment of trees that meet min and max boundary conditions
+		'gp.population_a'				the root generation from which Trees are chosen for mutation and reproduction
+		'gp.population_b'				the generation constructed from gp.population_a (recyled)
+		'gp.gene_pool'					once-per-generation assessment of trees that meet min and max boundary conditions
 		'gp.generation_id'			simple n + 1 increment
-		'gp.fitness_type'			set in 'fx_karoo_data_load' as either a minimising or maximising function
-		'gp.tree'					axis-1, 13 element Numpy array that defines each Tree, stored in 'gp.population'
-		'gp.pop_*'					13 elements which define each Tree (see 'fx_gen_tree_initialise' below)
+		'gp.fitness_type'				set in 'fx_karoo_data_load' as either a minimising or maximising function
+		'gp.tree'								axis-1, 13 element Numpy array that defines each Tree, stored in 'gp.population'
+		'gp.pop_*'							13 elements which define each Tree (see 'fx_gen_tree_initialise' below)
 		
 		### Fishing nets ###
 		You can insert a "fishing net" to search for a specific expression when you fear the evolutionary process or 
@@ -118,7 +125,6 @@ class Base_GP(object):
 		self.algo_sym = [] # temp store the sympified expression-- CONSIDER MAKING THIS VARIABLE LOCAL
 		self.fittest_dict = {} # temp store all Trees which share the best fitness score
 		self.gene_pool = [] # temp store all Tree IDs for use by Tournament
-		self.core_count = pp.get_number_of_cores() # pprocess
 		self.class_labels = 0 # temp set a variable which will be assigned the number of class labels (data_y)
 		
 		return
@@ -131,10 +137,11 @@ class Base_GP(object):
 	def karoo_gp(self, tree_type, tree_depth_base, filename):
 	
 		'''
-		This single method enables the engagement of the entire Karoo GP application. It is used by karoo_gp_server.py
-		for both scripted and command line execution, but not by karoo_gp_main.py.
+		This method enables the engagement of the entire Karoo GP application. It is used exclusively by the server script
+		karoo_gp_server.py (not by the desktop script karoo_gp_main.py). Instead of returning the user to the pause menu,
+		this script terminates at the command-line, providing support for bash and chron job execution.
 		
-		Arguments required: tree_type, tree_depth_base
+		Arguments required: tree_type, tree_depth_base, filename
 		'''
 		
 		self.karoo_banner()
@@ -147,8 +154,8 @@ class Base_GP(object):
 		
 		# evaluate first generation of Trees	
 		print '\n Evaluate the first generation of Trees ...'	
-		self.fx_fitness_gym(self.population_a) # run 'fx_eval', 'fx_fitness', 'fx_fitness_store', and fitness record
-		self.fx_tree_archive(self.population_a, 'a') # save the first generation of Trees to disk
+		self.fx_fitness_gym(self.population_a) # generate expression, evaluate fitness, compare fitness
+		self.fx_archive_tree_write(self.population_a, 'a') # save the first generation of Trees to disk
 		
 		# evolve subsequent generations of Trees
 		for self.generation_id in range(2, self.generation_max + 1): # loop through 'generation_max'
@@ -163,13 +170,16 @@ class Base_GP(object):
 			self.fx_karoo_crossover() # method 4 - Crossover
 			self.fx_eval_generation() # evaluate all Trees in a single generation
 			
-			self.population_a = self.fx_evo_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
+			self.population_a = self.fx_evolve_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
 			
 		# "End of line, man!" --CLU
-		self.fx_tree_archive(self.population_b, 'f') # save the final generation of Trees to disk
-		self.fx_karoo_eol()
+		self.fx_archive_tree_write(self.population_b, 'f') # save the final generation of Trees to disk
+		self.fx_archive_params_write('Server') # save run-time parameters to disk
 		
-		return
+		print '\033[3m Congrats!\033[0;0m Your multi-generational Karoo GP run is complete.\n'
+		sys.exit() # return Karoo GP to the command line to support bash and chron job execution
+		
+		# return
 		
 	
 	def karoo_banner(self):
@@ -192,7 +202,7 @@ class Base_GP(object):
 		print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 		print '\t **    ** **    **  **    **  ******    ******       ******   **'
 		print '\033[0;0m'
-		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 0.9.2.0\033[0;0m'
+		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 1.0\033[0;0m'
 				
 		return
 		
@@ -209,8 +219,12 @@ class Base_GP(object):
 		Arguments required: tree_type, tree_depth_base, filename (of the dataset)
 		'''
 		
-		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###			
-		data_dict = {'b':'files/data_BOOL.csv', 'c':'files/data_CLASSIFY.csv', 'r':'files/data_REGRESS.csv', 'm':'files/data_MATCH.csv', 'p':'files/data_PLAY.csv'}
+		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###
+		
+		#full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # helps with chron jobs --Thanks Marco!
+		cwd = os.getcwd() # Good idea Marco :)
+		
+		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
 		
 		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
@@ -227,20 +241,18 @@ class Base_GP(object):
 			data_y = np.loadtxt(filename, skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			header = open(filename,'r')
 			
-		fitt_dict = {'b':'max', 'c':'max', 'r':'min', 'm':'max', 'p':''}
+		fitt_dict = {'c':'max', 'r':'min', 'm':'max', 'p':''}
 		self.fitness_type = fitt_dict[self.kernel] # load fitness type
 		
-		func_dict = {'b':'files/functions_BOOL.csv', 'c':'files/functions_CLASSIFY.csv', 'r':'files/functions_REGRESS.csv', 'm':'files/functions_MATCH.csv', 'p':'files/functions_PLAY.csv'}
+		func_dict = {'c':cwd + '/files/functions_CLASSIFY.csv', 'r':cwd + '/files/functions_REGRESS.csv', 'm':cwd + '/files/functions_MATCH.csv', 'p':cwd + '/files/functions_PLAY.csv'}
 		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
-		
 		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the user defined terminals (operands)
-		self.algo_ops = sp.symbols(self.terminals) # convert a string of terminals to sympy executables - tested 2016 08/29
-		
 		self.class_labels = len(np.unique(data_y)) # load the user defined labels for classification or solutions for regression
-		self.coeff = np.loadtxt('files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients (constants)
+		self.coeff = np.loadtxt(cwd + '/files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients - NOT USED YET
 		
 		
-		### 2) from the dataset, generate TRAINING and TEST data ###
+		### 2) from the dataset, extract TRAINING and TEST data ###
+		
 		if len(data_x) < 11: # for small datasets we will not split them into TRAINING and TEST components
 			data_train = np.c_[data_x, data_y]
 			data_test = np.c_[data_x, data_y]
@@ -255,56 +267,41 @@ class Base_GP(object):
 			data_test = np.c_[x_test, y_test] # recombine each row of data with its associated label (right column)
 			x_test, y_test = [], [] # clear from memory
 			
-		self.data_train_cols = len(data_train[0,:])
-		self.data_train_rows = len(data_train[:,0])
-		self.data_test_cols = len(data_test[0,:])
-		self.data_test_rows = len(data_test[:,0])
+		self.data_train_cols = len(data_train[0,:]) # qty count
+		self.data_train_rows = len(data_train[:,0]) # qty count
+		self.data_test_cols = len(data_test[0,:]) # qty count
+		self.data_test_rows = len(data_test[:,0]) # qty count
 		
 		
-		### 3) copy TRAINING data into an array (rows) of dictionaries (columns) ###
-		data_train_dict = {}
-		self.data_train_dict_array = np.array([])
+		### 3) load TRAINING and TEST data for TensorFlow processing - tested 2017 02/02
 		
-		# potential place to insert 'coeff' for a static variable 'v': 2016 08/22
-		
-		for row in range(0, self.data_train_rows): # increment through each row of data
-			for col in range(0, self.data_train_cols): # increment through each column
-				data_train_dict.update( {self.terminals[col]:data_train[row,col]} ) # to be unpacked in 'fx_fitness_eval'
-				
-			self.data_train_dict_array = np.append(self.data_train_dict_array, data_train_dict.copy())
-			
-		data_train = [] # clear from memory
+		self.data_train = data_train # Store train data for processing in TF
+		self.data_test = data_test # Store test data for processing in TF
+		self.tf_device = "/gpu:0" # Set TF computation backend device (CPU or GPU)
+		self.tf_device_log = False # TF device usage logging (for debugging)
 		
 		
-		### 4) copy TEST data into an array (rows) of dictionaries (columns) ###
-		data_test_dict = {}
-		self.data_test_dict_array = np.array([])
+		### 4) create a unique directory and initialise all .csv files ###
 		
-		for row in range(0, self.data_test_rows): # increment through each row of data
-			for col in range(0, self.data_test_cols): # increment through each column
-				data_test_dict.update( {self.terminals[col]:data_test[row,col]} ) # to be unpacked in 'fx_fitness_eval'
-				
-			self.data_test_dict_array = np.append(self.data_test_dict_array, data_test_dict.copy())
-			
-		data_test = [] # clear from memory
+		self.datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+		self.path = os.path.join(cwd, 'runs/', self.datetime) # generate a unique directory name
+		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
-		
-		### 5) initialise all .csv files ###
 		self.filename = {} # a dictionary to hold .csv filenames
 		
-		self.filename.update( {'a':'files/population_a.csv'} )
+		self.filename.update( {'a':self.path + '/population_a.csv'} )
 		target = open(self.filename['a'], 'w') # initialise the .csv file for population 'a' (foundation)
 		target.close()
 		
-		self.filename.update( {'b':'files/population_b.csv'} )
+		self.filename.update( {'b':self.path + '/population_b.csv'} )
 		target = open(self.filename['b'], 'w') # initialise the .csv file for population 'b' (evolving)
 		target.close()
 		
-		self.filename.update( {'f':'files/population_f.csv'} )
+		self.filename.update( {'f':self.path + '/population_f.csv'} )
 		target = open(self.filename['f'], 'w') # initialise the .csv file for the final population (test)
 		target.close()
 		
-		self.filename.update( {'s':'files/population_s.csv'} )
+		self.filename.update( {'s':self.path + '/population_s.csv'} )
 		# do NOT initialise this .csv file, as it is retained for loading a previous run (recover)
 		
 		return
@@ -313,8 +310,8 @@ class Base_GP(object):
 	def fx_karoo_data_recover(self, population):
 	
 		'''
-		This method is used to load a saved population of Trees. As invoked through the (pause) menu, this loads 
-		population_s to replace population_a.
+		This method is used to load a saved population of Trees, as invoked through the (pause) menu where population_s 
+		replaces population_a in the /[path]/karoo_gp/runs/ directory.
 		
 		Arguments required: population size
 		'''
@@ -371,17 +368,17 @@ class Base_GP(object):
 			for n in range(1, int((self.tree_pop_max / 2) / tree_depth_base) + 1): # split the population into equal parts
 				for depth in range(1, tree_depth_base + 1): # build 2 Trees ats each depth
 					self.fx_gen_tree_build(TREE_ID, 'f', depth) # build a Full Tree
-					self.fx_tree_append(self.tree) # append Tree to the list 'gp.population_a'
+					self.fx_archive_tree_append(self.tree) # append Tree to the list 'gp.population_a'
 					TREE_ID = TREE_ID + 1
 					
 					self.fx_gen_tree_build(TREE_ID, 'g', depth) # build a Grow Tree
-					self.fx_tree_append(self.tree) # append Tree to the list 'gp.population_a'
+					self.fx_archive_tree_append(self.tree) # append Tree to the list 'gp.population_a'
 					TREE_ID = TREE_ID + 1
 						
 			if TREE_ID < self.tree_pop_max: # eg: split 100 by 2*3 and it will produce only 96 Trees ...
 				for n in range(self.tree_pop_max - TREE_ID + 1): # ... so we complete the run
 					self.fx_gen_tree_build(TREE_ID, 'g', tree_depth_base)
-					self.fx_tree_append(self.tree)
+					self.fx_archive_tree_append(self.tree)
 					TREE_ID = TREE_ID + 1
 					
 			else: pass
@@ -389,7 +386,7 @@ class Base_GP(object):
 		else: # Full or Grow
 			for TREE_ID in range(1, self.tree_pop_max + 1):
 				self.fx_gen_tree_build(TREE_ID, tree_type, tree_depth_base) # build the 1st generation of Trees
-				self.fx_tree_append(self.tree)
+				self.fx_archive_tree_append(self.tree)
 				
 		return
 		
@@ -411,7 +408,7 @@ class Base_GP(object):
 			
 		for n in range(self.evolve_repro): # quantity of Trees to be copied without mutation
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each reproduction
-			tourn_winner = self.fx_evo_fitness_wipe(tourn_winner) # remove fitness data
+			tourn_winner = self.fx_evolve_fitness_wipe(tourn_winner) # remove fitness data
 			self.population_b.append(tourn_winner) # append array to next generation population of Trees
 			
 		return
@@ -435,7 +432,7 @@ class Base_GP(object):
 			
 		for n in range(self.evolve_point): # quantity of Trees to be generated through mutation
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each mutation
-			tourn_winner, node = self.fx_evo_point_mutate(tourn_winner) # perform point mutation; return single point for record keeping
+			tourn_winner, node = self.fx_evolve_point_mutate(tourn_winner) # perform point mutation; return single point for record keeping
 			self.population_b.append(tourn_winner) # append array to next generation population of Trees
 						
 		return
@@ -461,15 +458,15 @@ class Base_GP(object):
 			
 		for n in range(self.evolve_branch): # quantity of Trees to be generated through mutation
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each mutation
-			branch = self.fx_evo_branch_select(tourn_winner) # select point of mutation and all nodes beneath
+			branch = self.fx_evolve_branch_select(tourn_winner) # select point of mutation and all nodes beneath
 			
 			# TEST & DEBUG: comment the top or bottom to force all Full or all Grow methods
 			
 			if tourn_winner[1][1] == 'f': # perform Full method mutation on 'tourn_winner'
-				tourn_winner = self.fx_evo_full_mutate(tourn_winner, branch)
+				tourn_winner = self.fx_evolve_full_mutate(tourn_winner, branch)
 				
 			elif tourn_winner[1][1] == 'g': # perform Grow method mutation on 'tourn_winner'
-				tourn_winner = self.fx_evo_grow_mutate(tourn_winner, branch)
+				tourn_winner = self.fx_evolve_grow_mutate(tourn_winner, branch)
 				
 			self.population_b.append(tourn_winner) # append array to next generation population of Trees
 			
@@ -503,18 +500,18 @@ class Base_GP(object):
 		for n in range(self.evolve_cross / 2): # quantity of Trees to be generated through Crossover, accounting for 2 children each
 		
 			parent_a = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for 'parent_a'
-			branch_a = self.fx_evo_branch_select(parent_a) # select branch within 'parent_a', to copy to 'parent_b' and receive a branch from 'parent_b'
+			branch_a = self.fx_evolve_branch_select(parent_a) # select branch within 'parent_a', to copy to 'parent_b' and receive a branch from 'parent_b'
 			
 			parent_b = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for 'parent_b'
-			branch_b = self.fx_evo_branch_select(parent_b) # select branch within 'parent_b', to copy to 'parent_a' and receive a branch from 'parent_a'
+			branch_b = self.fx_evolve_branch_select(parent_b) # select branch within 'parent_b', to copy to 'parent_a' and receive a branch from 'parent_a'
 			
 			parent_c = np.copy(parent_a); branch_c = np.copy(branch_a) # else the Crossover mods affect the parent Trees, due to how Python manages '='
 			parent_d = np.copy(parent_b); branch_d = np.copy(branch_b) # else the Crossover mods affect the parent Trees, due to how Python manages '='
 			
-			offspring_1 = self.fx_evo_crossover(parent_a, branch_a, parent_b, branch_b) # perform Crossover
+			offspring_1 = self.fx_evolve_crossover(parent_a, branch_a, parent_b, branch_b) # perform Crossover
 			self.population_b.append(offspring_1) # append the 1st child to next generation of Trees
 			
-			offspring_2 = self.fx_evo_crossover(parent_d, branch_d, parent_c, branch_c) # perform Crossover
+			offspring_2 = self.fx_evolve_crossover(parent_d, branch_d, parent_c, branch_c) # perform Crossover
 			self.population_b.append(offspring_2) # append the 2nd child to next generation of Trees
 			
 		return
@@ -530,7 +527,7 @@ class Base_GP(object):
 		Arguments required: eol
 		'''
 		
-		options = ['?','help','i','m','g','s','db','t','ts','min','max','b','c','id','pop','l','p','a','test','cont','load','w','q','']
+		options = ['?','help','i','m','g','s','db','ts','min','max','bal','id','pop','dir','l','p','t','cont','load','w','q','']
 		
 		while True:
 			try:
@@ -542,25 +539,24 @@ class Base_GP(object):
 					
 				if pause == '?' or pause == 'help':
 					print '\n\t\033[36mSelect one of the following options:\033[0;0m'
-					print '\t\033[36m\033[1m i \t\033[0;0m interactive display mode'
-					print '\t\033[36m\033[1m m \t\033[0;0m minimal display mode'
-					print '\t\033[36m\033[1m g \t\033[0;0m generation display mode'
-					print '\t\033[36m\033[1m s \t\033[0;0m silent display mode'
-					print '\t\033[36m\033[1m db \t\033[0;0m debug display mode'
-					print '\t\033[36m\033[1m t \t\033[0;0m timer display mode'
+					print '\t\033[36m\033[1m i \t\033[0;0m Interactive display mode'
+					print '\t\033[36m\033[1m m \t\033[0;0m Minimal display mode'
+					print '\t\033[36m\033[1m g \t\033[0;0m Generation display mode'
+					print '\t\033[36m\033[1m s \t\033[0;0m Silent display mode'
+					print '\t\033[36m\033[1m db \t\033[0;0m De-Bug display mode'
 					print ''
 					print '\t\033[36m\033[1m ts \t\033[0;0m adjust the tournament size'
 					print '\t\033[36m\033[1m min \t\033[0;0m adjust the minimum number of nodes'
 					# print '\t\033[36m\033[1m max \t\033[0;0m adjust the maximum Tree depth'
-					print '\t\033[36m\033[1m b \t\033[0;0m adjust the balance of genetic operators'
-					print '\t\033[36m\033[1m c \t\033[0;0m adjust the number of engaged CPU cores'
+					print '\t\033[36m\033[1m bal \t\033[0;0m adjust the balance of genetic operators'
 					print ''
-					print '\t\033[36m\033[1m id \t\033[0;0m display the generation ID'
-					print '\t\033[36m\033[1m pop \t\033[0;0m list all Trees in current population'
 					print '\t\033[36m\033[1m l \t\033[0;0m list Trees with leading fitness scores'
-					print '\t\033[36m\033[1m p \t\033[0;0m print a Tree to screen'
+					print '\t\033[36m\033[1m t \t\033[0;0m evaluate a single Tree against the test data'
 					print ''
-					print '\t\033[36m\033[1m test \t\033[0;0m evaluate a Tree against the test data'
+					print '\t\033[36m\033[1m p \t\033[0;0m print a single Tree to screen'
+					print '\t\033[36m\033[1m id \t\033[0;0m display the current generation ID'
+					print '\t\033[36m\033[1m pop \t\033[0;0m list all Trees in current population'
+					print '\t\033[36m\033[1m dir \t\033[0;0m display current working directory'
 					print ''
 					print '\t\033[36m\033[1m cont \t\033[0;0m continue evolution, starting with the current population'
 					print '\t\033[36m\033[1m load \t\033[0;0m load population_s (seed) to replace population_a (current)'
@@ -571,16 +567,14 @@ class Base_GP(object):
 					if eol == 1: print '\t\033[0;0m Remember to archive your final population before your next run!'
 					else: print '\t\033[36m\033[1m ENTER\033[0;0m to continue ...'
 					
-				elif pause == 'i': self.display = 'i'; print '\t Interactive mode engaged (for control freaks)'
-				elif pause == 'm': self.display = 'm'; print '\t Minimal mode engaged (for recovering control freaks)'
-				elif pause == 'g': self.display = 'g'; print '\t Generation mode engaged (for GP gurus)'
-				# elif pause == 's': self.display = 's'; print '\t Server mode engaged (for zen masters)'
-				elif pause == 'db': self.display = 'db'; print '\t Debug mode engaged (for vouyers)'
-				elif pause == 't': self.display = 't'; print '\t Timer mode engaged (for managers)'
+				elif pause == 'i': self.display = 'i'; print '\t Interactive display mode engaged (for control freaks)'
+				elif pause == 'm': self.display = 'm'; print '\t Minimal display mode engaged (for recovering control freaks)'
+				elif pause == 'g': self.display = 'g'; print '\t Generation display mode engaged (for GP gurus)'
+				elif pause == 's': self.display = 's'; print '\t Silent display mode engaged (for zen masters)'
+				elif pause == 'db': self.display = 'db'; print '\t De-Bug display mode engaged (for vouyers)'
 				
 				
 				elif pause == 'ts': # adjust the tournament size
-				
 					menu = range(2,self.tree_pop_max + 1) # set to total population size only for the sake of experimentation
 					while True:
 						try:
@@ -589,10 +583,9 @@ class Base_GP(object):
 							if query not in menu: raise ValueError()
 							self.tourn_size = query; break
 						except ValueError: print '\n\t\033[32m Enter a number from 2 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
-					
-					
-				elif pause == 'min': # adjust the global, minimum number of nodes per Tree
+						
 				
+				elif pause == 'min': # adjust the global, minimum number of nodes per Tree
 					menu = range(3,1001) # we must have at least 3 nodes, as in: x * y; 1000 is an arbitrary number
 					while True:
 						try:
@@ -604,90 +597,139 @@ class Base_GP(object):
 						
 				
 				# NEED TO ADD: adjustable tree_depth_max
-				# elif pause == 'max': # adjust the global, adjusted maximum Tree depth
-				
-					# menu = range(1,11)
-					# while True:
-						# try:
-							# print '\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', self.tree_depth_max
-							# query = int(raw_input('\n\t Adjust the global maximum Tree depth to (1 ... 10): '))
-							# if query not in menu: raise ValueError()
-							# if query < self.tree_depth_max:
-								# print '\n\t\033[32m This value is less than the current value.\033[0;0m'
-								# conf = raw_input('\n\t Are you ok with this? (y/n) ')
-								# if conf == 'n': break
-						# except ValueError: print '\n\t\033[32m Enter a number from 1 including 10. Try again ...\033[0;0m'
+				#elif pause == 'max': # adjust the global, adjusted maximum Tree depth
+				#
+				#	menu = range(1,11)
+				#	while True:
+				#		try:
+				#			print '\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', self.tree_depth_max
+				#			query = int(raw_input('\n\t Adjust the global maximum Tree depth to (1 ... 10): '))
+				#			if query not in menu: raise ValueError()
+				#			if query < self.tree_depth_max:
+				#				print '\n\t\033[32m This value is less than the current value.\033[0;0m'
+				#				conf = raw_input('\n\t Are you ok with this? (y/n) ')
+				#				if conf == 'n': break
+				#		except ValueError: print '\n\t\033[32m Enter a number from 1 including 10. Try again ...\033[0;0m'
 						
 				
-				elif pause == 'b': # adjust the balance of genetic operators'					
+				elif pause == 'bal': # adjust the balance of genetic operators'					
 					print '\n\t The current balance of genetic operators is:'
-					print '\t\t Reproduction:', self.evolve_repro
-					print '\t\t Point Mutation:', self.evolve_point
-					print '\t\t Branch Mutation:', self.evolve_branch
-					print '\t\t Cross Over Reproduction:', self.evolve_cross, '\n'
+					print '\t\t Reproduction:', self.evolve_repro; tmp_repro = self.evolve_repro
+					print '\t\t Point Mutation:', self.evolve_point; tmp_point = self.evolve_point
+					print '\t\t Branch Mutation:', self.evolve_branch; tmp_branch = self.evolve_branch
+					print '\t\t Crossover:', self.evolve_cross, '\n'; tmp_cross = self.evolve_cross
 					
-					menu = range(0,101) # 0 to 100% expresssed as an integer
+					menu = range(0,1000) # 0 to 1000 expresssed as an integer
 					
 					while True:
 						try:
-							query = raw_input('\t Enter percentage (0-100) for Reproduction: ')
+							query = raw_input('\t Enter quantity of Trees to be generated by Reproduction: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							self.evolve_repro = int(float(query) / 100 * self.tree_pop_max); break
-						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+							# tmp_repro = int(float(query) / 100 * self.tree_pop_max); break
+							tmp_repro = int(float(query)); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					while True:
 						try:
-							query = raw_input('\t Enter percentage (0-100) for Point Mutation: ')
+							query = raw_input('\t Enter quantity of Trees to be generated by Point Mutation: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							self.evolve_point = int(float(query) / 100 * self.tree_pop_max); break
-						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+							# tmp_point = int(float(query) / 100 * self.tree_pop_max); break
+							tmp_point = int(float(query)); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					while True:
 						try:
-							query = raw_input('\t Enter percentage (0-100) for Branch Mutation: ')
+							query = raw_input('\t Enter quantity of Trees to be generated by Branch Mutation: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							self.evolve_branch = int(float(query) / 100 * self.tree_pop_max); break
-						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+							# tmp_branch = int(float(query) / 100 * self.tree_pop_max); break
+							tmp_branch = int(float(query)); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					while True:
 						try:
-							query = raw_input('\t Enter percentage (0-100) for Cross Over Reproduction: ')
+							query = raw_input('\t Enter quantity of Trees to be generated by Crossover: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							self.evolve_cross = int(float(query) / 100 * self.tree_pop_max); break
-						except ValueError: print '\n\t\033[32m Enter a number from 0 including 100. Try again ...\033[0;0m'
+							# tmp_cross = int(float(query) / 100 * self.tree_pop_max); break
+							tmp_cross = int(float(query)); break
+						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
-					print '\n\t The revised balance of genetic operators is:'
-					print '\t\t Reproduction:', self.evolve_repro
-					print '\t\t Point Mutation:', self.evolve_point
-					print '\t\t Branch Mutation:', self.evolve_branch
-					print '\t\t Cross Over Reproduction:', self.evolve_cross
-					
-					if self.evolve_repro + self.evolve_point + self.evolve_branch + self.evolve_cross != 100:
-						print '\n\t The sum of the above does not equal 100%. Try again ...'
+					# if tmp_repro + tmp_point + tmp_branch + tmp_cross != 100: print '\n\t The sum of the above does not equal 100%. Try again ...'
+					if tmp_repro + tmp_point + tmp_branch + tmp_cross != self.tree_pop_max: print '\n\t The sum of the above does not equal', self.tree_pop_max, 'Try again ...'
+					else:
+						print '\n\t The revised balance of genetic operators is:'
+						self.evolve_repro = tmp_repro; print '\t\t Reproduction:', self.evolve_repro
+						self.evolve_point = tmp_point; print '\t\t Point Mutation:', self.evolve_point
+						self.evolve_branch = tmp_branch; print '\t\t Branch Mutation:', self.evolve_branch
+						self.evolve_cross = tmp_cross; print '\t\t Crossover:', self.evolve_cross
+						
+						
+				elif pause == 'l': # display dictionary of Trees with the best fitness score
+					print '\n\t The leading Trees and their associated expressions are:'
+					for n in range(len(self.fittest_dict)):
+						print '\t  ', self.fittest_dict.keys()[n], ':', self.fittest_dict.values()[n]
+						
+						
+				elif pause == 't':  # evaluate a Tree against the TEST data
+					if self.generation_id > 1:
+						menu = range(1, len(self.population_b))
+						while True:
+							try:
+								query = raw_input('\n\t Select a Tree in population_b to evaluate for Precision & Recall: ')
+								if query not in str(menu) or query == '0': raise ValueError()
+								elif query == '': break
+								
+								self.fx_eval_poly(self.population_b[int(query)]) # generate the raw and sympified equation for the given Tree using SymPy
+								
+								# get simplified expression and process it by TF - tested 2017 02/02
+								expr = str(self.algo_sym) # might change this to algo_raw for more correct expression evaluation
+								result = self.fx_fitness_eval(expr, self.data_test, get_labels=True)
+								
+								print '\n\t\033[36mTree', query, 'yields (raw):', self.algo_raw, '\033[0;0m'
+								print '\t\033[36mTree', query, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
+								
+								# test user selected Trees using TF - tested 2017 02/02
+								if self.kernel == 'c': self.fx_fitness_test_classify(result); break
+								elif self.kernel == 'r': self.fx_fitness_test_regress(result); break
+								elif self.kernel == 'm': self.fx_fitness_test_match(result); break
+								# elif self.kernel == '[other]': self.fx_fitness_test_[other](result); break
+								
+							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_b) - 1) + ".", 'Try again ...\033[0;0m'
+							
+					else: print '\n\t\033[32m Karoo GP does not enable evaluation of the foundation population. Be patient ...\033[0;0m'
 					
 				
-				elif pause == 'c': # adjust the number of engaged CPU cores
-				
-					menu = range(1,self.core_count + 1) # assuming any run above 24 cores will simply use the maximum number
-					while True:
-						try:
-							print '\n\t The current number of engaged CPU cores is:', self.cores
-							query = int(raw_input('\n\t Adjust the number of CPU cores (min 1): '))
-							if query not in (menu): raise ValueError()
-							elif query == '': break
-							self.cores = int(query); break
-						except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(self.core_count) + ".", 'Try again ...\033[0;0m'
+				elif pause == 'p': # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
+					if self.generation_id == 1:
+						menu = range(1,len(self.population_a))
+						while True:
+							try:
+								query = raw_input('\n\t Select a Tree to print: ')
+								if query not in str(menu) or query == '0': raise ValueError()
+								elif query == '': break
+								self.fx_display_tree(self.population_a[int(query)]); break
+							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_a) - 1) + ".", 'Try again ...\033[0;0m'
+							
+					elif self.generation_id > 1:
+						menu = range(1,len(self.population_b))
+						while True:
+							try:
+								query = raw_input('\n\t Select a Tree to print: ')
+								if query not in str(menu) or query == '0': raise ValueError()
+								elif query == '': break
+								self.fx_display_tree(self.population_b[int(query)]); break
+							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_b) - 1) + ".", 'Try again ...\033[0;0m'
+							
+					else: print '\n\t\033[36m There is nor forest for which to see the Trees.\033[0;0m'
 					
 				
 				elif pause == 'id': print '\n\t The current generation is:', self.generation_id
 				
 				
 				elif pause == 'pop': # list Trees in the current population
-				
 					print ''
 					if self.generation_id == 1:
 						for tree_id in range(1, len(self.population_a)):
@@ -701,60 +743,11 @@ class Base_GP(object):
 							
 					else: print '\n\t\033[36m There is nor forest for which to see the Trees.\033[0;0m'
 					
-				
-				elif pause == 'l': # display dictionary of Trees with the best fitness score
-				
-					print '\n\t The leading Trees and their associated expressions are:'
-					for n in range(len(self.fittest_dict)):
-						print '\t  ', self.fittest_dict.keys()[n], ':', self.fittest_dict.values()[n]
 					
-					
-				elif pause == 'p': # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
+				elif pause == 'dir': print '\n\t The current working directory is:', self.path
 				
-					if self.generation_id == 1:
-						menu = range(1,len(self.population_a))
-						while True:
-							try:
-								query = raw_input('\n\t Select a Tree to print: ')
-								if query not in str(menu) or query == '0': raise ValueError()
-								elif query == '': break
-								self.fx_eval_tree_print(self.population_a[int(query)]); break
-							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_a) - 1) + ".", 'Try again ...\033[0;0m'
-							
-					elif self.generation_id > 1:
-						menu = range(1,len(self.population_b))
-						while True:
-							try:
-								query = raw_input('\n\t Select a Tree to print: ')
-								if query not in str(menu) or query == '0': raise ValueError()
-								elif query == '': break
-								self.fx_eval_tree_print(self.population_b[int(query)]); break
-							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_b) - 1) + ".", 'Try again ...\033[0;0m'
-							
-					else: print '\n\t\033[36m There is nor forest for which to see the Trees.\033[0;0m'
-					
-				
-				elif pause == 'test': # evaluate a Tree against the TEST data
-				
-					if self.generation_id > 1:
-						menu = range(1,len(self.population_b))
-						while True:
-							try:
-								query = raw_input('\n\t Select a Tree in population_b to evaluate for Precision & Recall: ')
-								if query not in str(menu) or query == '0': raise ValueError()
-								elif query == '': break
-								if self.kernel == 'b': self.fx_test_bool(int(query)); break								
-								elif self.kernel == 'c': self.fx_test_classify(int(query)); break
-								elif self.kernel == 'r': self.fx_test_regress(int(query)); break
-								elif self.kernel == 'm': self.fx_test_match(int(query)); break
-								# elif self.kernel == '[other]': self.fx_test_[other](int(query)); break
-							except ValueError: print '\n\t\033[32m Enter a number from 1 including', str(len(self.population_b) - 1) + ".", 'Try again ...\033[0;0m'
-							
-					else: print '\n\t\033[32m Karoo GP does not enable evaluation of the foundation population. Be patient ...\033[0;0m'
-					
-				
+									
 				elif pause == 'cont': # continue evolution, starting with the current population
-				
 					menu = range(1,101)
 					while True:
 						try:
@@ -768,7 +761,6 @@ class Base_GP(object):
 					
 				
 				elif pause == 'load': # load population_s to replace population_a
-				
 					while True:
 						try:
 							query = raw_input('\n\t Overwrite the current population with population_s? ')
@@ -779,24 +771,27 @@ class Base_GP(object):
 						
 				
 				elif pause == 'w': # write the evolving population_b to disk
-				
 					if self.generation_id > 1:
-						self.fx_tree_archive(self.population_b, 'b')
+						self.fx_archive_tree_write(self.population_b, 'b')
 						print '\t\033[36m All current members of the evolving population_b saved to .csv\033[0;0m'
 						
 					else: print '\n\t\033[36m The evolving population_b does not yet exist\033[0;0m'
 					
 				
 				elif pause == 'q':
-					
-					if eol == 0:
+					if eol == 0: # if the GP run is not at the final generation
 						query = raw_input('\n\t \033[32mThe current population_b will be lost!\033[0;0m\n\n\t Are you certain you want to quit? (y/n)')
-						if query == 'y': sys.exit() # quit the script without saving population_b
+						if query == 'y':
+							self.fx_archive_params_write('Desktop') # save run-time parameters to disk
+							sys.exit() # quit the script without saving population_b
 						else: break
 						
-					else:
+					else: # if the GP run is complete
 						query = raw_input('\n\t Are you certain you want to quit? (y/n)')
-						if query == 'y': print '\n\t \033[32mRemember to archive the Trees found in karoo_gp/files/ before your next run ...\033[0;0m'; sys.exit()
+						if query == 'y':
+							print '\n\t \033[32mYour Trees and runtime parameters are archived in karoo_gp/runs/\033[0;0m'
+							self.fx_archive_params_write('Desktop') # save run-time parameters to disk
+							sys.exit()
 						else: self.fx_karoo_pause(1)
 						
 			except ValueError: print '\t\033[32m Select from the options given. Try again ...\033[0;0m'
@@ -827,13 +822,13 @@ class Base_GP(object):
 			self.fx_karoo_crossover() # method 4 - Crossover
 			self.fx_eval_generation() # evaluate all Trees in a single generation
 			
-			self.population_a = self.fx_evo_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
+			self.population_a = self.fx_evolve_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
 			
 		# "End of line, man!" --CLU
 		target = open(self.filename['f'], 'w') # reset the .csv file for the final population
 		target.close()
 		
-		self.fx_tree_archive(self.population_b, 'f') # save the final generation of Trees to disk
+		self.fx_archive_tree_write(self.population_b, 'f') # save the final generation of Trees to disk
 		self.fx_karoo_eol()
 		
 		return
@@ -842,7 +837,7 @@ class Base_GP(object):
 	def fx_karoo_eol(self):
 		
 		'''
-		The very last method to run in Karoo GP, thus the "end-of-line" :)
+		The very last method to run in Karoo GP.
 		
 		Arguments required: none
 		'''
@@ -851,7 +846,7 @@ class Base_GP(object):
 		print '\033[3m  but the one most responsive to change."\033[0;0m --Charles Darwin'
 		print ''
 		print '\033[3m Congrats!\033[0;0m Your multi-generational Karoo GP run is complete.\n'
-		print '\033[36m Type \033[1m?\033[0;0m\033[36m to review your options or \033[1mq\033[0;0m\033[36m to exit.\033[0;0m\n'
+		print '\033[36m Type \033[1m?\033[0;0m\033[36m to review your options or \033[1mq\033[0;0m\033[36m to quit.\033[0;0m\n'
 		self.fx_karoo_pause(1)
 		
 		return
@@ -923,7 +918,7 @@ class Base_GP(object):
 			self.pop_node_c2 = 3
 			self.pop_node_c3 = 4
 
-		else: print '\n\t\033[31mERROR! In fx_gen_root_node_build: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
+		else: print '\n\t\033[31m ERROR! In fx_gen_root_node_build: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
 
 		self.pop_node_type = 'root'
 			
@@ -1125,7 +1120,7 @@ class Base_GP(object):
 					self.pop_node_c2 = c_buffer + 1
 					self.pop_node_c3 = c_buffer + 2
 					
-				else: print '\n\t\033[31mERROR! In fx_gen_child_link: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
+				else: print '\n\t\033[31m ERROR! In fx_gen_child_link: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
 					
 		return
 		
@@ -1157,7 +1152,7 @@ class Base_GP(object):
 		'tree_type' is either (f)ull or (g)row. Note, however, that when the user selects 'ramped 50/50' at launch, 
 		it is still (f) or (g) which are passed to this method.
 		
-		This method is called by a 'fx_evo_crossover' and 'fx_evo_grow_mutate' and 'fx_karoo_construct'.
+		This method is called by a 'fx_evolve_crossover' and 'fx_evolve_grow_mutate' and 'fx_karoo_construct'.
 		
 		Arguments required: TREE_ID, tree_type, tree_depth_base
 		'''
@@ -1177,7 +1172,11 @@ class Base_GP(object):
 	def fx_eval_poly(self, tree):
 	
 		'''
-		Generate the expression (both raw and sympified).
+		Evaluate a Tree and generate its multivariate expression (both raw and Sympified).
+				
+		We need to extract the variables from the expression. However, these variables are no longer correlated
+		to the original variables listed across the top of each column of data.csv. Therefore, we must re-assign 
+		the respective values for each subsequent row in the data .csv, for each Tree's unique expression.
 		
 		Arguments required: tree
 		'''
@@ -1186,43 +1185,12 @@ class Base_GP(object):
 		self.algo_sym = sp.sympify(self.algo_raw) # convert string to a functional expression (the coolest line in Karoo! :)
 		
 		return
-		
-	
-	def fx_eval_subs(self, tree_id, data):
-	
-		'''
-		Process the sympified expression against the current data row.
-		
-		Arguments required: data (typically a single row from the associated [data].csv)
-		
-		'''
-		
-		### OLD .subs method ###
-		subs = self.algo_sym.subs(data) # process the expression against the data
-		result = round(float(subs), self.precision)		
-		
-		#if str(subs) == 'inf' or str(subs) == '-inf':
-		#	result = subs; self.population_a[tree_id][12][3] = 'error' # tag trees with 'divide by zero' errors
-		#else: result = round(float(subs), self.precision) # force 'result' to the set number of floating points
-		
-		### NEW .lambdify method - UNDER DEVELOPMENT ###
-		#f = sp.lambdify(self.algo_ops, self.algo_sym, "numpy") # define the function		
-		#with np.errstate(divide = 'ignore', invalid = 'ignore'): # do not raise 'divide by zero' errors
-		#	lamb = f(*sp.flatten(data.values())) # execute the function against the given data row; which currently remains a dictionary
-		#
-		#if str(lamb) == 'inf' or str(lamb) == '-inf':
-		#	result = lamb; self.population_a[tree_id][12][3] = 'error' # tag trees with 'divide by zero' errors
-		#	print 'divide by zero', self.algo_sym; print data; self.fx_karoo_pause(0)
-		#
-		#else: result = round(float(lamb), self.precision) # force 'result' to the set number of floating points
-		
-		return result
-		
+				
 	
 	def fx_eval_label(self, tree, node_id):
 	
 		'''
-		Evaluate all or part of a Tree and return a raw expression ('algo_raw').
+		Evaluate all or part of a Tree (starting at node_id) and return a raw mutivariate expression ('algo_raw').
 		
 		In the main code, this method is called once per Tree, but may be called at any time to prepare an expression 
 		for any full or partial (branch) Tree contained in 'population'.
@@ -1233,7 +1201,9 @@ class Base_GP(object):
 		Arguments required: tree, node_id
 		'''
 		
-		if tree[6, node_id] == 'not': tree[6, node_id] = ', not' # temp until this can be fixed at data_load
+		# if tree[6, node_id] == 'not': tree[6, node_id] = ', not' # temp until this can be fixed at data_load
+		
+		node_id = int(node_id)
 		
 		if tree[8, node_id] == '0': # arity of 0 for the pattern '[term]'
 			return '(' + tree[6, node_id] + ')' # 'node_label' (function or terminal)
@@ -1252,16 +1222,18 @@ class Base_GP(object):
 	def fx_eval_id(self, tree, node_id):
 	
 		'''
-		Evaluate all or part of a Tree and return a list of all 'NODE_ID'.
+		Evaluate all or part of a Tree and return a list of all 'NODE_ID's.
 	
 		This method generates a list of all 'NODE_ID's from the given Node and below. It is used primarily to generate 
-		'branch' for the multi-generatioal mutation of Trees.
+		'branch' for the multi-generational mutation of Trees.
 	
 		Pass the starting node for recursion via the local variable 'node_id' where the local variable 'tree' is a copy 
 		of the Tree you desire to evaluate.
 		
 		Arguments required: tree, node_id	
 		'''
+		
+		node_id = int(node_id)
 		
 		if tree[8, node_id] == '0': # arity of 0 for the pattern '[NODE_ID]'
 			return tree[3, node_id] # 'NODE_ID'
@@ -1276,90 +1248,13 @@ class Base_GP(object):
 			elif tree[8, node_id] == '3': # arity of 3 for the pattern '[NODE_ID], [NODE_ID], [NODE_ID], [NODE_ID]'
 				return tree[3, node_id] + ', ' + self.fx_eval_id(tree, tree[9, node_id]) + ', ' + self.fx_eval_id(tree, tree[10, node_id]) + ', ' + self.fx_eval_id(tree, tree[11, node_id])
 				
-
-	def fx_eval_tree_print(self, tree):
-
-		'''
-		Display all or part of a Tree on-screen.
-		
-		This method displays all sequential node_ids from 'start' node through bottom, within the given tree.
-		
-		Arguments required: tree
-		'''
-		
-		ind = ''
-		print '\n\033[1m\033[36m Tree ID', int(tree[0][1]), '\033[0;0m'
-		
-		#for depth in range(0, int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
-		for depth in range(0, self.tree_depth_max + 1): # increment through all possible Tree depths - tested 2016 07/09
-			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
-			
-			for node in range(1, len(tree[3])): # increment through all nodes (redundant, I know)
-				if int(tree[4][node]) == depth:
-					print ''
-					print ind,'\033[1m\033[36m NODE:', tree[3][node], '\033[0;0m'
-					print ind,'  type:', tree[5][node]
-					print ind,'  label:', tree[6][node], '\tparent node:', tree[7][node]
-					print ind,'  arity:', tree[8][node], '\tchild node(s):', tree[9][node], tree[10][node], tree[11][node]
-					
-			ind = ind + '\t'
-			
-		print ''
-		self.fx_eval_poly(tree) # generate the raw and sympified equation for the entire Tree
-		print '\t\033[36mTree', tree[0][1], 'yields (raw):', self.algo_raw, '\033[0;0m'
-		print '\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
-		
-		return
-		
-	
-	def fx_eval_branch_print(self, tree, start):
-	
-		'''
-		Display a Tree branch on-screen.
-		
-		This method displays all sequential node_ids from 'start' node through bottom, within the given branch. This
-		is not used by Karoo GP at this time.
-		
-		Arguments required: tree, start
-		'''
-		
-		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
-		branch_eval = self.fx_eval_id(tree, start) # generate tuple of given 'branch'		
-		branch_symp = sp.sympify(branch_eval) # convert string from tuple to list
-		branch = np.append(branch, branch_symp) # append list to array
-		ind = ''
-		
-		# for depth in range(int(tree[4][start]), int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
-		for depth in range(int(tree[4][start]), self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
-			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
-			
-			for n in range(0, len(branch)): # increment through all nodes listed in the branch
-				node = branch[n]
-				
-				if int(tree[4][node]) == depth:
-					print ''
-					print ind,'\033[1m\033[36m NODE:', node, '\033[0;0m'
-					print ind,'  type:', tree[5][node]
-					print ind,'  label:', tree[6][node], '\tparent node:', tree[7][node]
-					print ind,'  arity:', tree[8][node], '\tchild node(s):', tree[9][node], tree[10][node], tree[11][node]
-					
-			ind = ind + '\t'
-					
-		print ''
-		self.fx_eval_poly(tree) # generate the raw and sympified equation for the entire Tree
-		print '\t\033[36mTree', tree[0][1], 'yields (raw):', self.algo_raw, '\033[0;0m'
-		print '\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
-		
-		return
-		
 	
 	def fx_eval_generation(self):
 	
 		'''
-		Karoo GP evaluates each generation of Trees. This process flattens each GP Tree into a standard equation by 
-		means of a recursive algorithm and subsequent processing by Sympy. Sympy simultaneously evaluates the Tree for 
-		its results, reorganises and then rewrites the expression in its simplest form.
-		
+		This method invokes the evaluation of an entire generation of Trees, as engaged by karoo_gp_server.py and the 
+		'cont' function of karoo_go_main.py. It automatically evaluates population_b before invoking the copy of _b to _a.
+				
 		Arguments required: none
 		'''
 		
@@ -1368,9 +1263,9 @@ class Base_GP(object):
 			print '\n Evaluate all Trees in Generation', self.generation_id
 			if self.display == 'i': self.fx_karoo_pause(0)
 			
-		self.fx_evo_tree_renum(self.population_b) # population renumber
+		self.fx_evolve_tree_renum(self.population_b) # population renumber
 		self.fx_fitness_gym(self.population_b) # run 'fx_eval', 'fx_fitness', 'fx_fitness_store', and fitness record
-		self.fx_tree_archive(self.population_b, 'a') # archive the current, evolved generation of Trees as the next foundation population
+		self.fx_archive_tree_write(self.population_b, 'a') # archive the current, evolved generation of Trees as the next foundation population
 		
 		if self.display != 's':
 			print '\n Copy gp.population_b to gp.population_a\n'
@@ -1379,17 +1274,15 @@ class Base_GP(object):
 		
 	
 	#++++++++++++++++++++++++++++++++++++++++++
-	#   Methods to Evaluate Tree Fitness      |
+	#   Methods to Train and Test a Tree      |
 	#++++++++++++++++++++++++++++++++++++++++++
 	
 	def fx_fitness_gym(self, population):
 	
-		'''
-		This method combines 3 methods into one: 'fx_eval', 'fx_fitness', 'fx_fitness_store', and then displays the 
-		results to the user. It's a hard-core, all-out GP workout!
-		
-		Part 1 evaluates each expression against the data, line for line. This is the most time consuming and CPU 
-		engaging of the entire Genetic Program.
+		'''		
+		Part 1 evaluates each expression against the data, line for line. This is the most time consuming and
+		computationally expensive part of genetic programming. When GPUs are available, the performance can increase
+		by many orders of magnitude.
 		
 		Part 2 evaluates every Tree in each generation to determine which have the best, overall fitness score. This 
 		could be the highest or lowest depending upon if the fitness function is maximising (higher is better) or 
@@ -1410,54 +1303,32 @@ class Base_GP(object):
 		
 		for tree_id in range(1, len(population)):
 		
-			### PART 1 - EXTRACT EXPRESSION FROM TREE ###
+			### PART 1 - GENERATE MULTIVARIATE EXPRESSION FOR EACH TREE ###
 			self.fx_eval_poly(population[tree_id]) # extract the expression
-			if self.display not in ('s','t'): print '\t\033[36mTree', population[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
+			if self.display not in ('s'): print '\t\033[36mTree', population[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 			
 			
-			### PART 2 - EVALUATE TREE FITNESS AND STORE ###
+			### PART 2 - EVALUATE FITNESS FOR EACH TREE AGAINST TRAINING DATA ###
 			fitness = 0
 			
-			if self.display == 't': start = time.time() # start the clock for 'timer' mode
-			
-			if self.cores == 1: # employ only one CPU core and bypass 'pprocess' to avoid overhead
-				for row in range(0, self.data_train_rows): # increment through all rows in the TRAINING data
-					fitness = fitness + self.fx_fitness_eval(tree_id, row) # evaluate Tree Fitness
-					
-			else: # employ multiple CPU cores using 'pprocess'
-				results = pp.Map(limit = self.cores)
-				parallel_function = results.manage(pp.MakeParallel(self.fx_fitness_eval))
-				for row in range(0, self.data_train_rows): # increment through all rows in TRAINING data
-					parallel_function(tree_id, row) # evaluate Tree Fitness
-					
-				fitness = sum(results[:]) # 'pprocess' returns the fitness scores in a single dump
-				
+			expr = str(self.algo_sym) # get sympified expression and process it with TF - tested 2017 02/02
+			result = self.fx_fitness_eval(expr, self.data_train)
+			fitness = result['fitness'] # extract fitness value
 			
 			if self.display == 'i':
 				print '\t \033[36m with fitness sum:\033[1m', fitness, '\033[0;0m\n'
 				
-			if self.display == 't':
-				print '\t \033[36m The fitness_gym has an ellapsed time of \033[0;0m\033[31m%f\033[0;0m' % (time.time() - start), '\033[36mon', self.cores, 'cores\033[0;0m'
-				time_sum = time_sum + (time.time() - start)
-				
 			self.fx_fitness_store(population[tree_id], fitness) # store Fitness with each Tree
 			
 			
-			### PART 3 - COMPARE TREE FITNESS FOR DISPLAY ###
-			if self.kernel == 'b': # display best fit Trees for the BOOLEAN kernel
-				if fitness == self.data_train_rows: # find the Tree with a perfect match for all data rows
-					fitness_best = fitness # set best fitness score
-					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
-					
-			elif self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
+			### PART 3 - COMPARE FITNESS OF ALL TREES IN CURRENT GENERATION ###
+			if self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
 				if fitness >= fitness_best: # find the Tree with Maximum fitness score
 					fitness_best = fitness # set best fitness score
 					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
 					
 			elif self.kernel == 'r': # display best fit Trees for the REGRESSION kernel
-				if fitness_best == 0: # first time through
-					fitness_best = fitness
-					
+				if fitness_best == 0: fitness_best = fitness # set the baseline first time through
 				if fitness <= fitness_best: # find the Tree with Minimum fitness score
 					fitness_best = fitness # set best fitness score
 					self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
@@ -1471,8 +1342,6 @@ class Base_GP(object):
 				# if fitness >= fitness_best: # find the Tree with [Maximum or Minimum] fitness score
 					# fitness_best = fitness # set best fitness score
 					# self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
-														
-		if self.display == 't': print '\n\t \033[36m The sum of all Tree timings is \033[0;0m\033[31m%f\033[0;0m' % time_sum, '\033[0;0m'; self.fx_karoo_pause(0)
 		
 		print '\n\033[36m ', len(self.fittest_dict.keys()), 'trees\033[1m', np.sort(self.fittest_dict.keys()), '\033[0;0m\033[36moffer the highest fitness scores.\033[0;0m'
 		if self.display == 'g': self.fx_karoo_pause(0)
@@ -1480,94 +1349,159 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_fitness_eval(self, tree_id, row):
+	def fx_fitness_eval(self, expr, data, get_labels = False): # used to be fx_fitness_eval
+	
+		'''		
+		Computes tree expression using TensorFlow (TF) returning results and fitness values.
+		
+		This method orchestrates most of the TF routines by parsing input string expression and converting it into TF 
+		operation graph which then is processed in an isolated TF session to compute the results and corresponding fitness 
+		values. 
+		
+			'self.tf_device' - controls which device will be used for computations (CPU or GPU).
+			'self.tf_device_log' - controls device placement logging (debug only).
+
+		Args:
+			'expr' - a string containing math expression to be computed on the data. Variable names should match corresponding 
+			terminal names in 'self.terminals'. Only algebraic operations are currently supported (+, -, *, /, **).
+			
+			'data' - an 'n by m' matrix of the data points containing n observations and m features each. Variable order should 
+			match corresponding order of terminals in 'self.terminals'.
+
+			'get_labels' - a boolean flag which controls whether classification labels should be extracted from the results.
+			This is applied only to the CLASSIFY kernel and defaults to 'False'.
+
+		Returns:
+			A dict mapping keys to the following outputs:
+				'result' - an array of the results of applying given expression to the data
+				'labels' - an array of the labels extracted from the results; defined only for CLASSIFY kernel, None otherwise
+				'solution' - an array of the solution values extracted from the data (variable 's' in the dataset)
+				'pairwise_fitness' - an array of the element-wise results of applying corresponding fitness kernel function
+				'fitness' - aggregated scalar fitness value
+				
+		Arguments required: expr, data
+		'''
+		
+		# Initialize TensorFlow session
+		tf.reset_default_graph() # Reset TF internal state and cache (after previous processing)
+		config = tf.ConfigProto(log_device_placement=self.tf_device_log, allow_soft_placement=True)
+		config.gpu_options.allow_growth = True
+		
+		with tf.Session(config=config) as sess:
+			with sess.graph.device(self.tf_device):
+			
+				# Load data into TF
+				tensors = {}
+				for i in range(len(self.terminals)):
+					var = self.terminals[i]
+					tensors[var] = tf.constant(data[:, i], dtype=tf.float32)
+					
+				# Transform string expression into TF operation graph
+				result = self.fx_fitness_expr_parse(expr, tensors)
+				
+				labels = tf.no_op() # a placeholder, applies only to CLASSIFY kernel
+				solution = tensors['s'] # solution value is assumed to be stored in 's' terminal
+				
+				# Add fitness computation into TF graph
+				if self.kernel == 'c': # CLASSIFY kernels
+					if get_labels: labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype=[tf.int32, tf.string], swap_memory=True)
+					pairwise_fitness = self.fx_fitness_train_classify(result, tf.cast(solution, tf.float32))
+					
+				elif self.kernel == 'r': # REGRESSION kernel
+					pairwise_fitness = self.fx_fitness_train_regress(result, tf.cast(solution, tf.float32))
+					
+				elif self.kernel == 'm': # MATCH kernel
+					pairwise_fitness = self.fx_fitness_train_match(result, solution)
+					
+				# elif self.kernel == '[other]': # [OTHER] kernel
+					# pairwise_fitness = self.fx_fitness_function_[other](result ?, solution ?)
+					
+				else: raise Exception('Kernel type is wrong or missing. You entered {}'.format(self.kernel))
+				
+				fitness = tf.reduce_sum(pairwise_fitness)
+				
+				# Process TF graph and collect the results
+				result, labels, solution, fitness, pairwise_fitness = sess.run([result, labels, solution, fitness, pairwise_fitness])
+				
+		return {'result': result, 'labels': labels, 'solution': solution, 'fitness': float(fitness), 'pairwise_fitness': pairwise_fitness}
+		
+	
+	def fx_fitness_expr_parse(self, expr, tensors):
+	
+		'''		
+		Extract expression tree from the string algo_sym and transform into TensorFlow (TF) graph.
+		
+		Arguments required: expr, tensors
+		'''
+		
+		tree = ast.parse(expr, mode='eval').body
+		
+		return self.fx_fitness_node_parse(tree, tensors)
+		
+	
+	def fx_fitness_node_parse(self, node, tensors):
+	
+		'''		
+		Recursively transforms parsed expression tree into TensorFlow (TF) graph.
+		
+		Arguments required: node, tensors
+		'''
+		
+		if isinstance(node, ast.Name): # <tensor_name>
+			return tensors[node.id]
+		
+		elif isinstance(node, ast.Num): # <number>
+			shape = tensors[tensors.keys()[0]].get_shape()
+			return tf.constant(node.n, shape=shape, dtype=tf.float32)
+			
+		elif isinstance(node, ast.BinOp): # <left> <operator> <right>
+			return operators[type(node.op)](self.fx_fitness_node_parse(node.left, tensors), self.fx_fitness_node_parse(node.right, tensors))
+			
+		elif isinstance(node, ast.UnaryOp): # <operator> <operand> e.g., -1
+			return operators[type(node.op)](self.fx_fitness_node_parse(node.operand, tensors))
+			
+		else: raise TypeError(node)
+		
+	
+	def fx_fitness_labels_map(self, result):
 	
 		'''
-		Evaluate the fitness of the Tree.
+		Creates label extraction TensorFlow (TF) sub-graph for CLASSIFY kernel defined as a sequence of boolean conditions. 
+		Outputs an array of tuples containing label extracted from the result and corresponding boolean condition triggered.
+		
+		The original (pre-TensorFlow) code is as follows:
+		
+			skew = (self.class_labels / 2) - 1 # '-1' keeps a binary classification splitting over the origin
+			if solution == 0 and result <= 0 - skew; fitness = 1: # check for first class (the left-most bin)
+			elif solution == self.class_labels - 1 and result > solution - 1 - skew; fitness = 1: # check for last class (the right-most bin)
+			elif solution - 1 - skew < result <= solution - skew; fitness = 1: # check for class bins between first and last
+			else: fitness = 0 # no class match
+			
+		See 'fx_fitness_train_classify' for a description of the multi-class classifier.
+		
+		Arguments required: result
+		'''
+		
+		skew = (self.class_labels / 2) - 1
+		label_rules = {self.class_labels - 1: (tf.constant(self.class_labels - 1), tf.constant(' > {}'.format(self.class_labels - 2 - skew)))}
+		
+		for class_label in range(self.class_labels - 2, 0, -1):
+			cond = (class_label - 1 - skew < result) & (result <= class_label - skew)
+			label_rules[class_label] = tf.cond(cond, lambda: (tf.constant(class_label), tf.constant(' <= {}'.format(class_label - skew))), lambda: label_rules[class_label + 1])
+			
+		zero_rule = tf.cond(result <= 0 - skew, lambda: (tf.constant(0), tf.constant(' <= {}'.format(0 - skew))), lambda: label_rules[1])
+			
+		return zero_rule
+		
+	
+	def fx_fitness_train_classify(self, result, solution): # CLASSIFICATION kernel
+	
+		'''
+		Creates element-wise fitness computation TensorFlow (TF) sub-graph for CLASSIFY kernel.
 		
 		This method uses the 'sympified' (SymPy) expression ('algo_sym') created in 'fx_eval_poly' and the data set 
-		loaded at run-time to evaluate the fitness of the selected kernel. The output is returned as the global 
-		variable 'fitness'.
+		loaded at run-time to evaluate the fitness of the selected kernel.
 		
-		[need to write more about capturing 'zoo' and 'false']
-		
-		Arguments required: row
-		'''
-		
-		# We need to extract the variables from the expression. However, these variables are no longer correlated
-		# to the original variables listed across the top of each column of data.csv. Therefore, we must re-assign 
-		# the respective values for each subsequent row in the data .csv, for each Tree's unique expression.
-		
-		result = self.fx_eval_subs(tree_id, self.data_train_dict_array[row]) # process the expression against the training data - tested 2016 07
-		
-		# if self.population_a[tree_id][12][3] == 'error': fitness = 0
-		# else: # a place holder for future treatmemt of trees with errors
-		
-		solution = round(float(self.data_train_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
-						
-		if self.kernel == 'b': # BOOLEAN kernel
-			fitness = self.fx_fitness_function_bool(row, result, solution)
-				
-		elif self.kernel == 'c': # CLASSIFY kernel
-			fitness = self.fx_fitness_function_classify(row, result, solution)
-				
-		elif self.kernel == 'r': # REGRESSION kernel
-			fitness = self.fx_fitness_function_regress(row, result, solution)
-				
-		elif self.kernel == 'm': # MATCH kernel
-			fitness = self.fx_fitness_function_match(row, result, solution)
-				
-		# elif: # self.fx_kernel == '[other]': # place-holder for a new kernel
-			# self.fx_kernel_[other](row, result, solution)
-				
-		return fitness
-		
-	
-	def fx_fitness_function_regress(self, row, result, solution):
-	
-		'''
-		A symbolic regression kernel used within the 'fitness_eval' function.
-		
-		This is a minimisation function which seeks a result which is closest to the solution.
-		
-		[need to write more]
-		
-		Arguments required: row, result, solution
-		'''
-		
-		fitness = abs(result - solution) # this is a Minimisation function which seeks the smallest fitness
-		
-		if self.display == 'i': print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
-			
-		return fitness
-		
-	
-	def fx_fitness_function_bool(self, row, result, solution):
-	
-		'''
-		A Boolean kernel used within the 'fitness_eval' function.
-		
-		This is a maximization function which seeks an exact solution (a perfect match).
-		
-		[need to write more]
-		
-		Arguments required: row, result, solution
-		'''
-		
-		if result == solution:
-			if self.display == 'i': print '\t\033[36m data row', row, '\033[0;0m\033[36myields:\033[1m', result, '\033[0;0m'
-			fitness = 1 # improve the fitness score by 1
-			
-		else:
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
-			fitness = 0 # do not adjust the fitness score
-			
-		return fitness
-		
-	
-	def fx_fitness_function_classify(self, row, result, solution):
-	
-		'''
 		This multiclass classifer compares each row of a given Tree to the known solution, comparing estimated values 
 		(labels) generated by Karoo GP against the correct labels. This method is able to work with any number of class 
 		labels, from 2 to n. The left-most bin includes -inf. The right-most bin includes +inf. Those inbetween are 
@@ -1580,77 +1514,80 @@ class Base_GP(object):
 		side of origin as it has not yet been determined the effect of enabling the middle bin to include both a 
 		negative and positive space.
 		
-		Arguments required: row, result, solution
+		Arguments required: result, solution		
 		'''
 		
-		# tested 2015 10/18
+		skew = (self.class_labels / 2) - 1
+		rule11 = tf.equal(solution, 0)
+		rule12 = tf.less_equal(result, 0 - skew)
+		rule13 = tf.logical_and(rule11, rule12)
+		rule21 = tf.equal(solution, self.class_labels - 1)
+		rule22 = tf.greater(result, solution - 1 - skew)
+		rule23 = tf.logical_and(rule21, rule22)
+		rule31 = tf.less(solution - 1 - skew, result)
+		rule32 = tf.less_equal(result, solution - skew)
+		rule33 = tf.logical_and(rule31, rule32)
 		
-		skew = (self.class_labels / 2) - 1 # '-1' keeps a binary classification splitting over the origin
-		# skew = 0 # for code testing
+		return tf.cast(tf.logical_or(tf.logical_or(rule13, rule23), rule33), tf.int32)
 		
-		if solution == 0 and result <= 0 - skew: # check for first class (the left-most bin)
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '<=', int(0 - skew), '\033[0;0m'
-			fitness = 1
 			
-		elif solution == self.class_labels - 1 and result > solution - 1 - skew: # check for last class (the right-most bin)
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', result, '>', int(solution - 1 - skew), '\033[0;0m'
-			fitness = 1
-			
-		elif solution - 1 - skew < result <= solution - skew: # check for class bins between first and last
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields class label:\033[1m', int(solution), 'as', int(solution - 1 - skew), '<', result, '<=', int(solution - skew), '\033[0;0m'
-			fitness = 1
-			
-		else: # no class match
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields: no match \033[0;0m'
-			fitness = 0
-			
-		return fitness
-		
-	
-	def fx_fitness_function_match(self, row, result, solution):
+	def fx_fitness_train_regress(self, result, solution): # REGRESSION kernel
 	
 		'''
-		A Matching kernel used within the 'fitness_eval' function.
+		Creates element-wise fitness computation TensorFlow (TF) sub-graph for REGRESSION kernel.
+		
+		This is a minimisation function which seeks a result which is closest to the solution.
+		
+		[need to write more]
+		
+		Arguments required: result, solution
+		'''
+		
+		return tf.abs(solution - result)
+		
+	
+	def fx_fitness_train_match(self, result, solution): # MATCH kernel
+	
+		'''
+		Creates element-wise fitness computation TensorFlow (TF) sub-graph for MATCH kernel.
 		
 		This is a maximization function which seeks an exact solution (a perfect match).
 		
 		[need to write more]
 		
-		Arguments required: row, result, solution
+		Arguments required: result, solution
 		'''
 		
-		if result == solution:
-			if self.display == 'i': print '\t\033[36m data row', row, '\033[0;0m\033[36myields:\033[1m', result, '\033[0;0m' # bold font face
-			fitness = 1 # improve the fitness score by 1
-			
-		else:
-			if self.display == 'i': print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m' # standard font face
-			fitness = 0 # do not adjust the fitness score
-			
-		return fitness
+		return tf.cast(tf.equal(solution, result), tf.int32)
 		
-		
-	# def fx_fitness_function_[other](self, row, result, solution): # the [OTHER] kernel
+	
+	# def fx_fitness_function_[other](self, result, solution): # [OTHER] kernel
 
-		'''
-		[other] kernel used within the 'fitness_eval' function
+		# '''
+		# Creates element-wise fitness computation TensorFlow (TF) sub-graph for [other] kernel.
 		
-		This is a [minimisation or maximization] function which [insert description].
-				
-		[insert new fitness function kernel here]
+		# This is a [minimisation or maximization] function which [insert description].
 		
-		return fitness
-		'''
+		# return tf.[?]([insert formula])
+		# '''
 		
 	
 	def fx_fitness_store(self, tree, fitness):
+	
+		'''
+		Records the fitness and length of the raw algorithm (multivariate expression) to the Numpy array. Parsimony can 
+		be used to apply pressure to the evolutionary process to select from a set of trees with the same fitness function 
+		the one(s) with the simplest (shortest) multivariate expression.
+		
+		Arguments required: tree, fitness
+		'''
 	
 		fitness = float(fitness)
 		fitness = round(fitness, self.precision)
 		
 		tree[12][1] = fitness # store the fitness with each tree
-		tree[12][2] = len(str(self.algo_raw)) # store the length of the raw algo for the application fo parsimony
-		# tree[12][3] might equal 'error' as recorded by 'fx_eval_subs'
+		tree[12][2] = len(str(self.algo_raw)) # store the length of the raw algo for parsimony
+		# tree[12][3] might equal 'error' as recorded by 'fx_eval_subs' - NO LONGER USED
 		# if len(tree[3]) > 4: # if the Tree array is wide enough ...
 		
 		return
@@ -1713,7 +1650,7 @@ class Base_GP(object):
 					# tourn_lead remains unchanged
 					# tourn_test remains unchanged
 					
-				else: print '\n\t\033[31mERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
+				else: print '\n\t\033[31m ERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
 				
 			
 			elif self.fitness_type == 'min': # if the fitness function is Minimising
@@ -1736,7 +1673,7 @@ class Base_GP(object):
 					# tourn_lead remains unchanged
 					# tourn_test remains unchanged
 					
-				else: print '\n\t\033[31mERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
+				else: print '\n\t\033[31m ERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
 					
 		
 		tourn_winner = np.copy(self.population_a[tourn_lead]) # copy full Tree so as to not inadvertantly modify the original tree
@@ -1763,7 +1700,7 @@ class Base_GP(object):
 		mutation or reproduction nor does it take into account parsimony (seeking the simplest expression). Nor does
 		a 'divide by zero' error keep a tree from entering the gene pool, as it might contain other, beneficial code
 		to contribute to the next generation. However, trees with 'error' are given a fitness score of 0 and therefore
-		will eventually be removed from the gene pool (see 'fx_fitness_eval').
+		will eventually be removed from the gene pool.
 		
 		Arguments required: none
 		'''
@@ -1789,11 +1726,82 @@ class Base_GP(object):
 		return
 		
 	
+	def fx_fitness_test_classify(self, result):
+	
+		'''
+		Print the Precision-Recall and Confusion Matrix for a CLASSIFICATION run against the test data.
+
+		From scikit-learn.org/stable/auto_examples/model_selection/plot_precision_recall.html
+			Precision (P) = true_pos / true_pos + false_pos
+			Recall (R) = true_pos / true_pos + false_neg
+			harmonic mean of Precision and Recall (F1) = 2(P x R) / (P + R)
+			
+		From scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+			y_pred = result, the estimated target values (labels) generated by Karoo GP
+			y_true = solution, the correct target values (labels) associated with the data
+			
+		Arguments required: result
+		'''
+		
+		for i in range(len(result['result'])):
+			print '\t\033[36m Data row {} predicts class:\033[1m {} ({} label) as {:.2f}{}\033[0;0m'.format(i, int(result['labels'][0][i]), int(result['solution'][i]), result['result'][i], result['labels'][1][i])
+			
+		print '\n Fitness value: {}'.format(result['fitness'])
+		print '\n Classification report:', '\n', skm.classification_report(result['solution'], result['labels'][0])
+		print ' Confusion matrix:', '\n', skm.confusion_matrix(result['solution'], result['labels'][0])
+		
+		return
+		
+		
+	def fx_fitness_test_regress(self, result):
+	
+		'''
+		Print the Fitness value and Mean Squared Error for a REGRESSION run against the test data.
+		'''
+		
+		for i in range(len(result['result'])):
+			print '\t\033[36m Data row {} predicts value:\033[1m {:.2f} ({:.2f} True)\033[0;0m'.format(i, result['result'][i], result[ 'solution'][i])
+			
+		MSE, fitness = skm.mean_squared_error(result['result'], result['solution']), result['fitness']
+		print '\n\t Fitness value: {}'.format(fitness)
+		print '\t Mean Squared Error: {}'.format(MSE)
+		
+		return
+		
+		
+	def fx_fitness_test_match(self, result):
+	
+		'''
+		Print the accuracy for a MATCH kernel run against the test data.
+		'''
+		
+		for i in range(len(result['result'])):
+			print '\t\033[36m Data row {} predicts value:\033[1m {} ({} label)\033[0;0m'.format(i, int(result['result'][i]), int(result['solution'][i]))
+			
+		print '\n\tFitness value: {}'.format(result['fitness'])
+	
+		return
+		
+	
+	# def fx_fitness_test_[other](self, result):
+	
+		# '''
+		# Print the [statistical measure] for a [OTHER] kernel run against the test data.
+		# '''
+		
+		# for i in range(len(result['result'])):
+			# print '\t\033[36m Data row {} predicts value:\033[1m {} ({} label)\033[0;0m'.format(i, int(result['result'][i]), int(result['solution'][i]))
+			
+		# print '\n\tFitness value: {}'.format(result['fitness'])
+	
+		# return
+		
+	
 	#++++++++++++++++++++++++++++++++++++++++++
 	#   Methods to Evolve a Population        |
 	#++++++++++++++++++++++++++++++++++++++++++
 	
-	def fx_evo_point_mutate(self, tree):
+	def fx_evolve_point_mutate(self, tree):
 	
 		'''
 		Mutate a single point in any Tree (Grow or Full).
@@ -1817,16 +1825,16 @@ class Base_GP(object):
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 			tree[6][node] = self.terminals[rnd] # replace terminal (variable)
 		
-		else: print '\n\t\033[31mERROR! In fx_evo_point_mutate, node_type =', tree[5][node], '\033[0;0m'; self.fx_karoo_pause(0)
+		else: print '\n\t\033[31m ERROR! In fx_evolve_point_mutate, node_type =', tree[5][node], '\033[0;0m'; self.fx_karoo_pause(0)
 		
-		tree = self.fx_evo_fitness_wipe(tree) # remove fitness data
+		tree = self.fx_evolve_fitness_wipe(tree) # remove fitness data
 		
 		if self.display == 'db': print '\n\033[36m This is tourn_winner after node\033[1m', node, '\033[0;0m\033[36mmutation and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 		
 		return tree, node # 'node' is returned only to be assigned to the 'tourn_trees' record keeping
 		
 	
-	def fx_evo_full_mutate(self, tree, branch):
+	def fx_evolve_full_mutate(self, tree, branch):
 	
 		'''
 		Mutate a branch of a Full method Tree.
@@ -1855,14 +1863,14 @@ class Base_GP(object):
 				rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 				tree[6][branch[n]] = self.terminals[rnd] # replace terminal (variable)
 				
-		tree = self.fx_evo_fitness_wipe(tree) # remove fitness data
+		tree = self.fx_evolve_fitness_wipe(tree) # remove fitness data
 
 		if self.display == 'db': print '\n\033[36m This is tourn_winner after nodes\033[1m', branch, '\033[0;0m\033[36mwere mutated and updated:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 				
 		return tree
 		
 	
-	def fx_evo_grow_mutate(self, tree, branch):
+	def fx_evolve_grow_mutate(self, tree, branch):
 	
 		'''
 		Mutate a branch of a Grow method Tree.
@@ -1890,7 +1898,7 @@ class Base_GP(object):
 		branch_depth = self.tree_depth_max - int(tree[4][branch_top]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch - 2016 07/10
 		
 		if branch_depth < 0: # this has never occured ... yet
-			print '\n\t\033[31mERROR! In fx_evo_grow_mutate: branch_depth < 0\033[0;0m'
+			print '\n\t\033[31m ERROR! In fx_evolve_grow_mutate: branch_depth < 0\033[0;0m'
 			print '\t branch_depth =', branch_depth; self.fx_karoo_pause(0)
 			
 		elif branch_depth == 0: # the point of mutation ('branch_top') chosen resides at the maximum allowable depth, so mutate term to term
@@ -1920,9 +1928,9 @@ class Base_GP(object):
 				tree[6][branch_top] = self.terminals[rnd] # replace label
 				
 				tree = np.delete(tree, branch[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
-				tree = self.fx_evo_node_arity_fix(tree) # fix all node arities
-				tree = self.fx_evo_child_link_fix(tree) # fix all child links
-				tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
+				tree = self.fx_evolve_node_arity_fix(tree) # fix all node arities
+				tree = self.fx_evolve_child_link_fix(tree) # fix all child links
+				tree = self.fx_evolve_node_renum(tree) # renumber all 'NODE_ID's
 				
 				if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 				
@@ -1937,15 +1945,15 @@ class Base_GP(object):
 				if self.display == 'db': print '\n\033[36m This is the new Tree to be inserted at node\033[1m', branch_top, '\033[0;0m\033[36min tourn_winner:\033[0;0m\n', self.tree; self.fx_karoo_pause(0)
 				
 				# because we already know the maximum depth to which this branch can grow, there is no need to prune after insertion
-				tree = self.fx_evo_branch_top_copy(tree, branch) # copy root of new 'gp.tree' to point of mutation ('branch_top') in 'tree' ('tourn_winner')
-				tree = self.fx_evo_branch_body_copy(tree) # copy remaining nodes in new 'gp.tree' to 'tree' ('tourn_winner')
+				tree = self.fx_evolve_branch_top_copy(tree, branch) # copy root of new 'gp.tree' to point of mutation ('branch_top') in 'tree' ('tourn_winner')
+				tree = self.fx_evolve_branch_body_copy(tree) # copy remaining nodes in new 'gp.tree' to 'tree' ('tourn_winner')
 				
-		tree = self.fx_evo_fitness_wipe(tree) # wipe fitness data
+		tree = self.fx_evolve_fitness_wipe(tree) # wipe fitness data
 		
 		return tree
 		
 	
-	def fx_evo_crossover(self, parent, branch_x, offspring, branch_y):
+	def fx_evolve_crossover(self, parent, branch_x, offspring, branch_y):
 	
 		'''
 		Refer to the method 'fx_karoo_crossover' for a full description of the genetic operator Crossover.
@@ -1977,8 +1985,8 @@ class Base_GP(object):
 			offspring[8][branch_top] = 0 # set terminal arity
 			
 			offspring = np.delete(offspring, branch_y[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
-			offspring = self.fx_evo_child_link_fix(offspring) # fix all child links
-			offspring = self.fx_evo_node_renum(offspring) # renumber all 'NODE_ID's
+			offspring = self.fx_evolve_child_link_fix(offspring) # fix all child links
+			offspring = self.fx_evolve_node_renum(offspring) # renumber all 'NODE_ID's
 			
 			if self.display == 'db': print '\n\033[36m This is the resulting offspring:\033[0;0m\n', offspring; self.fx_karoo_pause(0)
 			
@@ -1988,7 +1996,7 @@ class Base_GP(object):
 			if self.display == 'i': print '\t\033[36m  branch crossover from \033[1mparent', parent[0][1], '\033[0;0m\033[36mto \033[1moffspring', offspring[0][1], '\033[0;0m\033[36mat node\033[1m', branch_top, '\033[0;0m'
 			
 			# self.fx_gen_tree_build('test', 'f', 2) # TEST & DEBUG: disable the next 'self.tree ...' line
-			self.tree = self.fx_evo_branch_copy(parent, branch_x) # generate stand-alone 'gp.tree' with properties of 'branch_x'
+			self.tree = self.fx_evolve_branch_copy(parent, branch_x) # generate stand-alone 'gp.tree' with properties of 'branch_x'
 			
 			if self.display == 'db':
 				print '\n\033[36m From one parent:\033[0;0m\n', parent
@@ -1997,16 +2005,16 @@ class Base_GP(object):
 			if self.display == 'db':
 				print '\n\033[36m ... and insert it into a copy of the second parent in place of the selected branch\033[1m', branch_y,':\033[0;0m\n', offspring; self.fx_karoo_pause(0)
 				
-			offspring = self.fx_evo_branch_top_copy(offspring, branch_y) # copy root of 'branch_y' ('gp.tree') to 'offspring'
-			offspring = self.fx_evo_branch_body_copy(offspring) # copy remaining nodes in 'branch_y' ('gp.tree') to 'offspring'
-			offspring = self.fx_evo_tree_prune(offspring, self.tree_depth_max) # prune to the max Tree depth + adjustment - tested 2016 07/10
+			offspring = self.fx_evolve_branch_top_copy(offspring, branch_y) # copy root of 'branch_y' ('gp.tree') to 'offspring'
+			offspring = self.fx_evolve_branch_body_copy(offspring) # copy remaining nodes in 'branch_y' ('gp.tree') to 'offspring'
+			offspring = self.fx_evolve_tree_prune(offspring, self.tree_depth_max) # prune to the max Tree depth + adjustment - tested 2016 07/10
 			
-		offspring = self.fx_evo_fitness_wipe(offspring) # wipe fitness data and return 'offspring'
+		offspring = self.fx_evolve_fitness_wipe(offspring) # wipe fitness data and return 'offspring'
 		
 		return offspring
 		
 	
-	def fx_evo_branch_select(self, tree):
+	def fx_evolve_branch_select(self, tree):
 	
 		'''
 		Select all nodes in the 'tourn_winner' Tree at and below the randomly selected starting point.
@@ -2031,7 +2039,7 @@ class Base_GP(object):
 		return branch
 		
 	
-	def fx_evo_branch_top_copy(self, tree, branch):
+	def fx_evolve_branch_top_copy(self, tree, branch):
 	
 		'''
 		Copy the point of mutation ('branch_top') from 'gp.tree' to 'tree'.
@@ -2053,9 +2061,9 @@ class Base_GP(object):
 		
 		tree = np.delete(tree, branch[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
 		
-		c_buffer = self.fx_evo_c_buffer(tree, branch_top) # generate c_buffer for point of mutation ('branch_top')
-		tree = self.fx_evo_child_insert(tree, branch_top, c_buffer) # insert new nodes
-		tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
+		c_buffer = self.fx_evolve_c_buffer(tree, branch_top) # generate c_buffer for point of mutation ('branch_top')
+		tree = self.fx_evolve_child_insert(tree, branch_top, c_buffer) # insert new nodes
+		tree = self.fx_evolve_node_renum(tree) # renumber all 'NODE_ID's
 
 		if self.display == 'db':
 			print '\n\t ... inserted node 1 of', len(self.tree[3])-1
@@ -2064,7 +2072,7 @@ class Base_GP(object):
 		return tree
 		
 	
-	def fx_evo_branch_body_copy(self, tree):
+	def fx_evolve_branch_body_copy(self, tree):
 	
 		'''
 		Copy the body of 'gp.tree' to 'tree', one node at a time.
@@ -2078,7 +2086,7 @@ class Base_GP(object):
 		Arguments required: tree
 		'''
 				
-		node_count = 2 # set node count for 'gp.tree' to 2 as the new root has already replaced 'branch_top' in 'fx_evo_branch_top_copy'
+		node_count = 2 # set node count for 'gp.tree' to 2 as the new root has already replaced 'branch_top' in 'fx_evolve_branch_top_copy'
 		
 		while node_count < len(self.tree[3]): # increment through all nodes in the new Tree ('gp.tree'), starting with node 2
 		
@@ -2092,14 +2100,14 @@ class Base_GP(object):
 					tree[8][j] = self.tree[8][node_count] # copy 'node_arity' from branch to tree
 					
 					if tree[5][j] == 'term':
-						tree = self.fx_evo_child_link_fix(tree) # fix all child links
-						tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
+						tree = self.fx_evolve_child_link_fix(tree) # fix all child links
+						tree = self.fx_evolve_node_renum(tree) # renumber all 'NODE_ID's
 						
 					if tree[5][j] == 'func':
-						c_buffer = self.fx_evo_c_buffer(tree, j) # generate 'c_buffer' for point of mutation ('branch_top')
-						tree = self.fx_evo_child_insert(tree, j, c_buffer) # insert new nodes
-						tree = self.fx_evo_child_link_fix(tree) # fix all child links
-						tree = self.fx_evo_node_renum(tree) # renumber all 'NODE_ID's
+						c_buffer = self.fx_evolve_c_buffer(tree, j) # generate 'c_buffer' for point of mutation ('branch_top')
+						tree = self.fx_evolve_child_insert(tree, j, c_buffer) # insert new nodes
+						tree = self.fx_evolve_child_link_fix(tree) # fix all child links
+						tree = self.fx_evolve_node_renum(tree) # renumber all 'NODE_ID's
 						
 					if self.display == 'db':
 						print '\n\t ... inserted node', node_count, 'of', len(self.tree[3])-1
@@ -2110,7 +2118,7 @@ class Base_GP(object):
 		return tree
 		
 	
-	def fx_evo_branch_copy(self, tree, branch):
+	def fx_evolve_branch_copy(self, tree, branch):
 	
 		'''
 		This method prepares a stand-alone Tree as a copy of the given branch.
@@ -2135,24 +2143,24 @@ class Base_GP(object):
 			node_depth = int(tree[4][node]) - int(tree[4][branch_top]) # subtract the depth of 'branch_top' from the current node depth
 			node_type = tree[5][node]
 			node_label = tree[6][node]
-			node_parent = '' # updated by 'fx_evo_parent_link_fix', below
+			node_parent = '' # updated by 'fx_evolve_parent_link_fix', below
 			node_arity = tree[8][node]
-			node_c1 = '' # updated by 'fx_evo_child_link_fix', below
+			node_c1 = '' # updated by 'fx_evolve_child_link_fix', below
 			node_c2 = ''
 			node_c3 = ''
 			fitness = ''
 			
 			new_tree = np.append(new_tree, [ [TREE_ID],[tree_type],[tree_depth_base],[NODE_ID],[node_depth],[node_type],[node_label],[node_parent],[node_arity],[node_c1],[node_c2],[node_c3],[fitness] ], 1)
 			
-		new_tree = self.fx_evo_node_renum(new_tree)
-		new_tree = self.fx_evo_child_link_fix(new_tree)
-		new_tree = self.fx_evo_parent_link_fix(new_tree)
-		new_tree = self.fx_tree_clean(new_tree)
+		new_tree = self.fx_evolve_node_renum(new_tree)
+		new_tree = self.fx_evolve_child_link_fix(new_tree)
+		new_tree = self.fx_evolve_parent_link_fix(new_tree)
+		new_tree = self.fx_archive_tree_clean(new_tree)
 		
 		return new_tree
 		
 	
-	def fx_evo_c_buffer(self, tree, node):
+	def fx_evolve_c_buffer(self, tree, node):
 	
 		'''
 		This method serves the very important function of determining the links from parent to child for any given 
@@ -2184,7 +2192,7 @@ class Base_GP(object):
 		return c_buffer
 		
 	
-	def fx_evo_child_link(self, tree, node, c_buffer):
+	def fx_evolve_child_link(self, tree, node, c_buffer):
 	
 		'''
 		Link each parent node to its children.
@@ -2216,12 +2224,12 @@ class Base_GP(object):
 				tree[10][node] = c_buffer + 1
 				tree[11][node] = c_buffer + 2
 				
-			else: print '\n\t\033[31mERROR! In fx_evo_child_link: node', node, 'has arity', tree[8][node]; self.fx_karoo_pause(0)
+			else: print '\n\t\033[31m ERROR! In fx_evolve_child_link: node', node, 'has arity', tree[8][node]; self.fx_karoo_pause(0)
 				
 		return tree
 		
 	
-	def fx_evo_child_link_fix(self, tree):
+	def fx_evolve_child_link_fix(self, tree):
 	
 		'''
 		In a given Tree, fix 'node_c1', 'node_c2', 'node_c3' for all nodes.
@@ -2234,13 +2242,13 @@ class Base_GP(object):
 		# tested 2015 06/04
 		for node in range(1, len(tree[3])):
 		
-			c_buffer = self.fx_evo_c_buffer(tree, node) # generate c_buffer for each node
-			tree = self.fx_evo_child_link(tree, node, c_buffer) # update child links for each node
+			c_buffer = self.fx_evolve_c_buffer(tree, node) # generate c_buffer for each node
+			tree = self.fx_evolve_child_link(tree, node, c_buffer) # update child links for each node
 			
 		return tree
 		
 	
-	def fx_evo_child_insert(self, tree, node, c_buffer):
+	def fx_evolve_child_insert(self, tree, node, c_buffer):
 	
 		'''
 		Insert child nodes.
@@ -2249,7 +2257,7 @@ class Base_GP(object):
 		'''
 		
 		if int(tree[8][node]) == 0: # if arity = 0
-			print '\n\t\033[31mERROR! In fx_evo_child_insert: node', node, 'has arity 0\033[0;0m'; self.fx_karoo_pause(0)
+			print '\n\t\033[31m ERROR! In fx_evolve_child_insert: node', node, 'has arity 0\033[0;0m'; self.fx_karoo_pause(0)
 		
 		elif int(tree[8][node]) == 1: # if arity = 1
 			tree = np.insert(tree, c_buffer, '', axis=1) # insert node for 'node_c1'
@@ -2284,12 +2292,12 @@ class Base_GP(object):
 			tree[4][c_buffer + 2] = int(tree[4][node]) + 1 # node_depth
 			tree[7][c_buffer + 2] = int(tree[3][node]) # parent ID
 			
-		else: print '\n\t\033[31mERROR! In fx_evo_child_insert: node', node, 'arity > 3\033[0;0m'; self.fx_karoo_pause(0)
+		else: print '\n\t\033[31m ERROR! In fx_evolve_child_insert: node', node, 'arity > 3\033[0;0m'; self.fx_karoo_pause(0)
 				
 		return tree
 		
 	
-	def fx_evo_parent_link_fix(self, tree):
+	def fx_evolve_parent_link_fix(self, tree):
 	
 		'''
 		In a given Tree, fix 'parent_id' for all nodes.
@@ -2324,7 +2332,7 @@ class Base_GP(object):
 		return tree
 		
 	
-	def fx_evo_node_arity_fix(self, tree):
+	def fx_evolve_node_arity_fix(self, tree):
 	
 		'''
 		In a given Tree, fix 'node_arity' for all nodes labeled 'term' but with arity 2.
@@ -2347,7 +2355,7 @@ class Base_GP(object):
 		return tree
 		
 		
-	def fx_evo_node_renum(self, tree):
+	def fx_evolve_node_renum(self, tree):
 	
 		'''
 		Renumber all 'NODE_ID' in a given tree.
@@ -2365,7 +2373,7 @@ class Base_GP(object):
 		return tree
 		
 	
-	def fx_evo_fitness_wipe(self, tree):
+	def fx_evolve_fitness_wipe(self, tree):
 	
 		'''
 		Remove all fitness data from a given tree.
@@ -2381,7 +2389,7 @@ class Base_GP(object):
 		return tree
 		
 	
-	def fx_evo_tree_prune(self, tree, depth):
+	def fx_evolve_tree_prune(self, tree, depth):
 	
 		'''
 		This method reduces the depth of a Tree. Used with Crossover, the input value 'branch' can be a partial Tree 
@@ -2407,12 +2415,12 @@ class Base_GP(object):
 			else: pass # as int(tree[4][n]) < depth and will remain untouched
 			
 		tree = np.delete(tree, nodes, axis = 1) # delete nodes deeper than the maximum allowed Tree depth
-		tree = self.fx_evo_node_arity_fix(tree) # fix all node arities
+		tree = self.fx_evolve_node_arity_fix(tree) # fix all node arities
 		
 		return tree
 		
 		
-	def fx_evo_tree_renum(self, population):
+	def fx_evolve_tree_renum(self, population):
 	
 		'''
 		Renumber all 'TREE_ID' in a given population.
@@ -2430,7 +2438,7 @@ class Base_GP(object):
 		return population
 		
 	
-	def fx_evo_pop_copy(self, pop_a, title):
+	def fx_evolve_pop_copy(self, pop_a, title):
 	
 		'''
 		Copy one population to another.
@@ -2450,150 +2458,93 @@ class Base_GP(object):
 			
 		return pop_b
 		
-		
+	
 	#++++++++++++++++++++++++++++++++++++++++++
-	#   Methods to Validate a Tree            |
+	#   Methods to Display a Tree             |
 	#++++++++++++++++++++++++++++++++++++++++++		
-	
-	def fx_test_bool(self, tree_id):
-	
+			
+	def fx_display_tree(self, tree):
+
 		'''
-		# [need to build]
+		Display all or part of a Tree on-screen.
+		
+		This method displays all sequential node_ids from 'start' node through bottom, within the given tree.
 		
 		Arguments required: tree
 		'''
 		
-		return
+		ind = ''
+		print '\n\033[1m\033[36m Tree ID', int(tree[0][1]), '\033[0;0m'
 		
-	
-	def fx_test_classify(self, tree_id):
-	
-		'''
-		Conduct class Precision / Recall on selected Trees against the TEST data.
-		
-		(see fx_fitness_function_classify for more information)
-
-		From scikit-learn.org/stable/auto_examples/model_selection/plot_precision_recall.html
-			Precision (P) = true_pos / true_pos + false_pos
-			Recall (R) = true_pos / true_pos + false_neg
-			harmonic mean of Precision and Recall (F1) = 2(P x R) / (P + R)
+		#for depth in range(0, int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
+		for depth in range(0, self.tree_depth_max + 1): # increment through all possible Tree depths - tested 2016 07/09
+			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
-		From scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
-			y_pred = result, the estimated target values (labels) generated by Karoo GP
-			y_true = solution, the correct target values (labels) associated with the data
-			
-		Arguments required: tree_id
-		'''
-		
-		# tested 2015 10/18; switched from population_a to _b 2016 07/09
-		y_pred = []
-		y_true = []
-		
-		self.fx_eval_poly(self.population_b[tree_id]) # generate the raw and sympified equation for the given Tree
-		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
-		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
-		
-		skew = (self.class_labels / 2) - 1 # '-1' keeps a binary classification splitting over the origin
-		# skew = 0 # for code testing
-		
-		for row in range(0, self.data_test_rows):
-			result = self.fx_eval_subs(tree_id, self.data_test_dict_array[row]) # process the expression against the test data
-			label_pred = '' # sets the label_pred to a known state (see 'if label_pred ==' below)
-			label_true = int(self.data_test_dict_array[row]['s'])
-			
-			if result <= 0 - skew: # test for the first class (the left-most bin)
-				label_pred = 0
-				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', result, '<=', 0 - skew, '\033[0;0m'
-								
-			elif result > (self.class_labels - 2) - skew: # test for last class (the right-most bin)
-				label_pred = self.class_labels - 1
-				print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', result, '>', (self.class_labels - 2) - skew, '\033[0;0m'
-				
-			else:
-				for class_label in range(1, self.class_labels - 1): # increment through all class labels, skipping first and last
-				
-					if (class_label - 1) - skew < result <= class_label - skew: # test for classes between first and last
-						label_pred = class_label
-						print '\t\033[36m data row', row, 'predicts class:\033[1m', label_pred, '(', label_true, 'label) as', (class_label - 1) - skew, '<', result, '<=', class_label - skew, '\033[0;0m'
-						
-					else: pass # print '\t\033[36m data row', row, 'predicts no class with label', class_label, '(', label_true, ') and result', result, '\033[0;0m'
+			for node in range(1, len(tree[3])): # increment through all nodes (redundant, I know)
+				if int(tree[4][node]) == depth:
+					print ''
+					print ind,'\033[1m\033[36m NODE:', tree[3][node], '\033[0;0m'
+					print ind,'  type:', tree[5][node]
+					print ind,'  label:', tree[6][node], '\tparent node:', tree[7][node]
+					print ind,'  arity:', tree[8][node], '\tchild node(s):', tree[9][node], tree[10][node], tree[11][node]
 					
-			if label_pred == '': print '\n\t\033[31mERROR! In fx_test_classify: tree', tree_id, 'failed to generate a class label prediction\033[0;0m'; self.fx_karoo_pause(0)
+			ind = ind + '\t'
 			
-			y_pred.append(label_pred)
-			y_true.append(label_true)
-			
-		print '\nClassification report for Tree: ', tree_id
-		print skm.classification_report(y_true, y_pred)
-		
-		print '\nConfusion matrix for Tree: ', tree_id
-		print skm.confusion_matrix(y_true, y_pred)
+		print ''
+		self.fx_eval_poly(tree) # generate the raw and sympified equation for the entire Tree
+		print '\t\033[36mTree', tree[0][1], 'yields (raw):', self.algo_raw, '\033[0;0m'
+		print '\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 		
 		return
 		
 	
-	def fx_test_regress(self, tree_id):
+	def fx_display_branch(self, tree, start):
 	
 		'''
-		A validation of a regression fitness function.
+		Display a Tree branch on-screen.
 		
-		Arguments required: tree_id
+		This method displays all sequential node_ids from 'start' node through bottom, within the given branch.
+		
+		This method is not used by Karoo GP at this time.
+		
+		Arguments required: tree, start
 		'''
-
-		# switched from population_a to _b 2016 07/09
-		self.fx_eval_poly(self.population_b[tree_id]) # generate the raw and sympified equation for the given Tree
-		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
-		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
 		
-		for row in range(0, self.data_test_rows):
-			result = self.fx_eval_subs(tree_id, self.data_test_dict_array[row]) # process the expression against the test data
-			solution = round(float(self.data_test_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
+		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
+		branch_eval = self.fx_eval_id(tree, start) # generate tuple of given 'branch'		
+		branch_symp = sp.sympify(branch_eval) # convert string from tuple to list
+		branch = np.append(branch, branch_symp) # append list to array
+		ind = ''
+		
+		# for depth in range(int(tree[4][start]), int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
+		for depth in range(int(tree[4][start]), self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
+			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
-			# fitness = abs(result - solution) # this is a Minimisation function (seeking smallest fitness)
-			print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
-		
-		# measure the total or average difference between result and solution across all rows ???
-		
-		print '\n\t (this test is not yet complete)'
-		
-		return
-		
-	
-	def fx_test_match(self, tree_id):
-	
-		'''
-		A validation of a matching fitness function.
-		
-		Arguments required: tree_id
-		'''
-		
-		# switched from population_a to _b 2016 07/09
-		self.fx_eval_poly(self.population_b[tree_id]) # generate the raw and sympified equation for the given Tree
-		print '\n\t\033[36mTree', tree_id, 'yields (raw):', self.algo_raw, '\033[0;0m'
-		print '\t\033[36mTree', tree_id, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
-		
-		for row in range(0, self.data_test_rows):
-			result = self.fx_eval_subs(tree_id, self.data_test_dict_array[row]) # process the expression against the test data
-			solution = round(float(self.data_test_dict_array[row]['s']), self.precision) # force 'solution' to the set number of floating points
-			
-			if result == solution:
-				fitness = 1 # improve the fitness score by 1		
-				print '\t\033[36m data row', row, '\033[0;0m\033[36myields:\033[1m', result, '\033[0;0m'
+			for n in range(0, len(branch)): # increment through all nodes listed in the branch
+				node = branch[n]
 				
-			else:
-				fitness = 0 # do not adjust the fitness score
-				print '\t\033[36m data row', row, 'yields:', result, '\033[0;0m'
-				
-		print '\n\t Tree', tree_id, 'has an accuracy of:', float(self.population_b[tree_id][12][1]) / self.data_test_dict_array.shape[0] * 100
+				if int(tree[4][node]) == depth:
+					print ''
+					print ind,'\033[1m\033[36m NODE:', node, '\033[0;0m'
+					print ind,'  type:', tree[5][node]
+					print ind,'  label:', tree[6][node], '\tparent node:', tree[7][node]
+					print ind,'  arity:', tree[8][node], '\tchild node(s):', tree[9][node], tree[10][node], tree[11][node]
+					
+			ind = ind + '\t'
+					
+		print ''
+		self.fx_eval_poly(tree) # generate the raw and sympified equation for the entire Tree
+		print '\t\033[36mTree', tree[0][1], 'yields (raw):', self.algo_raw, '\033[0;0m'
+		print '\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 		
 		return
 		
-		
+	
 	#++++++++++++++++++++++++++++++++++++++++++
-	#   Methods to Append & Archive           |
+	#   Methods to Archive                    |
 	#++++++++++++++++++++++++++++++++++++++++++
 	
-	def fx_tree_clean(self, tree):
+	def fx_archive_tree_clean(self, tree):
 	
 		'''
 		This method aesthetically cleans the Tree array, removing redundant data.
@@ -2603,12 +2554,12 @@ class Base_GP(object):
 		
 		tree[0][2:] = '' # A little clean-up to make things look pretty :)
 		tree[1][2:] = '' # Ignore the man behind the curtain!
-		tree[2][2:] = '' # Yes, I am a bit OCD ... but you *know* you appreciate clean data.
+		tree[2][2:] = '' # Yes, I am a bit OCD ... but you *know* you appreciate clean arrays.
 		
 		return tree
 		
 	
-	def fx_tree_append(self, tree):
+	def fx_archive_tree_append(self, tree):
 	
 		'''
 		Append Tree array to the foundation Population.
@@ -2616,16 +2567,16 @@ class Base_GP(object):
 		Arguments required: tree
 		'''
 		
-		self.fx_tree_clean(tree) # clean 'tree' prior to storing
+		self.fx_archive_tree_clean(tree) # clean 'tree' prior to storing
 		self.population_a.append(tree) # append 'tree' to population list
 		
 		return
 		
 	
-	def fx_tree_archive(self, population, key):
+	def fx_archive_tree_write(self, population, key):
 	
 		'''
-		Save Population list to disk.
+		Save population_* to disk.
 		
 		Arguments required: population, key
 		'''
@@ -2641,6 +2592,42 @@ class Base_GP(object):
 				for row in range(0, 13): # increment through each row in the array Tree
 					target.writerows([population[tree][row]])
 					
+	
+	def fx_archive_params_write(self, app):
+	
+		'''
+		Save run-time configuration parameters to disk.
+		
+		Arguments required: none
+		'''
+		
+		file = open(self.path + '/parameters.txt', 'w')
+		
+		file.write('Karoo GP ' + app)
+		file.write('\n launched: ' + self.datetime)
+		file.write('\n dataset: [n/a]')
+		file.write('\n best tree: [n/a]')
+		file.write('\n best tree fitness: [n/a]')
+		file.write('\n')
+		file.write('\n kernel: ' + self.kernel)
+		file.write('\n precision: ' + str(self.precision))
+		file.write('\n')
+		# file.write('tree type: ' + tree_type)
+		# file.write('tree depth base: ' + str(tree_depth_base))
+		file.write('\n tree depth max: ' + str(self.tree_depth_max))
+		file.write('\n tree depth min: ' + str(self.tree_depth_min))
+		file.write('\n')
+		file.write('\n\t genetic operator Reproduction: ' + str(self.evolve_repro))
+		file.write('\n\t genetic operator Point Mutation: ' + str(self.evolve_point))
+		file.write('\n\t genetic operator Branch Mutation: ' + str(self.evolve_branch))
+		file.write('\n\t genetic operator Crossover: ' + str(self.evolve_cross))
+		file.write('\n')
+		file.write('\n tournament size: ' + str(self.tourn_size))
+		file.write('\n population: ' + str(self.tree_pop_max))
+		file.write('\n number of generations: ' + str(self.generation_id))
+		
+		file.close()
+		
 		return
 		
-		
+

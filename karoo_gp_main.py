@@ -1,8 +1,8 @@
 # Karoo GP Main (desktop)
 # Use Genetic Programming for Classification and Symbolic Regression
-# by Kai Staats, MSc UCT / AIMS; see LICENSE.md
-# Much thanks to Emmanuel Dufourq and Arun Kumar for their support, guidance, and free psychotherapy sessions
-# version 0.9.2.1
+# by Kai Staats, MSc; see LICENSE.md
+# Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
+# version 1.0
 
 '''
 A word to the newbie, expert, and brave--
@@ -34,6 +34,7 @@ If you include the path to an external dataset, it will auto-load at launch:
 import sys # sys.path.append('modules/') to add the directory 'modules' to the current path 
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 
+
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Defined Configuration            |
 #++++++++++++++++++++++++++++++++++++++++++
@@ -50,10 +51,10 @@ gp.karoo_banner()
 
 print ''
 
-menu = ['b','r','c','m','p','']
+menu = ['c','r','m','p','']
 while True:
 	try:
-		gp.kernel = raw_input('\t Select (r)egression, (c)lassification, (m)atching, or (p)lay (default m): ')
+		gp.kernel = raw_input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
 		if gp.kernel not in menu: raise ValueError()
 		gp.kernel = gp.kernel or 'm'; break
 	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
@@ -139,7 +140,7 @@ else: # if any other kernel is selected
 		except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
-	menu = ['i','g','m','s','db','t','']
+	menu = ['i','g','m','s','db','']
 	while True:
 		try:
 			gp.display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, or (s)ilent (default m): ')
@@ -150,13 +151,12 @@ else: # if any other kernel is selected
 		
 
 # define the ratio between types of mutation, where all sum to 1.0; can be adjusted in 'i'nteractive mode
-gp.evolve_repro = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Reproduction
-gp.evolve_point = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Point Mutation
-gp.evolve_branch = int(0.1 * gp.tree_pop_max) # percentage of subsequent population to be generated through Branch Mutation
-gp.evolve_cross = int(0.7 * gp.tree_pop_max) # percentage of subsequent population to be generated through Crossover
+gp.evolve_repro = int(0.1 * gp.tree_pop_max) # quantity of a population generated through Reproduction
+gp.evolve_point = int(0.1 * gp.tree_pop_max) # quantity of a population generated through Point Mutation
+gp.evolve_branch = int(0.1 * gp.tree_pop_max) # quantity of a population generated through Branch Mutation
+gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
-gp.cores = 1 # replace '1' with 'int(gp.core_count)' to auto-set to max; can be adjusted in 'i'nteractive mode
 gp.precision = 4 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
 
 
@@ -182,8 +182,8 @@ gp.fx_karoo_construct(tree_type, tree_depth_base) # construct the first populati
 if gp.kernel != 'p': print '\n We have constructed a population of', gp.tree_pop_max,'Trees for Generation 1\n'
 
 else: # EOL for Play mode
-	gp.fx_eval_tree_print(gp.tree) # print the current Tree
-	gp.fx_tree_archive(gp.population_a, 'a') # save this one Tree to disk
+	gp.fx_display_tree(gp.tree) # print the current Tree
+	gp.fx_archive_tree_write(gp.population_a, 'a') # save this one Tree to disk
 	sys.exit()
 	
 
@@ -206,11 +206,13 @@ if gp.display != 's':
 	if gp.display == 'i': gp.fx_karoo_pause(0)
 
 gp.fx_fitness_gym(gp.population_a) # 1) extract polynomial from each Tree; 2) evaluate fitness, store; 3) display
-gp.fx_tree_archive(gp.population_a, 'a') # save the first generation of Trees to disk
+gp.fx_archive_tree_write(gp.population_a, 'a') # save the first generation of Trees to disk
 
 # no need to continue if only 1 generation or fewer than 10 Trees were designated by the user
 if gp.tree_pop_max < 10 or gp.generation_max == 1:
-	gp.fx_karoo_eol(); sys.exit()
+  gp.fx_archive_params_write('Desktop') # save run-time parameters to disk
+  gp.fx_karoo_eol()
+  sys.exit()
 	
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -238,14 +240,14 @@ for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generat
 	gp.fx_karoo_crossover() # method 4 - Crossover Reproduction
 	gp.fx_eval_generation() # evaluate all Trees in a single generation
 	
-	gp.population_a = gp.fx_evo_pop_copy(gp.population_b, ['GP Tree by Kai Staats, Generation ' + str(gp.generation_id)])
+	gp.population_a = gp.fx_evolve_pop_copy(gp.population_b, ['GP Tree by Kai Staats, Generation ' + str(gp.generation_id)])
 	
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   "End of line, man!" --CLU             |
 #++++++++++++++++++++++++++++++++++++++++++
 
-gp.fx_tree_archive(gp.population_b, 'f') # save the final generation of Trees to disk
+gp.fx_archive_tree_write(gp.population_b, 'f') # save the final generation of Trees to disk
 gp.fx_karoo_eol()
 
 	
