@@ -1,10 +1,12 @@
-OPERATORS TESTED with Karoo GP
+OPERATORS TESTED with Karoo GP v1.0
 
 +,2
 -,2
 *,2
 /,2
 **,2
+
+The following are not currently supported, but will be again with subsequent releases.
 
 and,2
 or,2
@@ -36,6 +38,3 @@ or,2
 
 
 Where sin, cos, exp, and log must be preceded by another operator.
-
-For documentation on the core Sympy operators, visit:
-http://docs.sympy.org/latest/modules/core.html
