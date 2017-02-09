@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.1
+# version 1.0
 
 '''
 A word to the newbie, expert, and brave--

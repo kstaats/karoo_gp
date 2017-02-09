@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.1
+# version 1.0
 
 '''
 A word to the newbie, expert, and brave--
@@ -143,7 +143,7 @@ else: # if any other kernel is selected
 	menu = ['i','g','m','s','db','']
 	while True:
 		try:
-			gp.display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, or (s)ilent (default m): ')
+			gp.display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
 			if gp.display not in menu: raise ValueError()
 			gp.display = gp.display or 'm'; break
 		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'

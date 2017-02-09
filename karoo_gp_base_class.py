@@ -11,9 +11,9 @@ this application. While your computer will not burst into flames nor will the su
 likely find more enjoyment of this particular flavour of GP with a little understanding of its intent and design.
 '''
 
-import csv
-import os
 import sys
+import os
+import csv
 
 import numpy as np
 import sklearn.metrics as skm
@@ -1420,7 +1420,7 @@ class Base_GP(object):
 					pairwise_fitness = self.fx_fitness_train_match(result, solution)
 					
 				# elif self.kernel == '[other]': # [OTHER] kernel
-					# pairwise_fitness = self.fx_fitness_function_[other](result ?, solution ?)
+					# pairwise_fitness = self.fx_fitness_train_[other](result ?, solution ?)
 					
 				else: raise Exception('Kernel type is wrong or missing. You entered {}'.format(self.kernel))
 				
@@ -1567,7 +1567,7 @@ class Base_GP(object):
 		return tf.cast(tf.equal(solution, result), tf.int32)
 		
 	
-	# def fx_fitness_function_[other](self, result, solution): # [OTHER] kernel
+	# def fx_fitness_train_[other](self, result, solution): # [OTHER] kernel
 
 		# '''
 		# Creates element-wise fitness computation TensorFlow (TF) sub-graph for [other] kernel.
