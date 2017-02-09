@@ -1,10 +1,22 @@
+2017 02/08
+
+The parameters.txt file now captures the full run-time configuration of both karoo_gp_main.py and karoo_gp_server.py.
+This file is written to the unique (datetime stamp) directory in karoo_gp/runs/ at the auto-termination of _server.py
+and with the user executed 'q'uit of _main.py.
+
+The final list of best fit evolved Trees and the test of the highest numbered (usually the highest performing) Tree is
+also recorded, with the test auto-executed based upon the original kernel designation. This functionality supports the 
+fully hands-off execution of Karoo GP on a remote server, from a bash or Python script, for parallel or multiple
+serial evolutionary runs.
+
+
 2017 02/06
 
 Graphics Processing Units (GPU) are now supported with the introduction of the Python library TensorFlow. The end 
 result is a staggering improvement in performance. With one comparison of a 10,000 data points (rows) x 9 features
-(columns) dataset on a 40 core Intel Xeon motherboard versus a 2000 core Nvidia GPU card, the wall time as reduced from 
-50 hours to less than 4 minutes. On CPU-only computers, the performance on a single core is as much as 10x improved due 
-to the vectorisation of the data and application of the C-based TensorFlow maths library.
+(columns) dataset on a 40 core Intel Xeon motherboard versus a 2000 core Nvidia GPU card, the wall time was reduced 
+from 50 hours to less than 4 minutes. On CPU-only computers, the performance on a single core is as much as 10x 
+improved due to the vectorisation of the data and application of the C-based TensorFlow maths library.
 
 To install TensorFlow, I recommend visiting https://www.tensorflow.org/get_started/ It is straight forward for Ubuntu, 
 but unfortunately can be rather challenging with OSX. Have patience. Review the forums. It's worth the effort.
@@ -29,10 +41,10 @@ A number of other changes have been integrated, including:
    for multi-core processing which is now automated by TensorFlow.
    
  - The libraries 'pprocess' and 'time' are no longer required nor imported.
- 
- - The population_* files (.csv) are now deposited into unique directories created with the launch of each run. A .txt
- 	 file is also written to each directory which captures the run-time configuration of Karoo GP. This enables truly
- 	 scriptable runs of Karoo.
+   
+ - The population_* files (.csv) are now written into unique directories created inside of karoo_gp/runs/ with the 
+   launch of each run. A .txt file is also written to each directory which captures the run-time configuration of 
+   Karoo GP. This enables truly scriptable runs of Karoo.
  	 
  - The Server interface to Karoo GP (karoo_gp_server.py) now terminates completely, kicking back to the command line.
    This enables bash or chron launches of multiple sequential or parallel runs, enabling the exploration of multiple 

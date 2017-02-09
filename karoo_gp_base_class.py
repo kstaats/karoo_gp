@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0
+# version 1.0.1
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -14,12 +14,14 @@ likely find more enjoyment of this particular flavour of GP with a little unders
 import csv
 import os
 import sys
-import datetime
 
 import numpy as np
 import sklearn.metrics as skm
 import sklearn.cross_validation as skcv
-import sympy as sp
+
+from sympy import sympify
+from datetime import datetime
+from collections import OrderedDict
 
 # TensorFlow-related imports
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
@@ -99,6 +101,7 @@ class Base_GP(object):
 		'gp.fitness_type'				fitness type
 		'gp.datetime'						date-time stamp of when the unique directory is created
 		'gp.path'								full path to the unique directory created with each run
+		'gp.dataset'						local path and dataset filename
 		
 		### Global variables initiated and/or used by Sympy ###
 		'gp.algo_raw'						a Sympy string which represents a flattened tree
@@ -221,7 +224,7 @@ class Base_GP(object):
 		
 		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###
 		
-		#full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # helps with chron jobs --Thanks Marco!
+		#full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path)
 		cwd = os.getcwd() # Good idea Marco :)
 		
 		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
@@ -230,21 +233,24 @@ class Base_GP(object):
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			header = open(data_dict[self.kernel],'r')
+			self.dataset = data_dict[self.kernel]
 			
 		elif len(sys.argv) == 2: # load an external data file
 			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			header = open(sys.argv[1],'r')
+			self.dataset = sys.argv[1]
 			
 		elif len(sys.argv) > 2: # receive filename and additional flags from karoo_gp_server.py via argparse
 			data_x = np.loadtxt(filename, skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(filename, skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
 			header = open(filename,'r')
+			self.dataset = filename
 			
 		fitt_dict = {'c':'max', 'r':'min', 'm':'max', 'p':''}
 		self.fitness_type = fitt_dict[self.kernel] # load fitness type
 		
-		func_dict = {'c':cwd + '/files/functions_CLASSIFY.csv', 'r':cwd + '/files/functions_REGRESS.csv', 'm':cwd + '/files/functions_MATCH.csv', 'p':cwd + '/files/functions_PLAY.csv'}
+		func_dict = {'c':cwd + '/files/operators_CLASSIFY.csv', 'r':cwd + '/files/operators_REGRESS.csv', 'm':cwd + '/files/operators_MATCH.csv', 'p':cwd + '/files/operators_PLAY.csv'}
 		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the user defined terminals (operands)
 		self.class_labels = len(np.unique(data_y)) # load the user defined labels for classification or solutions for regression
@@ -283,7 +289,8 @@ class Base_GP(object):
 		
 		### 4) create a unique directory and initialise all .csv files ###
 		
-		self.datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+		# self.datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 		self.path = os.path.join(cwd, 'runs/', self.datetime) # generate a unique directory name
 		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
@@ -669,10 +676,9 @@ class Base_GP(object):
 						
 				elif pause == 'l': # display dictionary of Trees with the best fitness score
 					print '\n\t The leading Trees and their associated expressions are:'
-					for n in range(len(self.fittest_dict)):
-						print '\t  ', self.fittest_dict.keys()[n], ':', self.fittest_dict.values()[n]
-						
-						
+					for item in sorted(self.fittest_dict): print '\t ', item, ':', self.fittest_dict[item]
+					
+					
 				elif pause == 't':  # evaluate a Tree against the TEST data
 					if self.generation_id > 1:
 						menu = range(1, len(self.population_b))
@@ -870,18 +876,18 @@ class Base_GP(object):
 		Arguments required: TREE_ID, tree_type, tree_depth_base
 		'''
 		
-		self.pop_TREE_ID = TREE_ID 					# pos 0: a unique identifier for each tree
-		self.pop_tree_type = tree_type				# pos 1: a global constant based upon the initial user setting
+		self.pop_TREE_ID = TREE_ID 			# pos 0: a unique identifier for each tree
+		self.pop_tree_type = tree_type	# pos 1: a global constant based upon the initial user setting
 		self.pop_tree_depth_base = tree_depth_base	# pos 2: a global variable which conveys 'tree_depth_base' as unique to each new Tree
 		self.pop_NODE_ID = 1 						# pos 3: unique identifier for each node; this is the INDEX KEY to this array
-		self.pop_node_depth = 0 					# pos 4: depth of each node when committed to the array
-		self.pop_node_type = '' 					# pos 5: root, function, or terminal
-		self.pop_node_label = '' 					# pos 6: operator [+, -, *, ...] or terminal [a, b, c, ...]
-		self.pop_node_parent = '' 					# pos 7: parent node
-		self.pop_node_arity = '' 					# pos 8: number of nodes attached to each non-terminal node
-		self.pop_node_c1 = '' 						# pos 9: child node 1
-		self.pop_node_c2 = '' 						# pos 10: child node 2
-		self.pop_node_c3 = '' 						# pos 11: child node 3 (assumed max of 3 with boolean operator 'if')
+		self.pop_node_depth = 0 				# pos 4: depth of each node when committed to the array
+		self.pop_node_type = '' 				# pos 5: root, function, or terminal
+		self.pop_node_label = '' 				# pos 6: operator [+, -, *, ...] or terminal [a, b, c, ...]
+		self.pop_node_parent = '' 			# pos 7: parent node
+		self.pop_node_arity = '' 				# pos 8: number of nodes attached to each non-terminal node
+		self.pop_node_c1 = '' 					# pos 9: child node 1
+		self.pop_node_c2 = '' 					# pos 10: child node 2
+		self.pop_node_c3 = '' 					# pos 11: child node 3 (assumed max of 3 with boolean operator 'if')
 		self.pop_fitness = ''						# pos 12: fitness value following Tree evaluation
 		
 		self.tree = np.array([ ['TREE_ID'],['tree_type'],['tree_depth_base'],['NODE_ID'],['node_depth'],['node_type'],['node_label'],['node_parent'],['node_arity'],['node_c1'],['node_c2'],['node_c3'],['fitness'] ])
@@ -1182,7 +1188,7 @@ class Base_GP(object):
 		'''
 		
 		self.algo_raw = self.fx_eval_label(tree, 1) # pass the root 'node_id', then flatten the Tree to a string
-		self.algo_sym = sp.sympify(self.algo_raw) # convert string to a functional expression (the coolest line in Karoo! :)
+		self.algo_sym = sympify(self.algo_raw) # convert string to a functional expression (the coolest line in Karoo! :)
 		
 		return
 				
@@ -1587,7 +1593,6 @@ class Base_GP(object):
 		
 		tree[12][1] = fitness # store the fitness with each tree
 		tree[12][2] = len(str(self.algo_raw)) # store the length of the raw algo for parsimony
-		# tree[12][3] might equal 'error' as recorded by 'fx_eval_subs' - NO LONGER USED
 		# if len(tree[3]) > 4: # if the Tree array is wide enough ...
 		
 		return
@@ -1747,8 +1752,8 @@ class Base_GP(object):
 			print '\t\033[36m Data row {} predicts class:\033[1m {} ({} label) as {:.2f}{}\033[0;0m'.format(i, int(result['labels'][0][i]), int(result['solution'][i]), result['result'][i], result['labels'][1][i])
 			
 		print '\n Fitness value: {}'.format(result['fitness'])
-		print '\n Classification report:', '\n', skm.classification_report(result['solution'], result['labels'][0])
-		print ' Confusion matrix:', '\n', skm.confusion_matrix(result['solution'], result['labels'][0])
+		print '\n Classification report:\n', skm.classification_report(result['solution'], result['labels'][0])
+		print ' Confusion matrix:\n', skm.confusion_matrix(result['solution'], result['labels'][0])
 		
 		return
 		
@@ -1849,6 +1854,7 @@ class Base_GP(object):
 		if self.display == 'db': print '\n\n\033[33m *** Full Mutation: function to function *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree
 		
 		for n in range(len(branch)):
+			
 			# 'root' is not made available for Full mutation as this would build an entirely new Tree
 			
 			if tree[5][branch[n]] == 'func':
@@ -1894,7 +1900,6 @@ class Base_GP(object):
 		'''
 		
 		branch_top = int(branch[0]) # replaces 2 instances, below; tested 2016 07/09
-		# branch_depth = int(tree[2][1]) - int(tree[4][branch_top]) # 'tree_depth_base' - depth at 'branch_top' to set max potential size of new branch - ORIGINAL
 		branch_depth = self.tree_depth_max - int(tree[4][branch_top]) # 'tree_depth_max' - depth at 'branch_top' to set max potential size of new branch - 2016 07/10
 		
 		if branch_depth < 0: # this has never occured ... yet
@@ -2029,7 +2034,7 @@ class Base_GP(object):
 		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
 		branch_top = np.random.randint(2, len(tree[3])) # randomly select a non-root node
 		branch_eval = self.fx_eval_id(tree, branch_top) # generate tuple of 'branch_top' and subseqent nodes
-		branch_symp = sp.sympify(branch_eval) # convert string into something useful
+		branch_symp = sympify(branch_eval) # convert string into something useful
 		branch = np.append(branch, branch_symp) # append list to array
 		
 		branch = np.sort(branch) # sort nodes in branch for Crossover.
@@ -2476,7 +2481,6 @@ class Base_GP(object):
 		ind = ''
 		print '\n\033[1m\033[36m Tree ID', int(tree[0][1]), '\033[0;0m'
 		
-		#for depth in range(0, int(tree[2][1]) + self.tree_depth_max + 1): # increment through all Tree depths - tested 2016 07/09
 		for depth in range(0, self.tree_depth_max + 1): # increment through all possible Tree depths - tested 2016 07/09
 			print '\n', ind,'\033[36m Tree Depth:', depth, 'of', tree[2][1], '\033[0;0m'
 			
@@ -2511,8 +2515,8 @@ class Base_GP(object):
 		'''
 		
 		branch = np.array([]) # the array is necessary in order to len(branch) when 'branch' has only one element
-		branch_eval = self.fx_eval_id(tree, start) # generate tuple of given 'branch'		
-		branch_symp = sp.sympify(branch_eval) # convert string from tuple to list
+		branch_eval = self.fx_eval_id(tree, start) # generate tuple of given 'branch'
+		branch_symp = sympify(branch_eval) # convert string from tuple to list
 		branch = np.append(branch, branch_symp) # append list to array
 		ind = ''
 		
@@ -2585,7 +2589,6 @@ class Base_GP(object):
 			target = csv.writer(csv_file, delimiter=',')
 			if self.generation_id != 1: target.writerows(['']) # empty row before each generation
 			target.writerows([['Karoo GP by Kai Staats', 'Generation:', str(self.generation_id)]])
-			# NEED TO ADD: time to file header
 			
 			for tree in range(1, len(population)):
 				target.writerows(['']) # empty row before each Tree
@@ -2593,7 +2596,7 @@ class Base_GP(object):
 					target.writerows([population[tree][row]])
 					
 	
-	def fx_archive_params_write(self, app):
+	def fx_archive_params_write(self, app): # tested 2017 02/08
 	
 		'''
 		Save run-time configuration parameters to disk.
@@ -2604,12 +2607,10 @@ class Base_GP(object):
 		file = open(self.path + '/parameters.txt', 'w')
 		
 		file.write('Karoo GP ' + app)
-		file.write('\n launched: ' + self.datetime)
-		file.write('\n dataset: [n/a]')
-		file.write('\n best tree: [n/a]')
-		file.write('\n best tree fitness: [n/a]')
+		file.write('\n launched: ' + str(self.datetime))
+		file.write('\n dataset: ' + str(self.dataset))
 		file.write('\n')
-		file.write('\n kernel: ' + self.kernel)
+		file.write('\n kernel: ' + str(self.kernel))
 		file.write('\n precision: ' + str(self.precision))
 		file.write('\n')
 		# file.write('tree type: ' + tree_type)
@@ -2617,15 +2618,48 @@ class Base_GP(object):
 		file.write('\n tree depth max: ' + str(self.tree_depth_max))
 		file.write('\n tree depth min: ' + str(self.tree_depth_min))
 		file.write('\n')
-		file.write('\n\t genetic operator Reproduction: ' + str(self.evolve_repro))
-		file.write('\n\t genetic operator Point Mutation: ' + str(self.evolve_point))
-		file.write('\n\t genetic operator Branch Mutation: ' + str(self.evolve_branch))
-		file.write('\n\t genetic operator Crossover: ' + str(self.evolve_cross))
+		file.write('\n genetic operator Reproduction: ' + str(self.evolve_repro))
+		file.write('\n genetic operator Point Mutation: ' + str(self.evolve_point))
+		file.write('\n genetic operator Branch Mutation: ' + str(self.evolve_branch))
+		file.write('\n genetic operator Crossover: ' + str(self.evolve_cross))
 		file.write('\n')
 		file.write('\n tournament size: ' + str(self.tourn_size))
 		file.write('\n population: ' + str(self.tree_pop_max))
 		file.write('\n number of generations: ' + str(self.generation_id))
 		
+		# parse the 'l'ist for the highest numbered Tree
+		if len(self.fittest_dict) > 0:
+		
+			file.write('\n\n The leading Trees and their associated expressions are:')
+			for item in sorted(self.fittest_dict):
+				file.write('\n\t ' + str(item) + ' : ' + str(self.fittest_dict[item]))
+		
+			# test the highest numbered Tree and write to the .txt log
+			self.fx_eval_poly(self.population_b[int(item)]) # generate the raw and sympified equation for the given Tree using SymPy
+			expr = str(self.algo_sym) # get simplified expression and process it by TF - tested 2017 02/02
+			result = self.fx_fitness_eval(expr, self.data_test, get_labels=True)
+		
+			file.write('\n\n Tree ' + str(item) + ' yields (sym): ' + str(self.algo_sym))
+		
+			if self.kernel == 'c':
+				file.write('\n\n Fitness value: {}'.format(result['fitness']))
+				file.write('\n\n Classification report:\n {}'.format(skm.classification_report(result['solution'], result['labels'][0])))
+				file.write('\n Confusion matrix:\n {}'.format(skm.confusion_matrix(result['solution'], result['labels'][0])))
+			
+			elif self.kernel == 'r':
+				MSE, fitness = skm.mean_squared_error(result['result'], result['solution']), result['fitness']
+				file.write('\n\n Fitness value: {}'.format(fitness))
+				file.write('\n Mean Squared Error: {}'.format(MSE))
+			
+			elif self.kernel == 'm':
+				file.write('\n\n Fitness value: {}'.format(result['fitness']))
+			
+			# elif self.kernel == '[other]':
+				# file.write( ... )
+		
+		else: file.write('\n\n There were no evolved solutions generated in this run... your species has gone extinct!')
+		
+		file.write('\n\n')
 		file.close()
 		
 		return
