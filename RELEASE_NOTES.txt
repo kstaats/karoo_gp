@@ -1,13 +1,20 @@
+2017 02/09
+
+The User Guide has been updated to match the functions of Karoo GP v1.0.1.
+
+
 2017 02/08
 
 The parameters.txt file now captures the full run-time configuration of both karoo_gp_main.py and karoo_gp_server.py.
-This file is written to the unique (datetime stamp) directory in karoo_gp/runs/ at the auto-termination of _server.py
+This file is written to a unique (datetime stamp) directory in karoo_gp/runs/ at the auto-termination of _server.py
 and with the user executed 'q'uit of _main.py.
 
 The final list of best fit evolved Trees and the test of the highest numbered (usually the highest performing) Tree is
-also recorded, with the test auto-executed based upon the original kernel designation. This functionality supports the 
-fully hands-off execution of Karoo GP on a remote server, from a bash or Python script, for parallel or multiple
-serial evolutionary runs.
+also recorded, with the test automatically executed based upon the original kernel designation. This functionality 
+supports the fully hands-off execution of Karoo GP on a remote server, from a bash or Python script, for parallel or 
+multiple serial evolutionary runs.
+
+Thank you Marco Cavaglia for guiding the addition of this functionality to Karoo GP!
 
 
 2017 02/06
