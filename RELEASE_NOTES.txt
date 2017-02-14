@@ -1,3 +1,13 @@
+2017 02/13
+
+Returned 'cwd = os.getcwd()' to 'cwd = os.path.dirname(full_path)' in fx_karoo_data_load in order to sustain chron
+compliance (sorry Marco). Then split end-of-run logging into 2 files: runtime_config.txt and test.txt. Looking to the 
+future in which the test log, in particular, might be stored in such a way as to be readily parsed by an external 
+script for automated comparison of multiple runs.
+
+Ideas are welcomed!
+
+
 2017 02/09
 
 The User Guide has been updated to match the functions of Karoo GP v1.0.1.

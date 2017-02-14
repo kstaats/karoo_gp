@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.1
+# version 1.0.2
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -224,8 +224,8 @@ class Base_GP(object):
 		
 		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###
 		
-		#full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path)
-		cwd = os.getcwd() # Good idea Marco :)
+		full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # Good idea Marco :)
+		# cwd = os.getcwd()
 		
 		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
 		
@@ -2596,7 +2596,7 @@ class Base_GP(object):
 					target.writerows([population[tree][row]])
 					
 	
-	def fx_archive_params_write(self, app): # tested 2017 02/08
+	def fx_archive_params_write(self, app): # tested 2017 02/13
 	
 		'''
 		Save run-time configuration parameters to disk.
@@ -2604,7 +2604,7 @@ class Base_GP(object):
 		Arguments required: none
 		'''
 		
-		file = open(self.path + '/parameters.txt', 'w')
+		file = open(self.path + '/log_config.txt', 'w')
 		
 		file.write('Karoo GP ' + app)
 		file.write('\n launched: ' + str(self.datetime))
@@ -2625,12 +2625,22 @@ class Base_GP(object):
 		file.write('\n')
 		file.write('\n tournament size: ' + str(self.tourn_size))
 		file.write('\n population: ' + str(self.tree_pop_max))
-		file.write('\n number of generations: ' + str(self.generation_id))
+		file.write('\n number of generations: ' + str(self.generation_id))		
+		file.write('\n\n')
 		
-		# parse the 'l'ist for the highest numbered Tree
+		file.close()
+		
+		
+		file = open(self.path + '/log_test.txt', 'w')
+		
+		file.write('Karoo GP ' + app)
+		file.write('\n launched: ' + str(self.datetime))
+		file.write('\n dataset: ' + str(self.dataset))
+		file.write('\n')
+		
 		if len(self.fittest_dict) > 0:
 		
-			file.write('\n\n The leading Trees and their associated expressions are:')
+			file.write('\n The leading Trees and their associated expressions are:')
 			for item in sorted(self.fittest_dict):
 				file.write('\n\t ' + str(item) + ' : ' + str(self.fittest_dict[item]))
 		
