@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.1
+# version 1.0.3
 
 '''
 A word to the newbie, expert, and brave--
@@ -33,7 +33,7 @@ If you include the path to an external dataset, it will auto-load at launch:
 
 import sys # sys.path.append('modules/') to add the directory 'modules' to the current path 
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
-
+import time
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Defined Configuration            |
@@ -157,7 +157,7 @@ gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generat
 gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
-gp.precision = 4 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
+gp.precision = 10 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -171,6 +171,8 @@ constructed from scratch. All parameters which define the Trees were set by the 
 If the user has selected 'Play' mode, this is the only generation to be constructed, and then GP Karoo terminates.
 '''
 
+start = time.time() # start the clock for the timer
+	
 filename = '' # temp place holder
 gp.fx_karoo_data_load(tree_type, tree_depth_base, filename)
 gp.generation_id = 1 # set initial generation ID
@@ -205,7 +207,7 @@ if gp.display != 's':
 	print ' Evaluate the first generation of Trees ...'
 	if gp.display == 'i': gp.fx_karoo_pause(0)
 
-gp.fx_fitness_gym(gp.population_a) # 1) extract polynomial from each Tree; 2) evaluate fitness, store; 3) display
+gp.fx_fitness_gym(gp.population_a) # generate expression, evaluate fitness, compare fitness
 gp.fx_archive_tree_write(gp.population_a, 'a') # save the first generation of Trees to disk
 
 # no need to continue if only 1 generation or fewer than 10 Trees were designated by the user
@@ -247,7 +249,9 @@ for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generat
 #   "End of line, man!" --CLU             |
 #++++++++++++++++++++++++++++++++++++++++++
 
+print '\n \033[36m Karoo GP has an ellapsed time of \033[0;0m\033[31m%f\033[0;0m' % (time.time() - start), '\033[0;0m'
+
 gp.fx_archive_tree_write(gp.population_b, 'f') # save the final generation of Trees to disk
 gp.fx_karoo_eol()
 
-	
+

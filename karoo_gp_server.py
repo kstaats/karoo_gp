@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.1
+# version 1.0.3
 
 '''
 A word to the newbie, expert, and brave--
@@ -54,11 +54,12 @@ import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 ap = argparse.ArgumentParser(description = 'Karoo GP Server')
 ap.add_argument('-ker', action = 'store', dest = 'kernel', default = 'm', help = '[c,r,m] fitness function: (r)egression, (c)lassification, or (m)atching')
 ap.add_argument('-typ', action = 'store', dest = 'type', default = 'r', help = '[f,g,r] Tree type: (f)ull, (g)row, or (r)amped half/half')
-ap.add_argument('-bas', action = 'store', dest = 'depth_base', default = 3, help = '[3...10] maximum Tree depth for the initial population')
-ap.add_argument('-max', action = 'store', dest = 'depth_max', default = 3, help = '[3...10] maximum Tree depth for the entire run')
+ap.add_argument('-bas', action = 'store', dest = 'depth_base', default = 5, help = '[3...10] maximum Tree depth for the initial population')
+ap.add_argument('-max', action = 'store', dest = 'depth_max', default = 5, help = '[3...10] maximum Tree depth for the entire run')
 ap.add_argument('-min', action = 'store', dest = 'depth_min', default = 3, help = '[3...100] minimum number of nodes')
 ap.add_argument('-pop', action = 'store', dest = 'pop_max', default = 100, help = '[10...1000] maximum population')
-ap.add_argument('-gen', action = 'store', dest = 'gen_max', default = 10, help = '[1...100] number of generations')
+ap.add_argument('-gen', action = 'store', dest = 'gen_max', default = 30, help = '[1...100] number of generations')
+ap.add_argument('-tor', action = 'store', dest = 'tor_size', default = 10, help = '[1...max pop] tournament size')
 ap.add_argument('-fil', action = 'store', dest = 'filename', default = 'files/data_MATCH.csv', help = '/path/to_your/[data].csv')
 
 args = ap.parse_args()
@@ -79,8 +80,8 @@ gp.evolve_point = int(0.0 * gp.tree_pop_max) # quantity of a population generate
 gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generated through Branch Mutation
 gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
 
-gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
-gp.precision = 4 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
+gp.tourn_size = int(args.tor_size) # qty of individuals entered into each tournament; can be adjusted in 'i'nteractive mode
+gp.precision = 4 # the number of floating points for the round function in 'fx_fitness_eval'
 
 # run Karoo GP
 gp.karoo_gp(tree_type, tree_depth_base, filename)
