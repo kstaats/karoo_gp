@@ -1,0 +1,40 @@
+OPERATORS TESTED with Karoo GP v1.0
+
++,2
+-,2
+*,2
+/,2
+**,2
+
+The following are not currently supported, but will be again with subsequent releases.
+
+and,2
+or,2
+
++ sin,2
+- sin,2
+* sin,2
+/ sin,2
+
++ cos,2
+- cos,2
+* cos,2
+/ cos,2
+
++ exp,2 
+- exp,2
+* exp,2
+/ exp,2
+
++ sqrt,2
++ sqrt,2
+- sqrt,2
+/ sqrt,2
+
++ log,2
+- log,2
+* log,2
+/ log,2
+
+
+Where sin, cos, exp, and log must be preceded by another operator.
