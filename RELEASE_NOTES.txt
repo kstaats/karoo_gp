@@ -1,3 +1,31 @@
+2017 05/27
+
+A number of changes applied in March and April. My apologies for the delayed updates to github.
+ 
+A timer is added. This is helpful when conducting comparisons of run times, given various configurations and datasets.
+If you go looking for this code, search for 'time.time' in _main.py for the Desktop interface, and in _base_class.py
+for the Server interface. 
+
+Raised tree_depth_max to 100 in _main in order to essentially remove the tree depth ceiling, allowing for the multi-
+generational increase in tree depth. While this re-introduces bloat, it does provide for a greater degree of 
+experimental freedom. A reminder that the _server has always allowed for tree_depth_max to be set to any level.
+
+Changed the balance of operators (reproduction, mutation, crossover) from a percentage to a fixed quantity in both the 
+default settings and in the user defined alteration.
+
+The User Guide is updated with some minor adjustments to wording.
+
+I have removed tools/ from Karoo package, as these will be re-launched as their own set of packages and associated 
+github repository. I am working to give each a proper interface and more broad functionality outside of the
+Karoo package. Stay tuned!
+
+Please also note that the variable os.environ (line 28 in _base_class.py) can be set to [0, 1, 2] to trigger 3 levels 
+of on-screen, TensorFlow run-time error logging. You can experiment with this to determine what is right for you.
+
+The much desired trig operators will be returned to Karoo GP v1.0.4. Log and boolean operators shortly thereafter. I 
+offer my apology for the delay, as I know this has inhibited some expanded uses of Karoo in the past few months. 
+
+
 2017 02/13
 
 Returned 'cwd = os.getcwd()' to 'cwd = os.path.dirname(full_path)' in fx_karoo_data_load in order to sustain chron
