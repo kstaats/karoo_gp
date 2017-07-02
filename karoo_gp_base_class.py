@@ -29,7 +29,35 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 import tensorflow as tf
 import ast
 import operator as op
-operators = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul, ast.Div: op.truediv, ast.Pow: op.pow, ast.BitXor: op.xor, ast.USub: op.neg}
+operators = {ast.Add: tf.add, # e.g., a + b
+             ast.Sub: tf.subtract, # e.g., a - b
+             ast.Mult: tf.multiply, # e.g., a * b
+             ast.Div: tf.divide, # e.g., a / b
+             ast.Pow: tf.pow, # e.g., a ** 2
+             ast.USub: tf.negative, # e.g., -a
+             ast.And: tf.logical_and, # e.g., a and b
+             ast.Or: tf.logical_or, # e.g., a or b
+             ast.Not: tf.logical_not, # e.g., not a
+             ast.Eq: tf.equal, # e.g., a == b
+             ast.NotEq: tf.not_equal, # e.g., a != b
+             ast.Lt: tf.less, # e.g., a < b
+             ast.LtE: tf.less_equal, # e.g., a <= b
+             ast.Gt: tf.greater, # e.g., a > b
+             ast.GtE: tf.greater_equal, # e.g., a >= 1
+            'abs': tf.abs, # e.g., abs(a)
+            'sign': tf.sign, # e.g., sign(a)
+            'square': tf.square, # e.g., square(a)
+            'sqrt': tf.sqrt, # e.g., sqrt(a)
+            'pow': tf.pow, # e.g., pow(a, b)
+            'log': tf.log, # e.g., log(a)
+            'log1p': tf.log1p, # e.g., log1p(a)
+            'cos': tf.cos, # e.g., cos(a)
+            'sin': tf.sin, # e.g., sin(a)
+            'tan': tf.tan, # e.g., tan(a)
+            'acos': tf.acos, # e.g., acos(a)
+            'asin': tf.asin, # e.g., asin(a)
+            'atan': tf.atan, # e.g., atan(a)
+            }
 
 np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
 
@@ -1442,6 +1470,37 @@ class Base_GP(object):
 		tree = ast.parse(expr, mode='eval').body
 		
 		return self.fx_fitness_node_parse(tree, tensors)
+
+
+	def fx_chain_bool(self, values, operation, tensors):
+
+		'''
+		Chains a sequence of boolean operations (e.g. 'a and b and c') into a single TensorFlow (TF) sub graph.
+
+		Arguments required: values, operation, tensors
+		'''
+
+		x = tf.cast(self.fx_fitness_node_parse(values[0], tensors), tf.bool)
+		if len(values) > 1:
+			return operation(x, self.fx_chain_bool(values[1:], operation, tensors))
+		else:
+			return x
+
+
+	def fx_chain_compare(self, comparators, ops, tensors):
+
+		'''
+		Chains a sequence of comparison operations (e.g. 'a > b < c') into a single TensorFlow (TF) sub graph.
+
+		Arguments required: comparators, ops, tensors
+		'''
+
+		x = self.fx_fitness_node_parse(comparators[0], tensors)
+		y = self.fx_fitness_node_parse(comparators[1], tensors)
+		if len(comparators) > 2:
+			return tf.logical_and(operators[type(ops[0])](x, y), self.fx_chain_compare(comparators[1:], ops[1:], tensors))
+		else:
+			return operators[type(ops[0])](x, y)
 		
 	
 	def fx_fitness_node_parse(self, node, tensors):
@@ -1459,11 +1518,20 @@ class Base_GP(object):
 			shape = tensors[tensors.keys()[0]].get_shape()
 			return tf.constant(node.n, shape=shape, dtype=tf.float32)
 			
-		elif isinstance(node, ast.BinOp): # <left> <operator> <right>
+		elif isinstance(node, ast.BinOp): # <left> <operator> <right>, e.g., x + y
 			return operators[type(node.op)](self.fx_fitness_node_parse(node.left, tensors), self.fx_fitness_node_parse(node.right, tensors))
 			
 		elif isinstance(node, ast.UnaryOp): # <operator> <operand> e.g., -1
 			return operators[type(node.op)](self.fx_fitness_node_parse(node.operand, tensors))
+
+		elif isinstance(node, ast.Call):  # <function>(<arguments>) e.g., sin(x)
+			return operators[node.func.id](*[self.fx_fitness_node_parse(arg, tensors) for arg in node.args])
+
+		elif isinstance(node, ast.BoolOp):  # <left> <bool_operator> <right> e.g. x or y
+			return self.fx_chain_bool(node.values, operators[type(node.op)], tensors)
+
+		elif isinstance(node, ast.Compare):  # <left> <compare> <right> e.g., a > z
+			return self.fx_chain_compare([node.left] + node.comparators, node.ops, tensors)
 			
 		else: raise TypeError(node)
 		
