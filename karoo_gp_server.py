@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.3b
+# version 1.0.4
 
 '''
 A word to the newbie, expert, and brave--
@@ -34,15 +34,19 @@ If you include the path to an external dataset, it will auto-load at launch:
 
 You can include a number of additional arguments which override the default values, as follows:
 
-	-ker		[r,c,m]			fitness function: (r)egression, (c)lassification, or (m)atching
-	-typ		[f,g,r]			Tree type: (f)ull, (g)row, or (r)amped half/half
-	-bas		[3...10]		maximum Tree depth for the initial population
-	-max		[3...10]		maximum Tree depth for the entire run
-	-min		[3...100]		minimum number of nodes
+	-ker		[r,c,m]				fitness function: (r)egression, (c)lassification, or (m)atching
+	-typ		[f,g,r]				Tree type: (f)ull, (g)row, or (r)amped half/half
+	-bas		[3...10]			maximum Tree depth for the initial population
+	-max		[3...10]			maximum Tree depth for the entire run
+	-min		[3...100]			minimum number of nodes
 	-pop		[10...1000]		maximum population
-	-gen		[1...100]		number of generations
+	-gen		[1...100]			number of generations
+	-tor		[1...100]			number of trees selected for the tournament
+	-fil		[filename]		an external dataset
 	
-Note that if you include any of the above flags, then you must also include a flag to load an external dataset:
+Note that if you include any of the above flags, then you must also include a flag to load an external dataset.
+
+An example is given, as follows:
 
 	$ python karoo_gp_server.py -ker c -typ r -bas 4 -fil /[path]/[to_your]/[filename].csv
 '''
@@ -72,16 +76,16 @@ gp.tree_depth_max = int(args.depth_max)
 gp.tree_depth_min = int(args.depth_min)
 gp.tree_pop_max = int(args.pop_max)
 gp.generation_max = int(args.gen_max)
+gp.tourn_size = int(args.tor_size)
 filename = str(args.filename)
 
-gp.display = 's' # display mode is set to (s)ilent
 gp.evolve_repro = int(0.1 * gp.tree_pop_max) # quantity of a population generated through Reproduction
 gp.evolve_point = int(0.0 * gp.tree_pop_max) # quantity of a population generated through Point Mutation
 gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generated through Branch Mutation
 gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
 
-gp.tourn_size = int(args.tor_size) # qty of individuals entered into each tournament; can be adjusted in 'i'nteractive mode
-gp.precision = 4 # the number of floating points for the round function in 'fx_fitness_eval'
+gp.display = 's' # display mode is set to (s)ilent
+gp.precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'
 
 # run Karoo GP
 gp.karoo_gp(tree_type, tree_depth_base, filename)

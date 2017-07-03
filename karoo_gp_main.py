@@ -2,7 +2,7 @@
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.3b
+# version 1.0.4
 
 '''
 A word to the newbie, expert, and brave--
@@ -157,7 +157,7 @@ gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generat
 gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
 
 gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
-gp.precision = 10 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
+gp.precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -233,7 +233,7 @@ Configuration' (top).
 for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generation_max'
 
 	print '\n Evolve a population of Trees for Generation', gp.generation_id, '...'
-	gp.population_b = ['GP Tree by Kai Staats, Evolving Generation'] # initialise population_b to host the next generation
+	gp.population_b = ['Karoo GP by Kai Staats, Evolving Generation'] # initialise population_b to host the next generation
 	
 	gp.fx_fitness_gene_pool() # generate the viable gene pool (compares against gp.tree_depth_min)
 	gp.fx_karoo_reproduce() # method 1 - Reproduction
@@ -242,7 +242,7 @@ for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generat
 	gp.fx_karoo_crossover() # method 4 - Crossover Reproduction
 	gp.fx_eval_generation() # evaluate all Trees in a single generation
 	
-	gp.population_a = gp.fx_evolve_pop_copy(gp.population_b, ['GP Tree by Kai Staats, Generation ' + str(gp.generation_id)])
+	gp.population_a = gp.fx_evolve_pop_copy(gp.population_b, ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)])
 	
 
 #++++++++++++++++++++++++++++++++++++++++++

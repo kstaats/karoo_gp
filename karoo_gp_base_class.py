@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.3b
+# version 1.0.4
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -204,7 +204,7 @@ class Base_GP(object):
 			self.fx_karoo_crossover() # method 4 - Crossover
 			self.fx_eval_generation() # evaluate all Trees in a single generation
 			
-			self.population_a = self.fx_evolve_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
+			self.population_a = self.fx_evolve_pop_copy(self.population_b, ['Karoo GP by Kai Staats, Generation ' + str(self.generation_id)])
 	
 		# "End of line, man!" --CLU
 		print '\n \033[36m Karoo GP has an ellapsed time of \033[0;0m\033[31m%f\033[0;0m' % (time.time() - start), '\033[0;0m'
@@ -286,7 +286,7 @@ class Base_GP(object):
 		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the user defined terminals (operands)
 		self.class_labels = len(np.unique(data_y)) # load the user defined labels for classification or solutions for regression
-		self.coeff = np.loadtxt(cwd + '/files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients - NOT USED YET
+		#self.coeff = np.loadtxt(cwd + '/files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients - NOT USED YET
 		
 		
 		### 2) from the dataset, extract TRAINING and TEST data ###
@@ -855,7 +855,7 @@ class Base_GP(object):
 			self.fx_karoo_crossover() # method 4 - Crossover
 			self.fx_eval_generation() # evaluate all Trees in a single generation
 			
-			self.population_a = self.fx_evolve_pop_copy(self.population_b, ['GP Tree by Kai Staats, Generation ' + str(self.generation_id)])
+			self.population_a = self.fx_evolve_pop_copy(self.population_b, ['Karoo GP by Kai Staats, Generation ' + str(self.generation_id)])
 			
 		# "End of line, man!" --CLU
 		target = open(self.filename['f'], 'w') # reset the .csv file for the final population
@@ -1315,7 +1315,7 @@ class Base_GP(object):
 		'''		
 		Part 1 evaluates each expression against the data, line for line. This is the most time consuming and
 		computationally expensive part of genetic programming. When GPUs are available, the performance can increase
-		by many orders of magnitude.
+		by many orders of magnitude for datasets measured in millions of data.
 		
 		Part 2 evaluates every Tree in each generation to determine which have the best, overall fitness score. This 
 		could be the highest or lowest depending upon if the fitness function is maximising (higher is better) or 
@@ -1757,19 +1757,24 @@ class Base_GP(object):
 	
 	def fx_fitness_gene_pool(self):
 	
-		'''		
-		With the introduction of the minimum number of nodes parameter (gp.tree_depth_min), the means by which the 
-		lower node count is enforced is through the creation of a gene pool from those Trees which contain equal or 
-		greater nodes to the user defined limit.
+		'''
+		The gene pool was introduced as means by which advanced users could define additional constraints on the evolved
+		functions, in an effort to guide the evolutionary process. The first constraint introduced is the 'mininum number
+		of nodes' parameter (gp.tree_depth_min). This defines the minimum number of nodes (in the context of Karoo, this 
+		refers to both functions (operators) and terminals (operands)).
 		
-		When the minimum node count is human guided, it can help keep the solution from defaulting to a local minimum,
-		as with 't/t' in the Kepler problem. However, the ramification of this limitation on the evolutionary process 
-		has not been fully studied.
+		When the minimum node count is human guided, it can keep the solution from defaulting to a local minimum, as with
+		't/t' in the Kepler problem, by forcing a more complex solution. If you find that when engaging the Regression 
+		kernel you are met with a solution which is too simple (eg: linear instead of non-linear), try increasing the 
+		minimum number of nodes (with the launch of Karoo, or mid-stream by way of the pause menu).
 		
-		This method is automatically invoked with every Tournament Selection ('fx_fitness_tournament').
+		What's more, you can add additional constraints to the Gene Pool, thereby customizing how the next generation is
+		selected.
 		
 		At this time, the gene pool does *not* limit the number of times any given Tree may be selected for mutation or 
 		reproduction nor does it take into account parsimony (seeking the simplest multivariate expression).
+		
+		This method is automatically invoked with every Tournament Selection ('fx_fitness_tournament').
 		
 		Arguments required: none
 		'''
@@ -2659,6 +2664,8 @@ class Base_GP(object):
 				for row in range(0, 13): # increment through each row in the array Tree
 					target.writerows([population[tree][row]])
 					
+		return
+		
 	
 	def fx_archive_params_write(self, app): # tested 2017 02/13
 	

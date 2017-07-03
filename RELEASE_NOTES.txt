@@ -1,3 +1,65 @@
+2017 07/03
+
+I am pleased to announce that Karoo GP is now updated to include a full suite of mathematical operators. I thank the
+expert code development of Iurii Milovanov. He was instrumental in bringing TensorFlow into Karoo last year, and has 
+now provided this important improvement.
+
+Iurii has prpared an efficient and elegant solution for the addition of a full range of operators, adding support for 
+boolean operations (a and b or c), comparison ops (a > b <= c == d) and generally speaking any function available in 
+TensorFlow, as given here: https://www.tensorflow.org/api_guides/python/math_ops
+
+Now there is a mapping in Karoo GP that connects an expression to the TF function: 
+
+    OPERATOR        EXAMPLE
+		add             a + b
+		subtract        a - b
+		multiply        a * b
+		divide          a / b
+		pow             a ** 2
+		
+		negative        -a
+		logical_and     a and b
+		logical_or      a or b
+		logical_not     not a
+		equal           a == b
+		not_equal       a != b
+		less            a < b
+		less_equal      a <= b
+		greater         a > b
+		greater_equal   a >= 1
+     
+		abs             abs(a)
+		sign            sign(a)
+		square          square(a)
+		sqrt            sqrt(a)
+		pow             pow(a, b)
+		log             log(a)
+		log1p           log1p(a)
+		cos             cos(a)
+		sin             sin(a)
+		tan             tan(a)
+		acos            acos(a)
+		asin            asin(a)
+		atan            atan(a)
+
+Now when Karoo parses an expression like "asin(x + 10)" it first parses and transforms the args "x + 10" and passes 
+the output to “tf.asin” function. So now Karoo is able to evaluate incredibly complx mathematical expressions.
+
+However, not all are immediately supported. Please refer to the karoo_gp/files/templates/operators_list.txt for the 
+most recent update. The issues are with recursive function I use to flatten the GP Trees and Sympy, not TF. Please be 
+patient as I work to provide support for all operators now recognized with Iurii's update.
+
+And remember, in its current form, Karoo requires that certain "one sided" operators such as abs, cos, and sin require
+a unique formating:
+
+	+ sin,2
+	- sin,2
+	* sin,2
+	/ sin,2
+
+The same operators_list.txt provides a full break-down. Again, this is due to the recursive function, as noted above.
+
+
 2017 06/06
 
 A number of changes applied in March and April. My apologies for the delayed updates to github.
