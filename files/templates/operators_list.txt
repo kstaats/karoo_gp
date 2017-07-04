@@ -6,6 +6,11 @@ OPERATORS TESTED with Karoo GP v1.4
 /,2
 **,2
 
+and,2
+or,2
+not,2
+
+
 The following must be preceded by another operator due the manner in which Karoo flattens the trees into a 
 mathematical expression. Else, Karoo will attempt a function such as (a)sin(b) where sin(b) is correct, but (a)sin 
 requires an operator between the operand 'a' and the operator 'sin'. This will be addressed in a future update to Karoo. 
@@ -16,6 +21,16 @@ So, each of these must be presented as given in the following example:
 - abs,2
 * abs,2
 / abs,2
+
++ log,2
+- log,2
+* log,2
+/ log,2
+
++ log1p,2
+- log1p,2
+* log1p,2
+/ log1p,2
 
 + sign,2
 - sign,2
@@ -32,17 +47,10 @@ So, each of these must be presented as given in the following example:
 * sqrt,2
 / sqrt,2
 
-+ log,2
-- log,2
-* log,2
-/ log,2
 
+The following operators produce TRUE or FALSE statements, and are therefore, at this time, not supported. A future
+version of Karoo will instead output a binary 1 or 0 instead.
 
-The following operators are not yet functional:
-
-		logical_and     a and b
-		logical_or      a or b
-		logical_not     not a
 		equal           a == b
 		not_equal       a != b
 		less            a < b
@@ -50,7 +58,7 @@ The following operators are not yet functional:
 		greater         a > b
 		greater_equal   a >= 1
 
-		log1p           log1p(a)
-		pow             pow(a, b)
+
+The operator 'pow' requires the format 'pow(a, b)' which is not yet supported by Karoo GP.
 
 
