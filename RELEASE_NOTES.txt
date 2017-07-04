@@ -45,19 +45,16 @@ Now there is a mapping in Karoo GP that connects an expression to the TF functio
 Now when Karoo parses an expression like "asin(x + 10)" it first parses and transforms the args "x + 10" and passes 
 the output to “tf.asin” function. So now Karoo is able to evaluate incredibly complx mathematical expressions.
 
-However, not all are immediately supported. Please refer to the karoo_gp/files/templates/operators_list.txt for the 
-most recent update. The issues are with recursive function I use to flatten the GP Trees and Sympy, not TF. Please be 
-patient as I work to provide support for all operators now recognized with Iurii's update.
-
-And remember, in its current form, Karoo requires that certain "one sided" operators such as abs, cos, and sin require
-a unique formating:
+It is important to refer to karoo_gp/files/templates/operators_list.txt to learn how to enage operators_[KERNEL].csv 
+In its current form Karoo requires some operators, such as abs, cos, and sin to have a unique formating:
 
 	+ sin,2
 	- sin,2
 	* sin,2
 	/ sin,2
 
-The same operators_list.txt provides a full break-down. Again, this is due to the recursive function, as noted above.
+In a future version of Karoo, this will be managed automatically by the recursive function which extracts the
+expression from a GP Tree.
 
 
 2017 06/06
