@@ -8,7 +8,7 @@ OPERATORS TESTED with Karoo GP v1.4
 
 and,2
 or,2
-not,2
+not,1
 
 
 The following must be preceded by another operator due the manner in which Karoo flattens the trees into a 
