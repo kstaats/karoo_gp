@@ -1,3 +1,25 @@
+2017 08/10
+Relatively light updates this time.
+
+Iurii fixed a minor bug in which the MATCHING function (used only for demonstrations) would not find a match despite
+the fact that the output was correct, due to the way in which TensorFlow was handling floating points and precision. 
+Iurii used numpy.allclose.html as a reference to resolve the situation.
+
+I also modified the autosave to the runs/ directory such that if you are using an external dataset (quite likely), the
+new directory (for each run) will be saved as [filename]-[date_time_stamp]/ The idea (thank you Marco) is to help keep 
+multiple, automated runs organized and more readily, visually inspected by name alone.
+
+
+2017 07/21
+
+In a rather embarrassing, live demo in which I asked for the audience to create the dataset for Karoo, I discovered a
+bug in the MATCH kernel in which a negative value in the dataset would cause that row to be discarded from the fitness
+function --FIXED.
+
+I merged the 3 methods fx_fitness_train_classify, fx_fitness_train_regress, fx_fitness_train_match into fx_fitness_eval
+in order to reduce the quantity of lines of code and simplify the workflow.
+
+
 2017 07/03
 
 I am pleased to announce that Karoo GP is now updated to include a full suite of mathematical operators. I thank the
