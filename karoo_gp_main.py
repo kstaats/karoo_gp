@@ -156,8 +156,8 @@ gp.evolve_point = int(0.0 * gp.tree_pop_max) # quantity of a population generate
 gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generated through Branch Mutation
 gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
 
-gp.tourn_size = 10 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
-gp.precision = 1 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
+gp.tourn_size = 7 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
+gp.precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
 
 
 #++++++++++++++++++++++++++++++++++++++++++
