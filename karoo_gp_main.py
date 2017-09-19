@@ -49,15 +49,15 @@ command-line arguments passed at launch.
 
 gp.karoo_banner()
 
-print ''
+print('')
 
 menu = ['c','r','m','p','']
 while True:
 	try:
-		gp.kernel = raw_input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
+		gp.kernel = input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
 		if gp.kernel not in menu: raise ValueError()
 		gp.kernel = gp.kernel or 'm'; break
-	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+	except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 	except KeyboardInterrupt: sys.exit()
 	
 if gp.kernel == 'p':
@@ -65,10 +65,10 @@ if gp.kernel == 'p':
 	menu = ['f','g','']
 	while True:
 		try:
-			tree_type = raw_input('\t Select (f)ull or (g)row method (default f): ')
+			tree_type = input('\t Select (f)ull or (g)row method (default f): ')
 			if tree_type not in menu: raise ValueError()
 			tree_type = tree_type or 'f'; break
-		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+		except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 
 else:
@@ -76,19 +76,19 @@ else:
 	menu = ['f','g','r','']
 	while True:
 		try:
-			tree_type = raw_input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
+			tree_type = input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
 			if tree_type not in menu: raise ValueError()
 			tree_type = tree_type or 'r'; break
-		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+		except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 	
-menu = range(1,11)
+menu = list(range(1,11))
 while True:
 	try:
-		tree_depth_base = raw_input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
+		tree_depth_base = input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
 		if tree_depth_base not in str(menu) or tree_depth_base == '0': raise ValueError()
 		tree_depth_base = tree_depth_base or 3; tree_depth_base = int(tree_depth_base); break
-	except ValueError: print '\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m'
+	except ValueError: print('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
 	except KeyboardInterrupt: sys.exit()
 	
 
@@ -103,50 +103,50 @@ else: # if any other kernel is selected
 	if tree_type == 'f': gp.tree_depth_max = tree_depth_base
 	else: # if type is Full, the maximum Tree depth for the full run is equal to the initial population
 	
-		menu = range(tree_depth_base,11)
+		menu = list(range(tree_depth_base,11))
 		while True:
 			try:
-				gp.tree_depth_max = raw_input('\t Enter maximum Tree depth (default matches \033[3minitial\033[0;0m): ')
+				gp.tree_depth_max = input('\t Enter maximum Tree depth (default matches \033[3minitial\033[0;0m): ')
 				if gp.tree_depth_max not in str(menu) or gp.tree_depth_max == '0': raise ValueError()
 				gp.tree_depth_max = gp.tree_depth_max or tree_depth_base; gp.tree_depth_max = int(gp.tree_depth_max); break
 				# gp.tree_depth_max = int(gp.tree_depth_max) - tree_depth_base; break
-			except ValueError: print '\t\033[32m Enter a number >= the maximum Tree depth. Try again ...\n\033[0;0m'
+			except ValueError: print('\t\033[32m Enter a number >= the maximum Tree depth. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
-	menu = range(3,101)
+	menu = list(range(3,101))
 	while True:
 		try:
-			gp.tree_depth_min = raw_input('\t Enter minimum number of nodes for any given Tree (default 3): ')
+			gp.tree_depth_min = input('\t Enter minimum number of nodes for any given Tree (default 3): ')
 			if gp.tree_depth_min not in str(menu) or gp.tree_depth_min == '0': raise ValueError()
 			gp.tree_depth_min = gp.tree_depth_min or 3; gp.tree_depth_min = int(gp.tree_depth_min); break
-		except ValueError: print '\t\033[32m Enter a number from 3 to 2^(depth + 1) - 1 including 100. Try again ...\n\033[0;0m'
+		except ValueError: print('\t\033[32m Enter a number from 3 to 2^(depth + 1) - 1 including 100. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 		
-	menu = range(10,1001)
+	menu = list(range(10,1001))
 	while True:
 		try:
-			gp.tree_pop_max = raw_input('\t Enter number of Trees in each population (default 100): ')
+			gp.tree_pop_max = input('\t Enter number of Trees in each population (default 100): ')
 			if gp.tree_pop_max not in str(menu) or gp.tree_pop_max == '0': raise ValueError()
 			gp.tree_pop_max = gp.tree_pop_max or 100; gp.tree_pop_max = int(gp.tree_pop_max); break
-		except ValueError: print '\t\033[32m Enter a number from 10 including 1000. Try again ...\n\033[0;0m'
+		except ValueError: print('\t\033[32m Enter a number from 10 including 1000. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 		
-	menu = range(1,101)
+	menu = list(range(1,101))
 	while True:
 		try:
-			gp.generation_max = raw_input('\t Enter max number of generations (default 10): ')
+			gp.generation_max = input('\t Enter max number of generations (default 10): ')
 			if gp.generation_max not in str(menu) or gp.generation_max == '0': raise ValueError()
 			gp.generation_max = gp.generation_max or 10; gp.generation_max = int(gp.generation_max); break
-		except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
+		except ValueError: print('\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 		
 	menu = ['i','g','m','s','db','']
 	while True:
 		try:
-			gp.display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
+			gp.display = input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
 			if gp.display not in menu: raise ValueError()
 			gp.display = gp.display or 'm'; break
-		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+		except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 		
 
@@ -181,7 +181,7 @@ gp.population_a = ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)
 
 gp.fx_karoo_construct(tree_type, tree_depth_base) # construct the first population of Trees	
 
-if gp.kernel != 'p': print '\n We have constructed a population of', gp.tree_pop_max,'Trees for Generation 1\n'
+if gp.kernel != 'p': print('\n We have constructed a population of', gp.tree_pop_max,'Trees for Generation 1\n')
 
 else: # EOL for Play mode
 	gp.fx_display_tree(gp.tree) # print the current Tree
@@ -204,7 +204,7 @@ continues into multi-generational evolution.
 '''
 
 if gp.display != 's':
-	print ' Evaluate the first generation of Trees ...'
+	print('Evaluate the first generation of Trees')
 	if gp.display == 'i': gp.fx_karoo_pause(0)
 
 gp.fx_fitness_gym(gp.population_a) # generate expression, evaluate fitness, compare fitness
@@ -232,7 +232,7 @@ Configuration' (top).
 
 for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generation_max'
 
-	print '\n Evolve a population of Trees for Generation', gp.generation_id, '...'
+	print('\n Evolve a population of Trees for Generation', gp.generation_id, '...')
 	gp.population_b = ['Karoo GP by Kai Staats, Evolving Generation'] # initialise population_b to host the next generation
 	
 	gp.fx_fitness_gene_pool() # generate the viable gene pool (compares against gp.tree_depth_min)
@@ -249,7 +249,7 @@ for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generat
 #   "End of line, man!" --CLU             |
 #++++++++++++++++++++++++++++++++++++++++++
 
-print '\n \033[36m Karoo GP has an ellapsed time of \033[0;0m\033[31m%f\033[0;0m' % (time.time() - start), '\033[0;0m'
+print('\n \033[36m Karoo GP has an ellapsed time of \033[0;0m\033[31m%f\033[0;0m' % (time.time() - start), '\033[0;0m')
 
 gp.fx_archive_tree_write(gp.population_b, 'f') # save the final generation of Trees to disk
 gp.fx_karoo_eol()
