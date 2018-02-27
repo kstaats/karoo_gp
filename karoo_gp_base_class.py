@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.5
+# version 1.0.8
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -24,40 +24,45 @@ from sympy import sympify
 from datetime import datetime
 from collections import OrderedDict
 
-# TensorFlow-related imports
+# np.random.seed(1000) # for reproducibility
+
+
+### TensorFlow Imports and Definitions ###
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+
 import tensorflow as tf
 import ast
 import operator as op
+
 operators = {ast.Add: tf.add, # e.g., a + b
-             ast.Sub: tf.subtract, # e.g., a - b
-             ast.Mult: tf.multiply, # e.g., a * b
-             ast.Div: tf.divide, # e.g., a / b
-             ast.Pow: tf.pow, # e.g., a ** 2
-             ast.USub: tf.negative, # e.g., -a
-             ast.And: tf.logical_and, # e.g., a and b
-             ast.Or: tf.logical_or, # e.g., a or b
-             ast.Not: tf.logical_not, # e.g., not a
-             ast.Eq: tf.equal, # e.g., a == b
-             ast.NotEq: tf.not_equal, # e.g., a != b
-             ast.Lt: tf.less, # e.g., a < b
-             ast.LtE: tf.less_equal, # e.g., a <= b
-             ast.Gt: tf.greater, # e.g., a > b
-             ast.GtE: tf.greater_equal, # e.g., a >= 1
-            'abs': tf.abs, # e.g., abs(a)
-            'sign': tf.sign, # e.g., sign(a)
-            'square': tf.square, # e.g., square(a)
-            'sqrt': tf.sqrt, # e.g., sqrt(a)
-            'pow': tf.pow, # e.g., pow(a, b)
-            'log': tf.log, # e.g., log(a)
-            'log1p': tf.log1p, # e.g., log1p(a)
-            'cos': tf.cos, # e.g., cos(a)
-            'sin': tf.sin, # e.g., sin(a)
-            'tan': tf.tan, # e.g., tan(a)
-            'acos': tf.acos, # e.g., acos(a)
-            'asin': tf.asin, # e.g., asin(a)
-            'atan': tf.atan, # e.g., atan(a)
-            }
+	ast.Sub: tf.subtract, # e.g., a - b
+	ast.Mult: tf.multiply, # e.g., a * b
+	ast.Div: tf.divide, # e.g., a / b
+	ast.Pow: tf.pow, # e.g., a ** 2
+	ast.USub: tf.negative, # e.g., -a
+	ast.And: tf.logical_and, # e.g., a and b
+	ast.Or: tf.logical_or, # e.g., a or b
+	ast.Not: tf.logical_not, # e.g., not a
+	ast.Eq: tf.equal, # e.g., a == b
+	ast.NotEq: tf.not_equal, # e.g., a != b
+	ast.Lt: tf.less, # e.g., a < b
+	ast.LtE: tf.less_equal, # e.g., a <= b
+	ast.Gt: tf.greater, # e.g., a > b
+	ast.GtE: tf.greater_equal, # e.g., a >= 1
+	'abs': tf.abs, # e.g., abs(a)
+	'sign': tf.sign, # e.g., sign(a)
+	'square': tf.square, # e.g., square(a)
+	'sqrt': tf.sqrt, # e.g., sqrt(a)
+	'pow': tf.pow, # e.g., pow(a, b)
+	'log': tf.log, # e.g., log(a)
+	'log1p': tf.log1p, # e.g., log1p(a)
+	'cos': tf.cos, # e.g., cos(a)
+	'sin': tf.sin, # e.g., sin(a)
+	'tan': tf.tan, # e.g., tan(a)
+	'acos': tf.acos, # e.g., acos(a)
+	'asin': tf.asin, # e.g., asin(a)
+	'atan': tf.atan, # e.g., atan(a)
+	}
 
 np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
 
@@ -65,10 +70,9 @@ np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters 
 class Base_GP(object):
 
 	'''
-	This Base_BP class contains all methods for Karoo GP.
-	
-	Method names are differentiated from global variable names (defined below) by the prefix 'fx_' followed by an object
-	and action, as in 'fx_display_tree()', with a few expections, such as 'fx_fitness_gene_pool'.
+	This Base_BP class contains all methods for Karoo GP. Method names are differentiated from global variable names 
+	(defined below) by the prefix 'fx_' followed by an object and action, as in 'fx_display_tree()', with a few 
+	expections, such as 'fx_fitness_gene_pool'.
 	
 	The categories (denoted by +++ banners +++) are as follows:
 		'karoo_gp'						A single method which conducts an entire run. Employed only by karoo_gp_server.py
@@ -80,85 +84,72 @@ class Base_GP(object):
 		'fx_display_'					Methods to Display a Tree
 		'fx_archive_'					Methods to Archive
 		
-	There are no sub-classes at the time of this edit - 2015 09/21
+	### Global variables used for data management ###
+	'gp.data_train'					store train data for processing in TF
+	'gp.data_test'					store test data for processing in TF
+	'gp.tf_device'					set TF computation backend device (CPU or GPU)
+	'gp.tf_device_log'			employed for TensorFlow debugging
+	
+	'gp.data_train_cols'		number of cols in the TRAINING data (see 'fx_karoo_data_load', below)
+	'gp.data_train_rows'		number of rows in the TRAINING data (see 'fx_karoo_data_load', below)
+	'gp.data_test_cols'			number of cols in the TEST data (see 'fx_karoo_data_load', below)
+	'gp.data_test_rows'			number of rows in the TEST data (see 'fx_karoo_data_load', below)
+	
+	'gp.functions'					user defined functions (operators) from the associated files/[functions].csv
+	'gp.terminals'					user defined variables (operands) from the top row of the associated [data].csv
+	'gp.coeff'							user defined coefficients (NOT YET IN USE)
+	'gp.fitness_type'				fitness type
+	'gp.datetime'						date-time stamp of when the unique directory is created
+	'gp.path'								full path to the unique directory created with each run
+	'gp.dataset'						local path and dataset filename
+	
+	### Global variables initiated and/or used by Sympy ###
+	'gp.algo_raw'						a Sympy string which represents a flattened tree
+	'gp.algo_sym'						a Sympy executable version of algo_raw
+	'gp.fittest_dict'				a dictionary of the most fit trees, compiled during fitness function execution
+	
+	### Global variables used for evolutionary management ###
+	'gp.population_a'				the root generation from which Trees are chosen for mutation and reproduction
+	'gp.population_b'				the generation constructed from gp.population_a (recyled)
+	'gp.gene_pool'					once-per-generation assessment of trees that meet min and max boundary conditions
+	'gp.generation_id'			simple n + 1 increment
+	'gp.fitness_type'				set in 'fx_karoo_data_load' as either a minimising or maximising function
+	'gp.tree'								axis-1, 13 element Numpy array that defines each Tree, stored in 'gp.population'
+	'gp.pop_*'							13 variables that define each Tree (see 'fx_gen_tree_initialise')
+	
+	### Error checks ###
+	You can quickly locate all error checks by searching for 'ERROR!' in this and all classes.
+	
 	'''
-	
-	#++++++++++++++++++++++++++++++++++++++++++
-	#   Define Global Variables               |
-	#++++++++++++++++++++++++++++++++++++++++++
-	
+		
 	def __init__(self):
-	
-		'''
-		All Karoo GP global variables are named with the prefix 'gp.' The 13 variables which begin with 'gp.pop_' are 
-		specifically employed to define the 13 parameters for each tree as stored in the axis-1 (expand horizontally) 
-		'gp.population' Numpy array.
+			
+		### Global variables instantiated in karoo_gp_main.py and karoo_gp_server.py ###
+		self.kernel = '' # fitness function
+		self.tree_depth_max = 0 # maximum Tree depth for the entire run; limits bloat
+		self.tree_depth_min = 0 # minimum number of nodes
+		self.tree_pop_max = 0 # maximum number of Trees per generation
+		self.generation_max = 0 # maximum number of generations
+		self.tourn_size = 0 # number of Trees selected for each tournament
 		
-		### Global and local variables defined by the user in karoo_gp_main.py (in order of appearence) ###
-		'gp.kernel'							fitness function
-		'gp.class_method'				select the number of classes (will be automated in future version)
-		'tree_type'							Full, Grow, or Ramped 50/50 (local variable)
-		'gp.tree_depth_min'			minimum number of nodes
-		'tree_depth_base'				maximum Tree depth for the initial population, where nodes = 2^(depth + 1) - 1
-		'gp.tree_depth_max'			maximum Tree depth for the entire run; introduces potential bloat
-		'gp.tree_pop_max'				maximum number of Trees per generation
-		'gp.generation_max'			maximum number of generations
-		'gp.display'						level of on-screen feedback
+		self.evolve_repro = 0 # quantity of a population generated through Reproduction
+		self.evolve_point = 0 # quantity of a population generated through Point Mutation
+		self.evolve_branch = 0 # quantity of a population generated through Branch Mutation
+		self.evolve_cross = 0 # quantity of a population generated through Crossover
 		
-		'gp.evolve_repro'				quantity of a population generated through Reproduction
-		'gp.evolve_point'				quantity of a population generated through Point Mutation
-		'gp.evolve_branch'			quantity of a population generated through Branch Mutation
-		'gp.evolve_cross'				quantity of a population generated through Crossover
+		self.display = '' # display mode is set to (s)ilent # level of on-screen feedback
+		self.precision = 0 # the number of floating points for the round function in 'fx_fitness_eval'
 		
-		'gp.tourn_size'					the number of Trees chosen for each tournament
-		'gp.precision'					the number of floating points for all applications of the round function
+		# self.karoo_gp(tree_type, tree_depth_base, filename) # used by karoo_gp_server.py to launch an entire run
 		
-		### Global variables used for data management ###
-		'gp.data_train'					store train data for processing in TF
-		'gp.data_test'					store test data for processing in TF
-		'gp.tf_device'					set TF computation backend device (CPU or GPU)
-		'gp.tf_device_log'			employed for TensorFlow debugging
 		
-		'gp.data_train_cols'		number of cols in the TRAINING data (see 'fx_karoo_data_load', below)
-		'gp.data_train_rows'		number of rows in the TRAINING data (see 'fx_karoo_data_load', below)
-		'gp.data_test_cols'			number of cols in the TEST data (see 'fx_karoo_data_load', below)
-		'gp.data_test_rows'			number of rows in the TEST data (see 'fx_karoo_data_load', below)
+		### Global variables instantiated in the classes ###
+		self.algo_raw = [] # the raw expression generated by Sympy per Tree -- CONSIDER MAKING THIS VARIABLE LOCAL
+		self.algo_sym = [] # the expression generated by Sympy per Tree -- CONSIDER MAKING THIS VARIABLE LOCAL
+		self.fittest_dict = {} # all Trees which share the best fitness score
 		
-		'gp.functions'					user defined functions (operators) from the associated files/[functions].csv
-		'gp.terminals'					user defined variables (operands) from the top row of the associated [data].csv
-		'gp.coeff'							user defined coefficients (NOT YET IN USE)
-		'gp.fitness_type'				fitness type
-		'gp.datetime'						date-time stamp of when the unique directory is created
-		'gp.path'								full path to the unique directory created with each run
-		'gp.dataset'						local path and dataset filename
-		
-		### Global variables initiated and/or used by Sympy ###
-		'gp.algo_raw'						a Sympy string which represents a flattened tree
-		'gp.algo_sym'						a Sympy executable version of algo_raw
-		'gp.fittest_dict'				a dictionary of the most fit trees, compiled during fitness function execution
-		
-		### Variables used for evolutionary management ###
-		'gp.population_a'				the root generation from which Trees are chosen for mutation and reproduction
-		'gp.population_b'				the generation constructed from gp.population_a (recyled)
-		'gp.gene_pool'					once-per-generation assessment of trees that meet min and max boundary conditions
-		'gp.generation_id'			simple n + 1 increment
-		'gp.fitness_type'				set in 'fx_karoo_data_load' as either a minimising or maximising function
-		'gp.tree'								axis-1, 13 element Numpy array that defines each Tree, stored in 'gp.population'
-		'gp.pop_*'							13 elements which define each Tree (see 'fx_gen_tree_initialise' below)
-		
-		### Fishing nets ###
-		You can insert a "fishing net" to search for a specific expression when you fear the evolutionary process or 
-		something in the code may not be working. Search for "fishing net" and follow the directions.
-		
-		### Error checks ###
-		You can quickly find all places in which error checks have been inserted by searching for "ERROR!"
-		'''
-		
-		self.algo_raw = [] # temp store the raw expression -- CONSIDER MAKING THIS VARIABLE LOCAL
-		self.algo_sym = [] # temp store the sympified expression-- CONSIDER MAKING THIS VARIABLE LOCAL
-		self.fittest_dict = {} # temp store all Trees which share the best fitness score
-		self.gene_pool = [] # temp store all Tree IDs for use by Tournament
-		self.class_labels = 0 # temp set a variable which will be assigned the number of class labels (data_y)
+		self.gene_pool = [] # store all Tree IDs for use by Tournament
+		self.class_labels = 0 # the number of true class labels (data_y)
 		
 		return
 		
@@ -181,7 +172,7 @@ class Base_GP(object):
 		start = time.time() # start the clock for the timer
 		
 		# construct first generation of Trees
-		self.fx_karoo_data_load(tree_type, tree_depth_base, filename)
+		self.fx_karoo_data_load(filename)
 		self.generation_id = 1 # set initial generation ID
 		self.population_a = ['Karoo GP by Kai Staats, Generation ' + str(self.generation_id)] # list to store all Tree arrays, one generation at a time
 		self.fx_karoo_construct(tree_type, tree_depth_base) # construct the first population of Trees
@@ -228,21 +219,21 @@ class Base_GP(object):
 		os.system('clear')
 		
 		print '\n\033[36m\033[1m'
-		print '\t **   **   ******    *****    ******    ******       ******   ******'
-		print '\t **  **   **    **  **   **  **    **  **    **     **        **   **'
-		print '\t ** **    **    **  **   **  **    **  **    **     **        **   **'
-		print '\t ****     ********  ******   **    **  **    **     **   ***  ******'
+		print '\t **   **   ******    *****    ******    ******       ******    ******'
+		print '\t **  **   **    **  **   **  **    **  **    **     **        **    **'
+		print '\t ** **    **    **  **   **  **    **  **    **     **        **    **'
+		print '\t ****     ********  ******   **    **  **    **     **   ***  *******'
 		print '\t ** **    **    **  ** **    **    **  **    **     **    **  **'
 		print '\t **  **   **    **  **  **   **    **  **    **     **    **  **'
 		print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 		print '\t **    ** **    **  **    **  ******    ******       ******   **'
 		print '\033[0;0m'
-		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 1.0\033[0;0m'
-				
+		print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 1.0.7\033[0;0m'
+		
 		return
 		
 	
-	def fx_karoo_data_load(self, tree_type, tree_depth_base, filename):
+	def fx_karoo_data_load(self, filename):
 	
 		'''
 		The data and function .csv files are loaded according to the fitness function kernel selected by the user. An
@@ -251,33 +242,33 @@ class Base_GP(object):
 		10 rows will not be split, rather copied in full to both TRAINING and TEST as it is assumed you are conducting
 		a system validation run, as with the built-in MATCH kernel and associated dataset.
 		
-		Arguments required: tree_type, tree_depth_base, filename (of the dataset)
+		Arguments required: filename (of the dataset)
 		'''
 		
 		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###
 		
-		full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # Good idea Marco :)
-		# cwd = os.getcwd()
+		# full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # Good idea Marco :)
+		cwd = os.getcwd()
 		
 		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
 		
 		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
-			header = open(data_dict[self.kernel],'r')
-			self.dataset = data_dict[self.kernel]
+			header = open(data_dict[self.kernel],'r') # read only the top row of parameters
+			self.dataset = data_dict[self.kernel] # copy the name only
 			
 		elif len(sys.argv) == 2: # load an external data file
 			data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
-			header = open(sys.argv[1],'r')
-			self.dataset = sys.argv[1]
+			header = open(sys.argv[1],'r') # read only the top row of parameters
+			self.dataset = sys.argv[1] # copy the name only
 			
-		elif len(sys.argv) > 2: # receive filename and additional flags from karoo_gp_server.py via argparse
+		elif len(sys.argv) > 2: # receive filename and additional arguments from karoo_gp_server.py via argparse
 			data_x = np.loadtxt(filename, skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
 			data_y = np.loadtxt(filename, skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
-			header = open(filename,'r')
-			self.dataset = filename
+			header = open(filename,'r') # read only the top row of parameters
+			self.dataset = filename # copy the name only
 			
 		fitt_dict = {'c':'max', 'r':'min', 'm':'max', 'p':''}
 		self.fitness_type = fitt_dict[self.kernel] # load fitness type
@@ -285,7 +276,7 @@ class Base_GP(object):
 		func_dict = {'c':cwd + '/files/operators_CLASSIFY.csv', 'r':cwd + '/files/operators_REGRESS.csv', 'm':cwd + '/files/operators_MATCH.csv', 'p':cwd + '/files/operators_PLAY.csv'}
 		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the user defined terminals (operands)
-		self.class_labels = len(np.unique(data_y)) # load the user defined labels for classification or solutions for regression
+		self.class_labels = len(np.unique(data_y)) # load the user defined true labels for classification or solutions for regression
 		#self.coeff = np.loadtxt(cwd + '/files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients - NOT USED YET
 		
 		
@@ -299,10 +290,10 @@ class Base_GP(object):
 			x_train, x_test, y_train, y_test = skcv.train_test_split(data_x, data_y, test_size = 0.2) # 80/20 TRAIN/TEST split
 			data_x, data_y = [], [] # clear from memory
 			
-			data_train = np.c_[x_train, y_train] # recombine each row of data with its associated label (right column)
+			data_train = np.c_[x_train, y_train] # recombine each row of data with its associated class label (right column)
 			x_train, y_train = [], [] # clear from memory
 			
-			data_test = np.c_[x_test, y_test] # recombine each row of data with its associated label (right column)
+			data_test = np.c_[x_test, y_test] # recombine each row of data with its associated class label (right column)
 			x_test, y_test = [], [] # clear from memory
 			
 		self.data_train_cols = len(data_train[0,:]) # qty count
@@ -315,33 +306,30 @@ class Base_GP(object):
 		
 		self.data_train = data_train # Store train data for processing in TF
 		self.data_test = data_test # Store test data for processing in TF
-		self.tf_device = "/gpu:0" # Set TF computation backend device (CPU or GPU)
+		self.tf_device = "/gpu:0" # Set TF computation backend device (CPU or GPU); gpu:n = 1st, 2nd, or ... GPU device
 		self.tf_device_log = False # TF device usage logging (for debugging)
 		
 		
 		### 4) create a unique directory and initialise all .csv files ###
-		
-		# self.datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-		self.path = os.path.join(cwd, 'runs/', filename.split('.')[0] + '_' + self.datetime) # generate a unique directory name
-		# self.path = os.path.join(cwd, 'runs/', self.datetime) # generate a unique directory name
+		self.path = os.path.join(cwd, 'runs/', filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
 		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
 		self.filename = {} # a dictionary to hold .csv filenames
 		
-		self.filename.update( {'a':self.path + '/population_a.csv'} )
+		self.filename.update( {'a':self.path + 'population_a.csv'} )
 		target = open(self.filename['a'], 'w') # initialise the .csv file for population 'a' (foundation)
 		target.close()
 		
-		self.filename.update( {'b':self.path + '/population_b.csv'} )
+		self.filename.update( {'b':self.path + 'population_b.csv'} )
 		target = open(self.filename['b'], 'w') # initialise the .csv file for population 'b' (evolving)
 		target.close()
 		
-		self.filename.update( {'f':self.path + '/population_f.csv'} )
+		self.filename.update( {'f':self.path + 'population_f.csv'} )
 		target = open(self.filename['f'], 'w') # initialise the .csv file for the final population (test)
 		target.close()
 		
-		self.filename.update( {'s':self.path + '/population_s.csv'} )
+		self.filename.update( {'s':self.path + 'population_s.csv'} )
 		# do NOT initialise this .csv file, as it is retained for loading a previous run (recover)
 		
 		return
@@ -619,9 +607,10 @@ class Base_GP(object):
 					while True:
 						try:
 							print '\n\t The current tournament size is:', self.tourn_size
-							query = int(raw_input('\t Adjust the tournament size (suggest 10): '))
-							if query not in menu: raise ValueError()
-							self.tourn_size = query; break
+							query = raw_input('\t Adjust the tournament size (suggest 10): ')
+							if query not in str(menu) or query == '0' or query == '1': raise ValueError() # not ideal 20170918
+							elif query == '': break
+							self.tourn_size = int(query); break
 						except ValueError: print '\n\t\033[32m Enter a number from 2 including', str(self.tree_pop_max) + ".", 'Try again ...\033[0;0m'
 						
 				
@@ -630,9 +619,10 @@ class Base_GP(object):
 					while True:
 						try:
 							print '\n\t The current minimum number of nodes is:', self.tree_depth_min
-							query = int(raw_input('\t Adjust the minimum number of nodes for all Trees (min 3): '))
-							if query not in menu: raise ValueError()
-							self.tree_depth_min = query; break
+							query = raw_input('\t Adjust the minimum number of nodes for all Trees (min 3): ')
+							if query not in str(menu) or query == '0' or query == '1' or query == '2': raise ValueError() # not ideal 20170918
+							elif query == '': break
+							self.tree_depth_min = int(query); break
 						except ValueError: print '\n\t\033[32m Enter a number from 3 including 1000. Try again ...\033[0;0m'
 						
 				
@@ -643,8 +633,8 @@ class Base_GP(object):
 				#	while True:
 				#		try:
 				#			print '\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', self.tree_depth_max
-				#			query = int(raw_input('\n\t Adjust the global maximum Tree depth to (1 ... 10): '))
-				#			if query not in menu: raise ValueError()
+				#			query = raw_input('\n\t Adjust the global maximum Tree depth to (1 ... 10): ')
+				#			if query not in str(menu): raise ValueError()
 				#			if query < self.tree_depth_max:
 				#				print '\n\t\033[32m This value is less than the current value.\033[0;0m'
 				#				conf = raw_input('\n\t Are you ok with this? (y/n) ')
@@ -666,7 +656,7 @@ class Base_GP(object):
 							query = raw_input('\t Enter quantity of Trees to be generated by Reproduction: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							tmp_repro = int(float(query)); break
+							tmp_repro = int(query); break # replaced int(float(query)) 20170918
 						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					while True:
@@ -674,7 +664,7 @@ class Base_GP(object):
 							query = raw_input('\t Enter quantity of Trees to be generated by Point Mutation: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							tmp_point = int(float(query)); break
+							tmp_point = int(query); break # replaced int(float(query)) 20170918
 						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					while True:
@@ -682,7 +672,7 @@ class Base_GP(object):
 							query = raw_input('\t Enter quantity of Trees to be generated by Branch Mutation: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							tmp_branch = int(float(query)); break
+							tmp_branch = int(query); break # replaced int(float(query)) 20170918
 						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					while True:
@@ -690,7 +680,7 @@ class Base_GP(object):
 							query = raw_input('\t Enter quantity of Trees to be generated by Crossover: ')
 							if query not in str(menu): raise ValueError()
 							elif query == '': break
-							tmp_cross = int(float(query)); break
+							tmp_cross = int(query); break # replaced int(float(query)) 20170918
 						except ValueError: print '\n\t\033[32m Enter a number from 0 including 1000. Try again ...\033[0;0m'
 						
 					if tmp_repro + tmp_point + tmp_branch + tmp_cross != self.tree_pop_max: print '\n\t The sum of the above does not equal', self.tree_pop_max, 'Try again ...'
@@ -720,7 +710,7 @@ class Base_GP(object):
 								
 								# get simplified expression and process it by TF - tested 2017 02/02
 								expr = str(self.algo_sym) # might change this to algo_raw for more correct expression evaluation
-								result = self.fx_fitness_eval(expr, self.data_test, get_labels=True)
+								result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels = True)
 								
 								print '\n\t\033[36mTree', query, 'yields (raw):', self.algo_raw, '\033[0;0m'
 								print '\t\033[36mTree', query, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
@@ -814,14 +804,14 @@ class Base_GP(object):
 				
 				elif pause == 'q':
 					if eol == 0: # if the GP run is not at the final generation
-						query = raw_input('\n\t \033[32mThe current population_b will be lost!\033[0;0m\n\n\t Are you certain you want to quit? (y/n)')
+						query = raw_input('\n\t \033[32mThe current population_b will be lost!\033[0;0m\n\n\t Are you certain you want to quit? (y/n) ')
 						if query == 'y':
 							self.fx_archive_params_write('Desktop') # save run-time parameters to disk
 							sys.exit() # quit the script without saving population_b
 						else: break
 						
 					else: # if the GP run is complete
-						query = raw_input('\n\t Are you certain you want to quit? (y/n)')
+						query = raw_input('\n\t Are you certain you want to quit? (y/n) ')
 						if query == 'y':
 							print '\n\t \033[32mYour Trees and runtime parameters are archived in karoo_gp/runs/\033[0;0m'
 							self.fx_archive_params_write('Desktop') # save run-time parameters to disk
@@ -1244,7 +1234,7 @@ class Base_GP(object):
 			
 		else:
 			if tree[8, node_id] == '1': # arity of 1 for the explicit pattern 'not [term]'
-				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id] # original code
+				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id]
 				
 			elif tree[8, node_id] == '2': # arity of 2 for the pattern '[func] [term] [func]'
 				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id] + self.fx_eval_label(tree, tree[10, node_id])
@@ -1383,32 +1373,32 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_fitness_eval(self, expr, data, get_labels = False):
+	def fx_fitness_eval(self, expr, data, get_pred_labels = False):
 	
 		'''		
 		Computes tree expression using TensorFlow (TF) returning results and fitness scores.
 		
-		This method orchestrates most of the TF routines by parsing input string expression and converting it into TF 
-		operation graph which then is processed in an isolated TF session to compute the results and corresponding fitness 
-		values. 
+		This method orchestrates most of the TF routines by parsing input string 'expression' and converting it into a TF 
+		operation graph which is then processed in an isolated TF session to compute the results and corresponding fitness 
+		values.
 		
 			'self.tf_device' - controls which device will be used for computations (CPU or GPU).
 			'self.tf_device_log' - controls device placement logging (debug only).
 
 		Args:
 			'expr' - a string containing math expression to be computed on the data. Variable names should match corresponding 
-			terminal names in 'self.terminals'. Only algebraic operations are currently supported (+, -, *, /, **).
+			terminal names in 'self.terminals'.
 			
-			'data' - an 'n by m' matrix of the data points containing n observations and m features each. Variable order should 
-			match corresponding order of terminals in 'self.terminals'.
+			'data' - an 'n by m' matrix of the data points containing n observations and m features per observation. 
+			Variable order should match corresponding order of terminals in 'self.terminals'.
 
-			'get_labels' - a boolean flag which controls whether classification labels should be extracted from the results.
-			This is applied only to the CLASSIFY kernel and defaults to 'False'.
-
+			'get_pred_labels' - a boolean flag which controls whether the predicted labels should be extracted from the 
+			evolved results. This applies only to the CLASSIFY kernel and defaults to 'False'.
+			
 		Returns:
 			A dict mapping keys to the following outputs:
 				'result' - an array of the results of applying given expression to the data
-				'labels' - an array of the labels extracted from the results; defined only for CLASSIFY kernel, None otherwise
+				'pred_labels' - an array of the predicted labels extracted from the results; defined only for CLASSIFY kernel, else None
 				'solution' - an array of the solution values extracted from the data (variable 's' in the dataset)
 				'pairwise_fitness' - an array of the element-wise results of applying corresponding fitness kernel function
 				'fitness' - aggregated scalar fitness score
@@ -1424,20 +1414,19 @@ class Base_GP(object):
 		with tf.Session(config=config) as sess:
 			with sess.graph.device(self.tf_device):
 			
-				# 1 - Load data into TF
+				# 1 - Load data into TF vectors
 				tensors = {}
 				for i in range(len(self.terminals)):
 					var = self.terminals[i]
-					tensors[var] = tf.constant(data[:, i], dtype=tf.float32)
+					tensors[var] = tf.constant(data[:, i], dtype=tf.float32) # converts data into vectors
 					
 				# 2- Transform string expression into TF operation graph
 				result = self.fx_fitness_expr_parse(expr, tensors)
-				
-				labels = tf.no_op() # a placeholder, applies only to CLASSIFY kernel
+				pred_labels = tf.no_op() # a placeholder, applies only to CLASSIFY kernel
 				solution = tensors['s'] # solution value is assumed to be stored in 's' terminal
 				
 				# 3- Add fitness computation into TF graph
-				if self.kernel == 'c': # CLASSIFY kernels
+				if self.kernel == 'c': # CLASSIFY kernel
 				
 					'''
 					Creates element-wise fitness computation TensorFlow (TF) sub-graph for CLASSIFY kernel.
@@ -1445,22 +1434,24 @@ class Base_GP(object):
 					This method uses the 'sympified' (SymPy) expression ('algo_sym') created in 'fx_eval_poly' and the data set 
 					loaded at run-time to evaluate the fitness of the selected kernel.
 					
-					This multiclass classifer compares each row of a given Tree to the known solution, comparing estimated values 
-					(labels) generated by Karoo GP against the correct labels. This method is able to work with any number of 
-					class labels, from 2 to n. The left-most bin includes -inf. The right-most bin includes +inf. Those inbetween 
-					are by default confined to the spacing of 1.0 each, as defined by:
+					This multiclass classifer compares each row of a given Tree to the known solution, comparing predicted labels 
+					generated by Karoo GP against the true classs labels. This method is able to work with any number of class 
+					labels, from 2 to n. The left-most bin includes -inf. The right-most bin includes +inf. Those inbetween are 
+					by default confined to the spacing of 1.0 each, as defined by:
 					
 						(solution - 1) < result <= solution
 					
 					The skew adjusts the boundaries of the bins such that they fall on both the negative and positive sides of the 
 					origin. At the time of this writing, an odd number of class labels will generate an extra bin on the positive 
 					side of origin as it has not yet been determined the effect of enabling the middle bin to include both a 
-					negative and positive space.
+					negative and positive result.
 					
-					Arguments required: result, solution		
+					Arguments required: result, solution
 					'''
 					
-					if get_labels: labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype=[tf.int32, tf.string], swap_memory=True)
+					# was breaking with upgrade from Tensorflow 1.1 to 1.3; fixed by Iurii by replacing [] with () as of 20171026
+					# if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = [tf.int32, tf.string], swap_memory = True)
+					if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = (tf.int32, tf.string), swap_memory = True)
 					
 					skew = (self.class_labels / 2) - 1
 					
@@ -1478,12 +1469,26 @@ class Base_GP(object):
 					
 					pairwise_fitness = tf.cast(tf.logical_or(tf.logical_or(rule13, rule23), rule33), tf.int32)
 					
+					
 				elif self.kernel == 'r': # REGRESSION kernel
+				
+					'''
+					A very, very basic REGRESSION kernel which is not designed to perform well in the real world. It requires
+					that you raise the minimum node count to keep it from converging on the value of '1'. Consider writing or 
+					integrating a more sophisticated kernel.
+					'''
+					
 					pairwise_fitness = tf.abs(solution - result)
 					
+					
 				elif self.kernel == 'm': # MATCH kernel
+				
+					'''
+					This is used for demonstration purposes only.
+					'''
+
 					# pairwise_fitness = tf.cast(tf.equal(solution, result), tf.int32) # breaks due to floating points
-					RTOL, ATOL = 1e-05, 1e-08
+					RTOL, ATOL = 1e-05, 1e-08 # fixes above issue by checking if a float value lies within a range of values
 					pairwise_fitness = tf.cast(tf.less_equal(tf.abs(solution - result), ATOL + RTOL * tf.abs(result)), tf.int32)
 					
 				# elif self.kernel == '[other]': # [OTHER] kernel
@@ -1494,9 +1499,9 @@ class Base_GP(object):
 				fitness = tf.reduce_sum(pairwise_fitness)
 				
 				# Process TF graph and collect the results
-				result, labels, solution, fitness, pairwise_fitness = sess.run([result, labels, solution, fitness, pairwise_fitness])
+				result, pred_labels, solution, fitness, pairwise_fitness = sess.run([result, pred_labels, solution, fitness, pairwise_fitness])
 				
-		return {'result': result, 'labels': labels, 'solution': solution, 'fitness': float(fitness), 'pairwise_fitness': pairwise_fitness}
+		return {'result': result, 'pred_labels': pred_labels, 'solution': solution, 'fitness': float(fitness), 'pairwise_fitness': pairwise_fitness}
 		
 	
 	def fx_fitness_expr_parse(self, expr, tensors):
@@ -1579,10 +1584,11 @@ class Base_GP(object):
 	def fx_fitness_labels_map(self, result):
 	
 		'''
-		Creates label extraction TensorFlow (TF) sub-graph for CLASSIFY kernel defined as a sequence of boolean conditions. 
-		Outputs an array of tuples containing label extracted from the result and corresponding boolean condition triggered.
+		For the CLASSIFY kernel, creates a TensorFlow (TF) sub-graph defined as a sequence of boolean conditions based upon
+		the quantity of true class labels provided in the data .csv. Outputs an array of tuples containing the predicted 
+		labels based upon the result and corresponding boolean condition triggered.
 		
-		The original (pre-TensorFlow) code is as follows:
+		For comparison, the original (pre-TensorFlow) cod follows:
 		
 			skew = (self.class_labels / 2) - 1 # '-1' keeps a binary classification splitting over the origin
 			if solution == 0 and result <= 0 - skew; fitness = 1: # check for first class (the left-most bin)
@@ -1600,9 +1606,9 @@ class Base_GP(object):
 			cond = (class_label - 1 - skew < result) & (result <= class_label - skew)
 			label_rules[class_label] = tf.cond(cond, lambda: (tf.constant(class_label), tf.constant(' <= {}'.format(class_label - skew))), lambda: label_rules[class_label + 1])
 			
-		zero_rule = tf.cond(result <= 0 - skew, lambda: (tf.constant(0), tf.constant(' <= {}'.format(0 - skew))), lambda: label_rules[1])
+		pred_label = tf.cond(result <= 0 - skew, lambda: (tf.constant(0), tf.constant(' <= {}'.format(0 - skew))), lambda: label_rules[1])
 			
-		return zero_rule
+		return pred_label
 		
 	
 	def fx_fitness_store(self, tree, fitness):
@@ -1769,18 +1775,18 @@ class Base_GP(object):
 			harmonic mean of Precision and Recall (F1) = 2(P x R) / (P + R)
 			
 		From scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
-			y_pred = result, the estimated target values (labels) generated by Karoo GP
-			y_true = solution, the correct target values (labels) associated with the data
+			y_pred = result, the predicted labels generated by Karoo GP
+			y_true = solution, the true labels associated with the data
 			
 		Arguments required: result
 		'''
 		
 		for i in range(len(result['result'])):
-			print '\t\033[36m Data row {} predicts class:\033[1m {} ({} True)\033[0;0m\033[36m as {:.2f}{}\033[0;0m'.format(i, int(result['labels'][0][i]), int(result['solution'][i]), result['result'][i], result['labels'][1][i])
+			print '\t\033[36m Data row {} predicts class:\033[1m {} ({} True)\033[0;0m\033[36m as {:.2f}{}\033[0;0m'.format(i, int(result['pred_labels'][0][i]), int(result['solution'][i]), result['result'][i], result['pred_labels'][1][i])
 			
 		print '\n Fitness score: {}'.format(result['fitness'])
-		print '\n Precision-Recall report:\n', skm.classification_report(result['solution'], result['labels'][0])
-		print ' Confusion matrix:\n', skm.confusion_matrix(result['solution'], result['labels'][0])
+		print '\n Precision-Recall report:\n', skm.classification_report(result['solution'], result['pred_labels'][0])
+		print ' Confusion matrix:\n', skm.confusion_matrix(result['solution'], result['pred_labels'][0])
 		
 		return
 		
@@ -2633,7 +2639,7 @@ class Base_GP(object):
 		Arguments required: none
 		'''
 		
-		file = open(self.path + '/log_config.txt', 'w')
+		file = open(self.path + 'log_config.txt', 'w')
 		file.write('Karoo GP ' + app)
 		file.write('\n launched: ' + str(self.datetime))
 		file.write('\n dataset: ' + str(self.dataset))
@@ -2658,7 +2664,7 @@ class Base_GP(object):
 		file.close()
 		
 		
-		file = open(self.path + '/log_test.txt', 'w')
+		file = open(self.path + 'log_test.txt', 'w')
 		file.write('Karoo GP ' + app)
 		file.write('\n launched: ' + str(self.datetime))
 		file.write('\n dataset: ' + str(self.dataset))
@@ -2668,12 +2674,7 @@ class Base_GP(object):
 		
 			fitness_best = 0
 			fittest_tree = 0
-			
-			# original method, using pre-built fittest_dict
-			# file.write('\n The leading Trees and their associated expressions are:')
-			# for n in sorted(self.fittest_dict):
-			# file.write('\n\t ' + str(n) + ' : ' + str(self.fittest_dict[n]))
-			
+						
 			# revised method, re-evaluating all Trees from stored fitness score
 			for tree_id in range(1, len(self.population_b)):
 			
@@ -2698,19 +2699,19 @@ class Base_GP(object):
 						
 				# print 'fitness_best:', fitness_best, 'fittest_tree:', fittest_tree
 				
-				
+			
 			# test the most fit Tree and write to the .txt log
 			self.fx_eval_poly(self.population_b[int(fittest_tree)]) # generate the raw and sympified equation for the given Tree using SymPy
 			expr = str(self.algo_sym) # get simplified expression and process it by TF - tested 2017 02/02
-			result = self.fx_fitness_eval(expr, self.data_test, get_labels=True)
+			result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels = True)
 			
 			file.write('\n\n Tree ' + str(fittest_tree) + ' is the most fit, with expression:')
 			file.write('\n\n ' + str(self.algo_sym))
 			
 			if self.kernel == 'c':
 				file.write('\n\n Classification fitness score: {}'.format(result['fitness']))
-				file.write('\n\n Precision-Recall report:\n {}'.format(skm.classification_report(result['solution'], result['labels'][0])))
-				file.write('\n Confusion matrix:\n {}'.format(skm.confusion_matrix(result['solution'], result['labels'][0])))
+				file.write('\n\n Precision-Recall report:\n {}'.format(skm.classification_report(result['solution'], result['pred_labels'][0])))
+				file.write('\n Confusion matrix:\n {}'.format(skm.confusion_matrix(result['solution'], result['pred_labels'][0])))
 				
 			elif self.kernel == 'r':
 				MSE, fitness = skm.mean_squared_error(result['result'], result['solution']), result['fitness']

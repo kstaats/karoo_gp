@@ -1,8 +1,7 @@
 # Karoo GP Main (desktop)
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
-# Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.5
+# version 1.0.8
 
 '''
 A word to the newbie, expert, and brave--
@@ -31,9 +30,11 @@ If you include the path to an external dataset, it will auto-load at launch:
 	$ python karoo_gp_main.py /[path]/[to_your]/[filename].csv
 '''
 
-import sys # sys.path.append('modules/') to add the directory 'modules' to the current path 
-import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
+import sys; sys.path.append('modules/') # add directory 'modules' to the current path
 import time
+
+import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
+
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Defined Configuration            |
@@ -87,11 +88,11 @@ while True:
 	try:
 		tree_depth_base = raw_input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
 		if tree_depth_base not in str(menu) or tree_depth_base == '0': raise ValueError()
-		tree_depth_base = tree_depth_base or 3; tree_depth_base = int(tree_depth_base); break
+		elif tree_depth_base == '': tree_depth_base = 3; break
+		tree_depth_base = int(tree_depth_base); break
 	except ValueError: print '\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m'
 	except KeyboardInterrupt: sys.exit()
 	
-
 
 if gp.kernel == 'p': # if the Play kernel is selected
 	gp.tree_depth_max = tree_depth_base
@@ -106,11 +107,13 @@ else: # if any other kernel is selected
 		menu = range(tree_depth_base,11)
 		while True:
 			try:
-				gp.tree_depth_max = raw_input('\t Enter maximum Tree depth (default matches \033[3minitial\033[0;0m): ')
-				if gp.tree_depth_max not in str(menu) or gp.tree_depth_max == '0': raise ValueError()
-				gp.tree_depth_max = gp.tree_depth_max or tree_depth_base; gp.tree_depth_max = int(gp.tree_depth_max); break
-				# gp.tree_depth_max = int(gp.tree_depth_max) - tree_depth_base; break
-			except ValueError: print '\t\033[32m Enter a number >= the maximum Tree depth. Try again ...\n\033[0;0m'
+				gp.tree_depth_max = raw_input('\t Enter maximum Tree depth (default %i): ' %tree_depth_base)
+				if gp.tree_depth_max not in str(menu): raise ValueError()
+				elif gp.tree_depth_max == '': gp.tree_depth_max = tree_depth_base
+				gp.tree_depth_max = int(gp.tree_depth_max)
+				if gp.tree_depth_max < tree_depth_base: raise ValueError() # an ugly exception to the norm 20170918
+				else: break
+			except ValueError: print '\t\033[32m Enter a number >= the initial Tree depth. Try again ...\n\033[0;0m'
 			except KeyboardInterrupt: sys.exit()
 			
 	menu = range(3,101)
@@ -118,7 +121,8 @@ else: # if any other kernel is selected
 		try:
 			gp.tree_depth_min = raw_input('\t Enter minimum number of nodes for any given Tree (default 3): ')
 			if gp.tree_depth_min not in str(menu) or gp.tree_depth_min == '0': raise ValueError()
-			gp.tree_depth_min = gp.tree_depth_min or 3; gp.tree_depth_min = int(gp.tree_depth_min); break
+			elif gp.tree_depth_min == '': gp.tree_depth_min = 3
+			gp.tree_depth_min = int(gp.tree_depth_min); break
 		except ValueError: print '\t\033[32m Enter a number from 3 to 2^(depth + 1) - 1 including 100. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
@@ -127,7 +131,8 @@ else: # if any other kernel is selected
 		try:
 			gp.tree_pop_max = raw_input('\t Enter number of Trees in each population (default 100): ')
 			if gp.tree_pop_max not in str(menu) or gp.tree_pop_max == '0': raise ValueError()
-			gp.tree_pop_max = gp.tree_pop_max or 100; gp.tree_pop_max = int(gp.tree_pop_max); break
+			elif gp.tree_pop_max == '': gp.tree_pop_max = 100
+			gp.tree_pop_max = int(gp.tree_pop_max); break
 		except ValueError: print '\t\033[32m Enter a number from 10 including 1000. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
@@ -136,7 +141,8 @@ else: # if any other kernel is selected
 		try:
 			gp.generation_max = raw_input('\t Enter max number of generations (default 10): ')
 			if gp.generation_max not in str(menu) or gp.generation_max == '0': raise ValueError()
-			gp.generation_max = gp.generation_max or 10; gp.generation_max = int(gp.generation_max); break
+			elif gp.generation_max == '': gp.generation_max = 10
+			gp.generation_max = int(gp.generation_max); break
 		except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
@@ -172,9 +178,11 @@ If the user has selected 'Play' mode, this is the only generation to be construc
 '''
 
 start = time.time() # start the clock for the timer
-	
+
 filename = '' # temp place holder
-gp.fx_karoo_data_load(tree_type, tree_depth_base, filename)
+
+gp.fx_karoo_data_load(filename)
+
 gp.generation_id = 1 # set initial generation ID
 
 gp.population_a = ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)] # an empty list which will store all Tree arrays, one generation at a time

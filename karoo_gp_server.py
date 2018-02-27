@@ -1,8 +1,7 @@
 # Karoo GP Server
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
-# Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 1.0.5
+# version 1.0.8
 
 '''
 A word to the newbie, expert, and brave--
@@ -49,9 +48,10 @@ Note that if you include any of the above flags, then you must also include a fl
 An example is given, as follows:
 
 	$ python karoo_gp_server.py -ker c -typ r -bas 4 -fil /[path]/[to_your]/[filename].csv
+	
 '''
 
-import sys # sys.path.append('modules/') to add the directory 'modules' to the current path
+import sys; sys.path.append('modules/') # to add the directory 'modules' to the current path
 import argparse
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 
