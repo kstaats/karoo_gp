@@ -1,3 +1,42 @@
+2018 04/01
+
+Two major updates, as follows:
+
+1) I have returned to the basic structure of Karoo GP and worked to make it properly Pythonic. For those of you who 
+recognised the error in my ways, I appreciate your patience. What I have updated with this v1.1 release does not 
+improve performance nor stability (already rock solid), rather, it keeps properly trained developers from cringing 
+when they read my code.
+
+In the prior versions, I used one of the loose functions of Python that allows the initiation of a variable outside of
+the base_class. Meaning, I imported the base_class to karoo_gp_main.py and karoo_gp_server.py, called a dozen global 
+variables by "gp.___" and as such initiated them from the user scripts. Yes, it works. But it caused a certain 
+individual with whom I worked at the SKA to yell at me and shake her head (and I had just met her a few days prior). 
+I don't like being yelled at, so I fixed it.
+
+Now, all user configurations are set as local variables and their values are passed to the base_class. 
+
+To make thing a bit easier to read and follow, I have renamed and reorganized several functions (methods) as follows:
+
+a) Created a new category for data and archiving, moving/renaming all related functions to fx_data_.
+
+b) Renamed all fx_gen_ to fx_init_ as this is the initial population.
+
+c) Moved the four top-level functions used to construct the next generation of trees into their own fx_nextgen_ 
+category: fx_karoo_reproduce, fx_nextgen_point_mutate, fx_nextgen_branch_mutate, fx_nextgen_crossover
+
+The final breakdown is as follows:
+		fx_karoo_						Methods to Run Karoo GP
+		fx_data_						Methods to Load and Archive Data
+		fx_init_						Methods to Construct the 1st Generation
+		fx_eval_						Methods to Evaluate a Tree
+		fx_fitness_					Methods to Train and Test a Tree for Fitness
+		fx_nextgen_					Methods to Construct the next Generation
+		fx_evolve_					Methods to Evolve a Population
+		fx_display_					Methods to Visualize a Tree
+
+That's it! --kai
+
+
 2018 02/27
 Updated the Python library versions and improved some explanation of Operators and Operands in the User Guide.
 

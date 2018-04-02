@@ -1,7 +1,7 @@
 # Karoo GP Main (desktop)
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
-# version 1.0.8
+# version 1.1
 
 '''
 A word to the newbie, expert, and brave--
@@ -31,9 +31,22 @@ If you include the path to an external dataset, it will auto-load at launch:
 '''
 
 import sys; sys.path.append('modules/') # add directory 'modules' to the current path
-import time
-
+import os
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
+
+os.system('clear')
+print '\n\033[36m\033[1m'
+print '\t **   **   ******    *****    ******    ******       ******    ******'
+print '\t **  **   **    **  **   **  **    **  **    **     **        **    **'
+print '\t ** **    **    **  **   **  **    **  **    **     **        **    **'
+print '\t ****     ********  ******   **    **  **    **     **   ***  *******'
+print '\t ** **    **    **  ** **    **    **  **    **     **    **  **'
+print '\t **  **   **    **  **  **   **    **  **    **     **    **  **'
+print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
+print '\t **    ** **    **  **    **  ******    ******       ******   **'
+print '\033[0;0m'
+print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 1.1\033[0;0m'
+print ''
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -41,27 +54,21 @@ import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 #++++++++++++++++++++++++++++++++++++++++++
 
 '''
-Karoo GP queries the user for key parameters, some of which may be adjusted during run-time 
-at user invoked pauses. See the User Guide for meaning and value of each of the following parameters.
-
-Future versions will enable all of these parameters to be configured via an external configuration file and/or 
-command-line arguments passed at launch.
+Karoo GP queries the user for key parameters, some of which may be adjusted during run-time at user invoked pauses. 
+See the User Guide for meaning and value of each of the following parameters. The server version of Karoo enables 
+all parameters to be configured via command-line arguments.
 '''
-
-gp.karoo_banner()
-
-print ''
 
 menu = ['c','r','m','p','']
 while True:
 	try:
-		gp.kernel = raw_input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
-		if gp.kernel not in menu: raise ValueError()
-		gp.kernel = gp.kernel or 'm'; break
+		kernel = raw_input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
+		if kernel not in menu: raise ValueError()
+		kernel = kernel or 'm'; break
 	except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
 	except KeyboardInterrupt: sys.exit()
 	
-if gp.kernel == 'p':
+if kernel == 'p':
 
 	menu = ['f','g','']
 	while True:
@@ -94,24 +101,30 @@ while True:
 	except KeyboardInterrupt: sys.exit()
 	
 
-if gp.kernel == 'p': # if the Play kernel is selected
-	gp.tree_depth_max = tree_depth_base
-	gp.tree_pop_max = 1
-	gp.display = 'm'
-
+if kernel == 'p': # if the Play kernel is selected
+	tree_depth_max = tree_depth_base
+	tree_depth_min = 0
+	tree_pop_max = 1
+	generation_max = 1
+	display = 'm'
+#	evolve_repro = evolve_point = evolve_branch = evolve_cross = ''
+#	tourn_size = ''
+#	precision = ''
+#	filename = ''
+	
 else: # if any other kernel is selected
 
-	if tree_type == 'f': gp.tree_depth_max = tree_depth_base
+	if tree_type == 'f': tree_depth_max = tree_depth_base
 	else: # if type is Full, the maximum Tree depth for the full run is equal to the initial population
 	
 		menu = range(tree_depth_base,11)
 		while True:
 			try:
-				gp.tree_depth_max = raw_input('\t Enter maximum Tree depth (default %i): ' %tree_depth_base)
-				if gp.tree_depth_max not in str(menu): raise ValueError()
-				elif gp.tree_depth_max == '': gp.tree_depth_max = tree_depth_base
-				gp.tree_depth_max = int(gp.tree_depth_max)
-				if gp.tree_depth_max < tree_depth_base: raise ValueError() # an ugly exception to the norm 20170918
+				tree_depth_max = raw_input('\t Enter maximum Tree depth (default %i): ' %tree_depth_base)
+				if tree_depth_max not in str(menu): raise ValueError()
+				elif tree_depth_max == '': tree_depth_max = tree_depth_base
+				tree_depth_max = int(tree_depth_max)
+				if tree_depth_max < tree_depth_base: raise ValueError() # an ugly exception to the norm 20170918
 				else: break
 			except ValueError: print '\t\033[32m Enter a number >= the initial Tree depth. Try again ...\n\033[0;0m'
 			except KeyboardInterrupt: sys.exit()
@@ -119,147 +132,56 @@ else: # if any other kernel is selected
 	menu = range(3,101)
 	while True:
 		try:
-			gp.tree_depth_min = raw_input('\t Enter minimum number of nodes for any given Tree (default 3): ')
-			if gp.tree_depth_min not in str(menu) or gp.tree_depth_min == '0': raise ValueError()
-			elif gp.tree_depth_min == '': gp.tree_depth_min = 3
-			gp.tree_depth_min = int(gp.tree_depth_min); break
+			tree_depth_min = raw_input('\t Enter minimum number of nodes for any given Tree (default 3): ')
+			if tree_depth_min not in str(menu) or tree_depth_min == '0': raise ValueError()
+			elif tree_depth_min == '': tree_depth_min = 3
+			tree_depth_min = int(tree_depth_min); break
 		except ValueError: print '\t\033[32m Enter a number from 3 to 2^(depth + 1) - 1 including 100. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
 	menu = range(10,1001)
 	while True:
 		try:
-			gp.tree_pop_max = raw_input('\t Enter number of Trees in each population (default 100): ')
-			if gp.tree_pop_max not in str(menu) or gp.tree_pop_max == '0': raise ValueError()
-			elif gp.tree_pop_max == '': gp.tree_pop_max = 100
-			gp.tree_pop_max = int(gp.tree_pop_max); break
+			tree_pop_max = raw_input('\t Enter number of Trees in each population (default 100): ')
+			if tree_pop_max not in str(menu) or tree_pop_max == '0': raise ValueError()
+			elif tree_pop_max == '': tree_pop_max = 100
+			tree_pop_max = int(tree_pop_max); break
 		except ValueError: print '\t\033[32m Enter a number from 10 including 1000. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
 	menu = range(1,101)
 	while True:
 		try:
-			gp.generation_max = raw_input('\t Enter max number of generations (default 10): ')
-			if gp.generation_max not in str(menu) or gp.generation_max == '0': raise ValueError()
-			elif gp.generation_max == '': gp.generation_max = 10
-			gp.generation_max = int(gp.generation_max); break
+			generation_max = raw_input('\t Enter max number of generations (default 10): ')
+			if generation_max not in str(menu) or generation_max == '0': raise ValueError()
+			elif generation_max == '': generation_max = 10
+			generation_max = int(generation_max); break
 		except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
 	menu = ['i','g','m','s','db','']
 	while True:
 		try:
-			gp.display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
-			if gp.display not in menu: raise ValueError()
-			gp.display = gp.display or 'm'; break
+			display = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
+			if display not in menu: raise ValueError()
+			display = display or 'm'; break
 		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
 		except KeyboardInterrupt: sys.exit()
 		
 
 # define the ratio between types of mutation, where all sum to 1.0; can be adjusted in 'i'nteractive mode
-gp.evolve_repro = int(0.1 * gp.tree_pop_max) # quantity of a population generated through Reproduction
-gp.evolve_point = int(0.0 * gp.tree_pop_max) # quantity of a population generated through Point Mutation
-gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generated through Branch Mutation
-gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
+evolve_repro = int(0.1 * tree_pop_max) # quantity of a population generated through Reproduction
+evolve_point = int(0.0 * tree_pop_max) # quantity of a population generated through Point Mutation
+evolve_branch = int(0.2 * tree_pop_max) # quantity of a population generated through Branch Mutation
+evolve_cross = int(0.7 * tree_pop_max) # quantity of a population generated through Crossover
 
-gp.tourn_size = 7 # qty of individuals entered into each tournament (standard 10); can be adjusted in 'i'nteractive mode
-gp.precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
+tourn_size = 7 # qty of individuals entered into each tournament (standard = 7%); can be adjusted in 'i'nteractive mode
+precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'; hard coded
+filename = '' # not required unless an external file is referenced
 
+# pass all user defined settings to the base_class and launch Karoo GP
+gp.fx_karoo_gp(kernel, tree_type, tree_depth_base, tree_depth_max, tree_depth_min, tree_pop_max, generation_max, tourn_size, filename, evolve_repro, evolve_point, evolve_branch, evolve_cross, display, precision, 'm')
 
-#++++++++++++++++++++++++++++++++++++++++++
-#   Construct First Generation of Trees   |
-#++++++++++++++++++++++++++++++++++++++++++
-
-'''
-Karoo GP constructs the first generation of Trees. All subsequent generations evolve from priors, with no new Trees
-constructed from scratch. All parameters which define the Trees were set by the user in the previous section.
-
-If the user has selected 'Play' mode, this is the only generation to be constructed, and then GP Karoo terminates.
-'''
-
-start = time.time() # start the clock for the timer
-
-filename = '' # temp place holder
-
-gp.fx_karoo_data_load(filename)
-
-gp.generation_id = 1 # set initial generation ID
-
-gp.population_a = ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)] # an empty list which will store all Tree arrays, one generation at a time
-
-gp.fx_karoo_construct(tree_type, tree_depth_base) # construct the first population of Trees	
-
-if gp.kernel != 'p': print '\n We have constructed a population of', gp.tree_pop_max,'Trees for Generation 1\n'
-
-else: # EOL for Play mode
-	gp.fx_display_tree(gp.tree) # print the current Tree
-	gp.fx_archive_tree_write(gp.population_a, 'a') # save this one Tree to disk
-	sys.exit()
-	
-
-#++++++++++++++++++++++++++++++++++++++++++
-#   Evaluate First Generation of Trees    |
-#++++++++++++++++++++++++++++++++++++++++++
-
-'''
-Karoo GP evaluates the first generation of Trees. This process flattens each GP Tree into a standard
-equation by means of a recursive algorithm and subsequent processing by the SymPy library which 
-simultaneously evaluates the Tree for its results, returns null for divide by zero, reorganises 
-and then rewrites the expression in its simplest form.
-
-If the user has defined only 1 generation, then this is the end of the run. Else, Karoo GP 
-continues into multi-generational evolution.
-'''
-
-if gp.display != 's':
-	print ' Evaluate the first generation of Trees ...'
-	if gp.display == 'i': gp.fx_karoo_pause(0)
-
-gp.fx_fitness_gym(gp.population_a) # generate expression, evaluate fitness, compare fitness
-gp.fx_archive_tree_write(gp.population_a, 'a') # save the first generation of Trees to disk
-
-# no need to continue if only 1 generation or fewer than 10 Trees were designated by the user
-if gp.tree_pop_max < 10 or gp.generation_max == 1:
-  gp.fx_archive_params_write('Desktop') # save run-time parameters to disk
-  gp.fx_karoo_eol()
-  sys.exit()
-	
-
-#++++++++++++++++++++++++++++++++++++++++++
-#   Evolve Multiple Generations           |
-#++++++++++++++++++++++++++++++++++++++++++
-
-'''
-Karoo GP moves into multi-generational evolution.
-
-In the following four evolutionary methods, the global list of arrays 'gp.population_a' is repeatedly recycled as 
-the prior generation from which the local list of arrays 'gp.population_b' is created, one array at a time. The ratio of
-invocation of the four evolutionary processes for each generation is set by the parameters in the 'User Defined 
-Configuration' (top).
-'''
-
-for gp.generation_id in range(2, gp.generation_max + 1): # loop through 'generation_max'
-
-	print '\n Evolve a population of Trees for Generation', gp.generation_id, '...'
-	gp.population_b = ['Karoo GP by Kai Staats, Evolving Generation'] # initialise population_b to host the next generation
-	
-	gp.fx_fitness_gene_pool() # generate the viable gene pool (compares against gp.tree_depth_min)
-	gp.fx_karoo_reproduce() # method 1 - Reproduction
-	gp.fx_karoo_point_mutate() # method 2 - Point Mutation
-	gp.fx_karoo_branch_mutate() # method 3 - Branch Mutation
-	gp.fx_karoo_crossover() # method 4 - Crossover Reproduction
-	gp.fx_eval_generation() # evaluate all Trees in a single generation
-	
-	gp.population_a = gp.fx_evolve_pop_copy(gp.population_b, ['Karoo GP by Kai Staats, Generation ' + str(gp.generation_id)])
-	
-
-#++++++++++++++++++++++++++++++++++++++++++
-#   "End of line, man!" --CLU             |
-#++++++++++++++++++++++++++++++++++++++++++
-
-print '\n \033[36m Karoo GP has an ellapsed time of \033[0;0m\033[31m%f\033[0;0m' % (time.time() - start), '\033[0;0m'
-
-gp.fx_archive_tree_write(gp.population_b, 'f') # save the final generation of Trees to disk
-gp.fx_karoo_eol()
-
+print 'You seem to have found your way back to the Desktop. Huh.'
+sys.exit()
 

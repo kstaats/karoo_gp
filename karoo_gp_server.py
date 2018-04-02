@@ -1,7 +1,7 @@
 # Karoo GP Server
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
-# version 1.0.8
+# version 1.1
 
 '''
 A word to the newbie, expert, and brave--
@@ -52,8 +52,23 @@ An example is given, as follows:
 '''
 
 import sys; sys.path.append('modules/') # to add the directory 'modules' to the current path
+import os
 import argparse
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
+
+os.system('clear')
+print '\n\033[36m\033[1m'
+print '\t **   **   ******    *****    ******    ******       ******    ******'
+print '\t **  **   **    **  **   **  **    **  **    **     **        **    **'
+print '\t ** **    **    **  **   **  **    **  **    **     **        **    **'
+print '\t ****     ********  ******   **    **  **    **     **   ***  *******'
+print '\t ** **    **    **  ** **    **    **  **    **     **    **  **'
+print '\t **  **   **    **  **  **   **    **  **    **     **    **  **'
+print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
+print '\t **    ** **    **  **    **  ******    ******       ******   **'
+print '\033[0;0m'
+print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 1.1\033[0;0m'
+print ''
 
 ap = argparse.ArgumentParser(description = 'Karoo GP Server')
 ap.add_argument('-ker', action = 'store', dest = 'kernel', default = 'c', help = '[c,r,m] fitness function: (r)egression, (c)lassification, or (m)atching')
@@ -64,30 +79,31 @@ ap.add_argument('-min', action = 'store', dest = 'depth_min', default = 3, help 
 ap.add_argument('-pop', action = 'store', dest = 'pop_max', default = 100, help = '[10...1000] maximum population')
 ap.add_argument('-gen', action = 'store', dest = 'gen_max', default = 10, help = '[1...100] number of generations')
 ap.add_argument('-tor', action = 'store', dest = 'tor_size', default = 7, help = '[1...max pop] tournament size')
-ap.add_argument('-fil', action = 'store', dest = 'filename', default = 'files/data_MATCH.csv', help = '/path/to_your/[data].csv')
+ap.add_argument('-fil', action = 'store', dest = 'filename', default = '', help = '/path/to_your/[data].csv')
 
 args = ap.parse_args()
 
 # pass the argparse defaults and/or user inputs to the required variables
-gp.kernel = str(args.kernel)
+kernel = str(args.kernel)
 tree_type = str(args.type)
 tree_depth_base = int(args.depth_base)
-gp.tree_depth_max = int(args.depth_max)
-gp.tree_depth_min = int(args.depth_min)
-gp.tree_pop_max = int(args.pop_max)
-gp.generation_max = int(args.gen_max)
-gp.tourn_size = int(args.tor_size)
+tree_depth_max = int(args.depth_max)
+tree_depth_min = int(args.depth_min)
+tree_pop_max = int(args.pop_max)
+generation_max = int(args.gen_max)
+tourn_size = int(args.tor_size)
 filename = str(args.filename)
 
-gp.evolve_repro = int(0.1 * gp.tree_pop_max) # quantity of a population generated through Reproduction
-gp.evolve_point = int(0.0 * gp.tree_pop_max) # quantity of a population generated through Point Mutation
-gp.evolve_branch = int(0.2 * gp.tree_pop_max) # quantity of a population generated through Branch Mutation
-gp.evolve_cross = int(0.7 * gp.tree_pop_max) # quantity of a population generated through Crossover
+evolve_repro = int(0.1 * tree_pop_max) # quantity of a population generated through Reproduction
+evolve_point = int(0.0 * tree_pop_max) # quantity of a population generated through Point Mutation
+evolve_branch = int(0.2 * tree_pop_max) # quantity of a population generated through Branch Mutation
+evolve_cross = int(0.7 * tree_pop_max) # quantity of a population generated through Crossover
 
-gp.display = 's' # display mode is set to (s)ilent
-gp.precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'
+display = 's' # display mode is set to (s)ilent
+precision = 6 # the number of floating points for the round function in 'fx_fitness_eval'
 
-# run Karoo GP
-gp.karoo_gp(tree_type, tree_depth_base, filename)
+# pass all user defined settings to the base_class and launch Karoo GP
+gp.fx_karoo_gp(kernel, tree_type, tree_depth_base, tree_depth_max, tree_depth_min, tree_pop_max, generation_max, tourn_size, filename, evolve_repro, evolve_point, evolve_branch, evolve_cross, display, precision, 's')
 
+sys.exit()
 
