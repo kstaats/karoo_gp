@@ -1,3 +1,36 @@
+2018 04/12
+
+1) Merged 'Karoo GP Server' and 'Karoo GP Main' into a single 'Karoo GP'. So, just one user script now that provides the 
+user interface (TUI) or scripting (comnand line). There are now 3 ways to run Karoo:
+
+	a) $ run karoo_gp.py
+	b) $ run karoo_gp.py [path/][dataset.csv]
+	c) $ run karoo_gp.py -fil [path/][dataset.csv] -[arg] [val] -[arg] [val] ... etc.
+
+Where [arg][val] are the sysargs defined in the body of karoo_gp.py and the User Guide. Both (a) and (b) will auto-
+run the Desktop interface, providing a user query for each entry and holding the user within the script until quit;
+(c) will skip the user query and go directly into execution, dropping the user back to the command line at the end of 
+the run (for scripting).
+
+
+2) Merged the 'menu' ranges into the while loops, directly (to reduce line count).
+
+3) Added the 2**(tree_depth_base +1) - 1 to the tree_depth_min calculation (could have done this a long time ago).
+
+4) Auto-calc the number of trees entered into the Tournament (was previously hard coded to 7 assuming a pop 100).
+
+5) Added [-evr, -evp, -evb, -evc] to the sysargs to support a change in the balance of the genetic operators mid-run.
+
+6) Merged fx_evolve_branch_top_copy with fx_evolve_branch_body_copy as they were alway called sequencially and required
+the same input values.
+
+7) Merged fx_evolve_tree_renum into fx_eval_generation as both are used only once, as the former was but 2 lines of code.
+
+8) Finally finished commenting all "Called by: ___" statements in each function header.
+
+I've been productive!
+
+
 2018 04/01
 
 Two major updates, as follows:
