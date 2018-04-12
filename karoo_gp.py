@@ -51,7 +51,7 @@ An example is given, as follows:
 '''
 
 import os
-import sys; #sys.path.append('modules/') # add directory 'modules' to the current path
+import sys; sys.path.append('modules/') # add directory 'modules' to the current path
 import argparse
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 
