@@ -1,4 +1,9 @@
-2018 04/12
+2018 04/12b
+
+Created the 'modules/' directory to hold karoo_base_class and in the future, more modules.
+
+
+2018 04/12a
 
 1) Merged 'Karoo GP Server' and 'Karoo GP Main' into a single 'Karoo GP'. So, just one user script now that provides the 
 user interface (TUI) or scripting (comnand line). There are now 3 ways to run Karoo:
