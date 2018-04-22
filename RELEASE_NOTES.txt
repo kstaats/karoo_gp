@@ -1,6 +1,61 @@
+2018 04/22
+
+1) Completed the isolation of the user interface from the base_class such that all mid-run parameter configurations and 
+population summaries are now conducted in menu.pause(), and any associatede executions (Tree validation) are conducted 
+fully in the base_class.
+
+	karoo_gp.py imports karoo_gp_base_class.py
+		karoo_gp_base_class.py imports karoo_gp_pause.py
+		
+The user's initial run configuration is conducted in karoo_gp.py. Those settings are passed into karoo_gp_base_class.py
+where they are used to guide the run. At each 'pause' (generation, interactive, or debug display modes; or end of run)
+the user is taken into menu.pause where additional queries and configurations are conducted. Those value changes are
+returned to the base_class where they are executed. When a run is completed (Server or Desktop), the user is returned
+to the original karoo_gp.py for salutations and run termination.
+
+Finally, the Karoo GP Python pasta is no longer spaghetti!
+
+2) Modified the function of 'cont' such that it either continues if you yet have additional generations to go, or 
+querie the user if gen_id = gen_max and the prior run is done.
+
+3) Replaced 'generation_id' with 'gen_id' and 'generation_max' with 'gen_max'.
+
+4) Conducted a full set of unit tests on every user interface query in menu.pause().
+
+5) Cleaned up the code beneath the user interface (menu.pause), making the while-true loops consistent with those in
+karoo_gp_pause.py.
+
+6) Merged 'fx_karoo_continue' into 'fx_karoo_gp' such that a simple while loop maintains an active evolutionary process
+until the either the Server script is complete, or the user has terminated the run. This allows for the simple addition
+of generations to an existing run. A far better solution than what I had previously coded.
+
+7) Discovered that the loading of seed population_s is far too delicate. Even the slightest change and it fails. I have 
+disabled the load function for now, until I have time to rebuild it.
+
+8) Please note that all modules are now stored in modules/
+
+
+2018 04/19
+
+Added a new kind of gene_pool filter (environmental pressure) such that you can select partial or full inclusion of 
+the operands (features). While not yet incorporated into the user interface (desktop or server), the new 'swim' setting
+enables you to build consecutive gene pools that have *only* Trees that include at least one instance of each feature.
+This may be helpful for regression problems moreso than classification, as regression tends to fall to a minimum 
+feature set, depending upon the nature of the solution (fixed or rolling value). I desire to merge tree_depth_min
+setting and this new 'swim' into one user defined system that controls the gene_pool.
+ 
+Discovered 3 more functions that did not include a "Called by: ___" statement. Updated.
+
+Fixed a long-standing issue of total failure if you enter 1 for the total number of generations. This setting, while 
+it may seem odd, allows Karoo GP to be used to create populations of stochastic multivariate expressions based upon the
+given dataset for use in other applications. Simple fix. The population is written to the runs/ directory as with all 
+other modes of operation, including Play.
+
+
 2018 04/12c
 
-Updated the User Guide and modified a help print statement in the sys args of the Server function.
+Updated the User Guide to match the Desktop and Serve merger, and modified a help print statement in the sys args of 
+the Server function.
 
 
 2018 04/12b
