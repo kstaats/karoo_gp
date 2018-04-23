@@ -62,7 +62,7 @@ print '\t **  **   **    **  **  **   **    **  **    **     **    **  **'
 print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
 print '\t **    ** **    **  **    **  ******    ******       ******   **'
 print '\033[0;0m'
-print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 1.2\033[0;0m'
+print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 2.1\033[0;0m'
 print ''
 
 
