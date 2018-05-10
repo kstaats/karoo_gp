@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 2.1
+# version 2.1.1
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -302,7 +302,7 @@ class Base_GP(object):
 				print '\t\033[36m Tree', self.population_b[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 				
 		elif menu_dict['input_a'] == 'load': # load population_s to replace population_a
-			self.fx_data_recover(self.filename['s']) # NEED TO replace 'r' with a user defined filename
+			self.fx_data_recover(self.filename['s']) # NEED TO replace 's' with a user defined filename
 			
 		elif menu_dict['input_a'] == 'write': # write the evolving population_b to disk
 			self.fx_data_tree_write(self.population_b, 'b')
@@ -339,6 +339,7 @@ class Base_GP(object):
 		'''
 		
 		### 1) load the associated data set, operators, operands, fitness type, and coefficients ###
+		# full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # for user Marco Cavaglia
 		cwd = os.getcwd()
 		
 		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
@@ -434,7 +435,8 @@ class Base_GP(object):
 			n = 0 # track row count
 			
 			for row in target:
-			
+				print 'row', row
+				
 				n = n + 1
 				if n == 1: pass # skip first empty row
 				
@@ -498,7 +500,7 @@ class Base_GP(object):
 		'''
 		Save population_* to disk.
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add, fx_eval_generation
+		Called by: fx_karoo_gp, fx_eval_generation
 		
 		Arguments required: population, key
 		'''
@@ -1069,10 +1071,10 @@ class Base_GP(object):
 	def fx_eval_generation(self):
 	
 		'''
-		This method invokes the evaluation of an entire generation of Trees, as engaged by karoo_gp.py and fx_karoo_gen_add
-		function of this library. It automatically evaluates population_b before invoking the copy of _b to _a.
+		This method invokes the evaluation of an entire generation of Trees. It automatically evaluates population_b 
+		before invoking the copy of _b to _a.
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: none
 		'''
@@ -1552,7 +1554,7 @@ class Base_GP(object):
 		
 		This method is automatically invoked with every Tournament Selection ('fx_fitness_tournament').
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: none
 		'''
@@ -1685,7 +1687,7 @@ class Base_GP(object):
 		generation. This is analogous to a member of the prior generation directly entering the gene pool of the 
 		subsequent (younger) generation.
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: none
 		'''
@@ -1711,7 +1713,7 @@ class Base_GP(object):
 		functions (operators) and terminal nodes as terminals (variables). The size and shape of the Tree will remain 
 		identical.
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: none
 		'''
@@ -1739,7 +1741,7 @@ class Base_GP(object):
 		Ramped Half/Half, the size and shape of the Tree may grow smaller or larger, but it may not exceed
 		tree_depth_max as defined by the user.
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: none
 		'''
@@ -1782,7 +1784,7 @@ class Base_GP(object):
 		
 		For those who like to watch, select 'db' (debug mode) at the launch of Karoo GP or at any (pause).
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: none
 		'''
@@ -2076,7 +2078,9 @@ class Base_GP(object):
 		Arguments required: tree, branch
 		'''
 		
-		### insert branch_top from 'gp.tree' into 'tree' ### *_branch_top_copy merged with *_body_copy 2018 04/12
+		# *_branch_top_copy merged with *_body_copy 2018 04/12
+		
+		### 1) insert branch_top from 'gp.tree' into 'tree' ###
 		
 		branch_top = int(branch[0])
 		
@@ -2095,7 +2099,7 @@ class Base_GP(object):
 			print '\n\033[36m This is the Tree after a new node is inserted:\033[0;0m\n', tree; self.fx_karoo_pause()
 		
 		
-		### insert branch_body from 'gp.tree' into 'tree' ### *_branch_top_copy merged with *_body_copy 2018 04/12
+		### 2) insert branch_body from 'gp.tree' into 'tree' ###
 		
 		node_count = 2 # set node count for 'gp.tree' to 2 as the new root has already replaced 'branch_top' (above)
 		
@@ -2268,7 +2272,7 @@ class Base_GP(object):
 	def fx_evolve_child_insert(self, tree, node, c_buffer):
 	
 		'''
-		Insert child nodes.
+		Insert child node into the copy of a parent Tree.
 		
 		Called by: fx_evolve_branch_insert
 				
@@ -2457,7 +2461,7 @@ class Base_GP(object):
 		Simply copying a list of arrays generates a pointer to the original list. Therefore we must append each array 
 		to a new, empty array and then build a list of those new arrays.
 		
-		Called by: fx_karoo_gp, fx_karoo_gen_add
+		Called by: fx_karoo_gp
 		
 		Arguments required: pop_a, title
 		'''

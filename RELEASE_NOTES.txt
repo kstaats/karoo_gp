@@ -1,3 +1,9 @@
+2018 05/10
+
+Returned full_path = os.path.realpath(__file__) (approx. line 342) to support bash scripting of automated runs. This 
+remains commented, but can be readily re-activated (remember to comment the next line down).
+
+
 2018 04/22
 
 1) Completed the isolation of the user interface from the base_class such that all mid-run parameter configurations and 
