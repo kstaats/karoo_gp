@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 2.1.1
+# version 2.1.2
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -169,7 +169,8 @@ class Base_GP(object):
 		### 2) construct first generation of Trees ###
 		self.fx_data_load(filename)
 		self.gen_id = 1 # set initial generation ID
-		self.population_a = ['Karoo GP by Kai Staats, Generation ' + str(self.gen_id)] # list to store all Tree arrays, one generation at a time
+		self.population_a = ['Karoo GP by Kai Staats, Generation ' + str(self.gen_id)] # initialise population_a to host the first generation
+		self.population_b = ['placeholder'] # initialise population_b to satisfy fx_karoo_pause()
 		self.fx_init_construct(tree_type, tree_depth_base) # construct the first population of Trees
 		
 		if self.kernel == 'p': # EOL for Play mode
@@ -212,7 +213,7 @@ class Base_GP(object):
 			elif mode == 'd': # provide the user with the option to reconfigure and continue
 				# self.fx_data_params_write('Desktop') # removed 2018 04/22 as this is executed in fx_karoo_pause / 'quit'
 				print '\n\t\033[36m Enter \033[1m?\033[0;0m\033[36m to review your options or \033[1mq\033[0;0m\033[36m to quit.\033[0;0m'
-				eol = self.fx_karoo_pause()
+				eol = self.fx_karoo_pause(1)
 				
 		### 5) archive populations and return to karoo_gp.py to terminate the run ###
 		target = open(self.filename['f'], 'w'); target.close() # initialize the .csv file for the final population
@@ -221,14 +222,10 @@ class Base_GP(object):
 		return
 		
 	
-	def fx_karoo_pause(self):
+	def fx_karoo_pause(self, pause):
 	
 		'''
 		Pause the program execution and engage the user, providing a number of options. 
-		
-		The "eol" parameter instructs this 
-		method to display a different screen for run-time or end-of-line, and to dive back into the current run, or do 
-		nothing, accordingly.
 		
 		Called by: throughout this base_class library
 		
@@ -236,7 +233,6 @@ class Base_GP(object):
 		'''
 		
 		### 1) reset and pack values to send to menu.pause ###
-		
 		menu_dict = {'input_a':'', 
 			'input_b':0, 
 			'display':self.display, 
@@ -268,9 +264,7 @@ class Base_GP(object):
 		self.evolve_cross = menu_dict['evolve_cross']
 		
 		### 3) execute the user queries returned from menu.pause ###
-		eol = 0
-		
-		if menu_dict['input_a'] == 'esc': return eol # ENTER enables next step in generational, interactive, and debug display
+		if menu_dict['input_a'] == 'esc': return 0 # ENTER enables next step in generational, interactive, and debug display
 		
 		elif menu_dict['input_a'] == 'test': # evaluate a Tree against the TEST data
 			expr = str(self.algo_sym) # might change this to algo_raw for more correct expression evaluation
@@ -315,9 +309,21 @@ class Base_GP(object):
 		elif menu_dict['input_a'] == 'quit': # quit and save run-time parameters to disk
 			self.fx_data_params_write('Desktop')
 			print '\n\t \033[32mYour Trees and runtime parameters are archived in karoo_gp/runs/[date-time]/\033[0;0m'
-			eol = 1
-			
-		return eol
+			if pause == 0: sys.exit() # force quit due to being one level below the while loop
+			else: return 1
+		
+		if pause == 0: # ENTER enables next step in generational, interactive, and debug display
+			while True:
+				try:
+					query = raw_input('\n\t\033[36m (pause) \033[0;0m')
+					if query not in ['']: raise ValueError()
+					else: break 
+				except ValueError: print '\t\033[32m Select from the options given. Try again ...\033[0;0m'
+				except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
+				
+		else: pass
+		
+		return 0
 		
 	
 	#+++++++++++++++++++++++++++++++++++++++++++++
@@ -638,7 +644,7 @@ class Base_GP(object):
 		
 		if self.display == 'i' or self.display == 'g':
 			print '\n\t Type \033[1m?\033[0;0m at any (pause) to review your options, or \033[1mENTER\033[0;0m to continue.\033[0;0m'
-			self.fx_karoo_pause()
+			self.fx_karoo_pause(0)
 						
 		if tree_type == 'r': # Ramped 50/50
 			
@@ -756,7 +762,7 @@ class Base_GP(object):
 			self.pop_node_c2 = 3
 			self.pop_node_c3 = 4
 
-		else: print '\n\t\033[31m ERROR! In fx_init_root_build: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause()
+		else: print '\n\t\033[31m ERROR! In fx_init_root_build: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
 
 		self.pop_node_type = 'root'
 			
@@ -958,7 +964,7 @@ class Base_GP(object):
 					self.pop_node_c2 = c_buffer + 1
 					self.pop_node_c3 = c_buffer + 2
 					
-				else: print '\n\t\033[31m ERROR! In fx_init_child_link: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause()
+				else: print '\n\t\033[31m ERROR! In fx_init_child_link: pop_node_arity =', self.pop_node_arity, '\033[0;0m'; self.fx_karoo_pause(0)
 					
 		return
 		
@@ -1082,7 +1088,7 @@ class Base_GP(object):
 		if self.display != 's':
 			if self.display == 'i': print ''
 			print '\n Evaluate all Trees in Generation', self.gen_id
-			if self.display == 'i': self.fx_karoo_pause()
+			if self.display == 'i': self.fx_karoo_pause(0)
 			
 		for tree_id in range(1, len(self.population_b)): # renumber all Trees in given population - merged fx_evolve_tree_renum 2018 04/12
 			self.population_b[tree_id][0][1] = tree_id
@@ -1169,7 +1175,7 @@ class Base_GP(object):
 					# self.fittest_dict.update({tree_id:self.algo_sym}) # add to dictionary
 			
 		print '\n\033[36m ', len(self.fittest_dict.keys()), 'trees\033[1m', np.sort(self.fittest_dict.keys()), '\033[0;0m\033[36moffer the highest fitness scores.\033[0;0m'
-		if self.display == 'g': self.fx_karoo_pause()
+		if self.display == 'g': self.fx_karoo_pause(0)
 		
 		return
 		
@@ -1501,7 +1507,7 @@ class Base_GP(object):
 					# tourn_lead remains unchanged
 					# tourn_test remains unchanged
 					
-				else: print '\n\t\033[31m ERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause()
+				else: print '\n\t\033[31m ERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
 				
 			
 			elif self.fitness_type == 'min': # if the fitness function is Minimising
@@ -1524,7 +1530,7 @@ class Base_GP(object):
 					# tourn_lead remains unchanged
 					# tourn_test remains unchanged
 					
-				else: print '\n\t\033[31m ERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause()
+				else: print '\n\t\033[31m ERROR! In fx_fitness_tournament: fitness =', fitness, 'and tourn_test =', tourn_test, '\033[0;0m'; self.fx_karoo_pause(0)
 					
 		
 		tourn_winner = np.copy(self.population_a[tourn_lead]) # copy full Tree so as to not inadvertantly modify the original tree
@@ -1560,7 +1566,7 @@ class Base_GP(object):
 		'''
 		
 		self.gene_pool = []
-		if self.display == 'i': print '\n Prepare a viable gene pool ...'; self.fx_karoo_pause()
+		if self.display == 'i': print '\n Prepare a viable gene pool ...'; self.fx_karoo_pause(0)
 		
 		for tree_id in range(1, len(self.population_a)):
 		
@@ -1580,12 +1586,12 @@ class Base_GP(object):
 				# build your selection process
 					# if self.display == 'i': print '\t\033[36m Tree', tree_id, '[screen readout for interactive mode]\033[0;0m'
 					
-		if len(self.gene_pool) > 0 and self.display == 'i': print '\n\t The total population of the gene pool is', len(self.gene_pool); self.fx_karoo_pause()
+		if len(self.gene_pool) > 0 and self.display == 'i': print '\n\t The total population of the gene pool is', len(self.gene_pool); self.fx_karoo_pause(0)
 		
 		elif len(self.gene_pool) <= 0: # the evolutionary constraints were too tight, killing off the entire population
 			# self.gen_id = self.gen_id - 1 # revert the increment of the 'gen_id'
 			# self.gen_max = self.gen_id # catch the unused "cont" values in the 'fx_karoo_pause' method
-			print "\n\t\033[31m\033[3m 'They're dead Jim. They're all dead!'\033[0;0m There are no Trees in the gene pool. You should archive your population and (q)uit."; self.fx_karoo_pause()
+			print "\n\t\033[31m\033[3m 'They're dead Jim. They're all dead!'\033[0;0m There are no Trees in the gene pool. You should archive your population and (q)uit."; self.fx_karoo_pause(0)
 			
 		return
 		
@@ -1695,7 +1701,7 @@ class Base_GP(object):
 		if self.display != 's':
 			if self.display == 'i': print ''
 			print '  Perform', self.evolve_repro, 'Reproductions ...'
-			if self.display == 'i': self.fx_karoo_pause()
+			if self.display == 'i': self.fx_karoo_pause(0)
 			
 		for n in range(self.evolve_repro): # quantity of Trees to be copied without mutation
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each reproduction
@@ -1721,7 +1727,7 @@ class Base_GP(object):
 		if self.display != 's':
 			if self.display == 'i': print ''
 			print '  Perform', self.evolve_point, 'Point Mutations ...'
-			if self.display == 'i': self.fx_karoo_pause()
+			if self.display == 'i': self.fx_karoo_pause(0)
 			
 		for n in range(self.evolve_point): # quantity of Trees to be generated through mutation
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each mutation
@@ -1749,7 +1755,7 @@ class Base_GP(object):
 		if self.display != 's':
 			if self.display == 'i': print ''
 			print '  Perform', self.evolve_branch, 'Branch Mutations ...'
-			if self.display == 'i': self.fx_karoo_pause()
+			if self.display == 'i': self.fx_karoo_pause(0)
 			
 		for n in range(self.evolve_branch): # quantity of Trees to be generated through mutation
 			tourn_winner = self.fx_fitness_tournament(self.tourn_size) # perform tournament selection for each mutation
@@ -1792,7 +1798,7 @@ class Base_GP(object):
 		if self.display != 's':
 			if self.display == 'i': print ''
 			print '  Perform', self.evolve_cross, 'Crossovers ...'
-			if self.display == 'i': self.fx_karoo_pause()
+			if self.display == 'i': self.fx_karoo_pause(0)
 			
 		for n in range(self.evolve_cross / 2): # quantity of Trees to be generated through Crossover, accounting for 2 children each
 		
@@ -1844,11 +1850,11 @@ class Base_GP(object):
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 			tree[6][node] = self.terminals[rnd] # replace terminal (variable)
 		
-		else: print '\n\t\033[31m ERROR! In fx_evolve_point_mutate, node_type =', tree[5][node], '\033[0;0m'; self.fx_karoo_pause()
+		else: print '\n\t\033[31m ERROR! In fx_evolve_point_mutate, node_type =', tree[5][node], '\033[0;0m'; self.fx_karoo_pause(0)
 		
 		tree = self.fx_evolve_fitness_wipe(tree) # wipe fitness data
 		
-		if self.display == 'db': print '\n\033[36m This is tourn_winner after node\033[1m', node, '\033[0;0m\033[36mmutation and updates:\033[0;0m\n', tree; self.fx_karoo_pause()
+		if self.display == 'db': print '\n\033[36m This is tourn_winner after node\033[1m', node, '\033[0;0m\033[36mmutation and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 		
 		return tree, node # 'node' is returned only to be assigned to the 'tourn_trees' record keeping
 		
@@ -1887,7 +1893,7 @@ class Base_GP(object):
 				
 		tree = self.fx_evolve_fitness_wipe(tree) # wipe fitness data
 
-		if self.display == 'db': print '\n\033[36m This is tourn_winner after nodes\033[1m', branch, '\033[0;0m\033[36mwere mutated and updated:\033[0;0m\n', tree; self.fx_karoo_pause()
+		if self.display == 'db': print '\n\033[36m This is tourn_winner after nodes\033[1m', branch, '\033[0;0m\033[36mwere mutated and updated:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 				
 		return tree
 		
@@ -1922,7 +1928,7 @@ class Base_GP(object):
 		
 		if branch_depth < 0: # this has never occured ... yet
 			print '\n\t\033[31m ERROR! In fx_evolve_grow_mutate: branch_depth < 0\033[0;0m'
-			print '\t branch_depth =', branch_depth; self.fx_karoo_pause()
+			print '\t branch_depth =', branch_depth; self.fx_karoo_pause(0)
 			
 		elif branch_depth == 0: # the point of mutation ('branch_top') chosen resides at the maximum allowable depth, so mutate term to term
 		
@@ -1932,7 +1938,7 @@ class Base_GP(object):
 			rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
 			tree[6][branch_top] = self.terminals[rnd] # replace terminal (variable)
 
-			if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause()
+			if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 			
 		else: # the point of mutation ('branch_top') chosen is at least one depth from the maximum allowed
 		
@@ -1955,7 +1961,7 @@ class Base_GP(object):
 				tree = self.fx_evolve_child_link_fix(tree) # fix all child links
 				tree = self.fx_evolve_node_renum(tree) # renumber all 'NODE_ID's
 				
-				if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause()
+				if self.display == 'db': print '\n\033[36m This is tourn_winner after terminal\033[1m', branch_top, '\033[0;0m\033[36mmutation, branch deletion, and updates:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 				
 			
 			if type_mod == 'func': # mutate 'branch_top' to a function (a new 'gp.tree' will be copied, node by node, into 'tourn_winner')
@@ -1965,7 +1971,7 @@ class Base_GP(object):
 				
 				self.fx_init_tree_build('mutant', self.pop_tree_type, branch_depth) # build new Tree ('gp.tree') with a maximum depth which matches 'branch'
 				
-				if self.display == 'db': print '\n\033[36m This is the new Tree to be inserted at node\033[1m', branch_top, '\033[0;0m\033[36min tourn_winner:\033[0;0m\n', self.tree; self.fx_karoo_pause()
+				if self.display == 'db': print '\n\033[36m This is the new Tree to be inserted at node\033[1m', branch_top, '\033[0;0m\033[36min tourn_winner:\033[0;0m\n', self.tree; self.fx_karoo_pause(0)
 				
 				tree = self.fx_evolve_branch_insert(tree, branch) # insert new 'branch' at point of mutation 'branch_top' in tourn_winner 'tree'
 				# because we already know the maximum depth to which this branch can grow, there is no need to prune after insertion
@@ -2002,7 +2008,7 @@ class Base_GP(object):
 			
 			if self.display == 'db':
 				print '\n\033[36m In a copy of one parent:\033[0;0m\n', offspring
-				print '\n\033[36m ... we remove nodes\033[1m', branch_y, '\033[0;0m\033[36mand replace node\033[1m', branch_top, '\033[0;0m\033[36mwith a terminal from branch_x\033[0;0m'; self.fx_karoo_pause()
+				print '\n\033[36m ... we remove nodes\033[1m', branch_y, '\033[0;0m\033[36mand replace node\033[1m', branch_top, '\033[0;0m\033[36mwith a terminal from branch_x\033[0;0m'; self.fx_karoo_pause(0)
 				
 			offspring[5][branch_top] = 'term' # replace type
 			offspring[6][branch_top] = parent[6][crossover] # replace label with that of a particular node in 'branch_x'
@@ -2012,7 +2018,7 @@ class Base_GP(object):
 			offspring = self.fx_evolve_child_link_fix(offspring) # fix all child links
 			offspring = self.fx_evolve_node_renum(offspring) # renumber all 'NODE_ID's
 			
-			if self.display == 'db': print '\n\033[36m This is the resulting offspring:\033[0;0m\n', offspring; self.fx_karoo_pause()
+			if self.display == 'db': print '\n\033[36m This is the resulting offspring:\033[0;0m\n', offspring; self.fx_karoo_pause(0)
 			
 		
 		else: # we are working with a branch from 'parent' >= depth 1 (min 3 nodes)
@@ -2024,10 +2030,10 @@ class Base_GP(object):
 			
 			if self.display == 'db':
 				print '\n\033[36m From one parent:\033[0;0m\n', parent
-				print '\n\033[36m ... we copy branch_x\033[1m', branch_x, '\033[0;0m\033[36mas a new, sub-tree:\033[0;0m\n', self.tree; self.fx_karoo_pause()
+				print '\n\033[36m ... we copy branch_x\033[1m', branch_x, '\033[0;0m\033[36mas a new, sub-tree:\033[0;0m\n', self.tree; self.fx_karoo_pause(0)
 				
 			if self.display == 'db':
-				print '\n\033[36m ... and insert it into a copy of the second parent in place of the selected branch\033[1m', branch_y,':\033[0;0m\n', offspring; self.fx_karoo_pause()
+				print '\n\033[36m ... and insert it into a copy of the second parent in place of the selected branch\033[1m', branch_y,':\033[0;0m\n', offspring; self.fx_karoo_pause(0)
 				
 			offspring = self.fx_evolve_branch_insert(offspring, branch_y) # insert new 'branch_y' at point of mutation 'branch_top' in tourn_winner 'offspring'
 			offspring = self.fx_evolve_tree_prune(offspring, self.tree_depth_max) # prune to the max Tree depth + adjustment - tested 2016 07/10
@@ -2096,7 +2102,7 @@ class Base_GP(object):
 
 		if self.display == 'db':
 			print '\n\t ... inserted node 1 of', len(self.tree[3])-1
-			print '\n\033[36m This is the Tree after a new node is inserted:\033[0;0m\n', tree; self.fx_karoo_pause()
+			print '\n\033[36m This is the Tree after a new node is inserted:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 		
 		
 		### 2) insert branch_body from 'gp.tree' into 'tree' ###
@@ -2126,7 +2132,7 @@ class Base_GP(object):
 						
 					if self.display == 'db':
 						print '\n\t ... inserted node', node_count, 'of', len(self.tree[3])-1
-						print '\n\033[36m This is the Tree after a new node is inserted:\033[0;0m\n', tree; self.fx_karoo_pause()
+						print '\n\033[36m This is the Tree after a new node is inserted:\033[0;0m\n', tree; self.fx_karoo_pause(0)
 						
 					node_count = node_count + 1 # exit loop when 'node_count' reaches the number of columns in the array 'gp.tree'
 							
@@ -2243,7 +2249,7 @@ class Base_GP(object):
 				tree[10][node] = c_buffer + 1
 				tree[11][node] = c_buffer + 2
 				
-			else: print '\n\t\033[31m ERROR! In fx_evolve_child_link: node', node, 'has arity', tree[8][node]; self.fx_karoo_pause()
+			else: print '\n\t\033[31m ERROR! In fx_evolve_child_link: node', node, 'has arity', tree[8][node]; self.fx_karoo_pause(0)
 				
 		return tree
 		
@@ -2280,7 +2286,7 @@ class Base_GP(object):
 		'''
 		
 		if int(tree[8][node]) == 0: # if arity = 0
-			print '\n\t\033[31m ERROR! In fx_evolve_child_insert: node', node, 'has arity 0\033[0;0m'; self.fx_karoo_pause()
+			print '\n\t\033[31m ERROR! In fx_evolve_child_insert: node', node, 'has arity 0\033[0;0m'; self.fx_karoo_pause(0)
 		
 		elif int(tree[8][node]) == 1: # if arity = 1
 			tree = np.insert(tree, c_buffer, '', axis=1) # insert node for 'node_c1'
@@ -2315,7 +2321,7 @@ class Base_GP(object):
 			tree[4][c_buffer + 2] = int(tree[4][node]) + 1 # node_depth
 			tree[7][c_buffer + 2] = int(tree[3][node]) # parent ID
 			
-		else: print '\n\t\033[31m ERROR! In fx_evolve_child_insert: node', node, 'arity > 3\033[0;0m'; self.fx_karoo_pause()
+		else: print '\n\t\033[31m ERROR! In fx_evolve_child_insert: node', node, 'arity > 3\033[0;0m'; self.fx_karoo_pause(0)
 				
 		return tree
 		

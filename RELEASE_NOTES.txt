@@ -1,3 +1,9 @@
+2018 05/18
+
+Fixed a bug which automically re-engaged the run after selecting a pause menu option if mid generation. Now, it 
+correctly again require an ENTER before continuing.
+
+
 2018 05/10
 
 Returned full_path = os.path.realpath(__file__) (approx. line 342) to support bash scripting of automated runs. This 
