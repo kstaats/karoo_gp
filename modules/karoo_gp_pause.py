@@ -1,23 +1,19 @@
 # Karoo GP Pause Menu
 # A text-based user interface for mid-run parameter configuration and population studies
 # by Kai Staats, MSc; see LICENSE.md
-# version 2.1
+# version 2.1.2
 
 def pause(menu_dict):
 
 	'''
-	Pause the program execution and invok the user to make one or more valid options. The "eol" parameter 
-	instructs this method to display a different screen for mid-run or end-of-line, and then dive back into the
-	current run, or do nothing accordingly.
-	
-	(would like to upgrade to 'select case')
-	
+	Pause the program execution and invok the user to make one or more valid options. 
+		
 	Called by: fx_karoo_gp
 	
-	Arguments required: eol, menu_dict
+	Arguments required: menu_dict
 	'''
 	
-	options = ['','?','help','i','m','g','s','db','ts','min','bal','l','pop','t','p','id','dir','w','cont','q']
+	options = ['','?','help','i','m','g','s','db','ts','min','bal','l','pop','t','p','id','dir','load','w','cont','q']
 	
 	while True:
 		try:
@@ -27,7 +23,7 @@ def pause(menu_dict):
 		except ValueError: print '\t\033[32m Select from the options given. Try again ...\033[0;0m'
 		except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
 		
-	if menu == '': menu_dict['input_a'] = 'esc'; return menu_dict # ENTER enables next step in generational, interactive, and debug display
+	if menu == '': menu_dict['input_a'] = 'esc'; return menu_dict # bypass the following with ENTER
 	
 	elif menu == '?' or menu == 'help':
 		print '\n\t\033[36mSelect one of the following options:\033[0;0m'
@@ -203,15 +199,15 @@ def pause(menu_dict):
 	elif menu == 'dir': print '\n\t The current working directory is:', menu_dict['path']
 	
 	# NEED TO review and fix
-	#elif menu == 'load': # load population_s to replace population_a
-	#	while True:
-	#		try:
-	#			query = raw_input('\n\t Overwrite the current population with population_s? (y/n) ')
-	#			if query not in ['y','n']: raise ValueError()
-	#			if query == 'y': menu_dict['input_a'] = 'load'; break
-	#			elif query == 'n': break
-	#		except ValueError: print '\n\t\033[32m Enter (y)es or (n)o. Try again ...\033[0;0m'
-	#		except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
+	elif menu == 'load': # load population_s to replace population_a
+		while True:
+			try:
+				query = raw_input('\n\t Overwrite the current population with population_s? (y/n) ')
+				if query not in ['y','n']: raise ValueError()
+				if query == 'y': menu_dict['input_a'] = 'load'; break
+				elif query == 'n': break
+			except ValueError: print '\n\t\033[32m Enter (y)es or (n)o. Try again ...\033[0;0m'
+			except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
 			
 	elif menu == 'w': # write the evolving population_b to disk
 		if menu_dict['gen_id'] > 1: menu_dict['input_a'] = 'write'
