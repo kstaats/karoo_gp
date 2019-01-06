@@ -18,7 +18,7 @@ import time
 
 import numpy as np
 import sklearn.metrics as skm
-import sklearn.cross_validation as skcv
+import sklearn.model_selection as skcv
 
 from sympy import sympify
 from datetime import datetime
@@ -313,14 +313,8 @@ class Base_GP(object):
 			else: return 1
 		
 		if pause == 0: # ENTER enables next step in generational, interactive, and debug display
-			while True:
-				try:
-					query = raw_input('\n\t\033[36m (pause) \033[0;0m')
-					if query not in ['']: raise ValueError()
-					else: break 
-				except ValueError: print '\t\033[32m Select from the options given. Try again ...\033[0;0m'
-				except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
-				
+                    if menu_dict['input_a'] != 'esc': self.fx_karoo_pause(0)
+
 		else: pass
 		
 		return 0
