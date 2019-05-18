@@ -1,7 +1,25 @@
+2019 05/18
+
+"My apology to the users of Karoo GP for the incredible gap between the most recent and this update. My research and 
+work have for the past year taken me in other directions. This update marks my return to an active effort in working on 
+Karoo, and GP applied to a growing research space. I appreciate your patience and understanding." --kai
+
+NOTE: this is the *final* update to the Python 2.7 version of Karoo. All future development will be in Python 3.x.
+
+And now, the updates:
+
+Fixed the Test function to evaluate the Tree selected by the user.
+
+Modified the menu option from 't'est to 'e'valulate from the Pause menu.
+
+Added a user defined (m)in node count, (f)ull set of features, or (b)oth as the gene_pool regulator. For more about 
+the "full set of features" see 2018 04/19 and the new 'swim' variable.
+
+
 2018 05/18
 
-Fixed a bug which automically re-engaged the run after selecting a pause menu option if mid generation. Now, it 
-correctly again require an ENTER before continuing.
+Fixed a bug which automically re-engaged the run after selecting a pause menu option if mid generation. Now, it again 
+requires ENTER before continuing.
 
 
 2018 05/10

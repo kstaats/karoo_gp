@@ -1,7 +1,7 @@
 # Karoo GP Pause Menu
 # A text-based user interface for mid-run parameter configuration and population studies
 # by Kai Staats, MSc; see LICENSE.md
-# version 2.1.2
+# version 2.1.3
 
 def pause(menu_dict):
 
@@ -13,7 +13,7 @@ def pause(menu_dict):
 	Arguments required: menu_dict
 	'''
 	
-	options = ['','?','help','i','m','g','s','db','ts','min','bal','l','pop','t','p','id','dir','load','w','cont','q']
+	options = ['','?','help','i','m','g','s','db','ts','min','bal','l','pop','e','p','id','dir','load','w','cont','q']
 	
 	while True:
 		try:
@@ -40,7 +40,7 @@ def pause(menu_dict):
 		print ''
 		print '\t\033[36m\033[1m l \t\033[0;0m list Trees with leading fitness scores'
 		print '\t\033[36m\033[1m pop \t\033[0;0m list Trees in current population'
-		print '\t\033[36m\033[1m t \t\033[0;0m evaluate a single Tree against the test data'
+		print '\t\033[36m\033[1m e \t\033[0;0m evaluate a single Tree against the test data'
 		print '\t\033[36m\033[1m p \t\033[0;0m print a single Tree to screen'
 		print ''
 		print '\t\033[36m\033[1m id \t\033[0;0m display current generation ID'
@@ -159,16 +159,16 @@ def pause(menu_dict):
 		if menu_dict['gen_id'] == 1: menu_dict['input_a'] = 'pop_a'
 		else: menu_dict['input_a'] = 'pop_b'
 		
-	elif menu == 't': # evaluate a Tree against the TEST data
+	elif menu == 'e': # evaluate a Tree against the TEST data
 		if menu_dict['gen_id'] == 1: print '\n\t\033[32m You cannot evaluate the foundation population. Be patient ...\033[0;0m'
 		
 		else: # gen_id > 1
 			while True:
 				try:
-					query = raw_input('\n\t Select a Tree to test: ')
+					query = raw_input('\n\t Select a Tree to evaluate: ')
 					if query not in str(range(1, menu_dict['pop_b_len'])) or query == '0': raise ValueError()
 					elif query == '': break
-					else: menu_dict['input_a'] = 'test'; menu_dict['input_b'] = int(query); break
+					else: menu_dict['input_a'] = 'eval'; menu_dict['input_b'] = int(query); break
 				except ValueError: print '\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_b_len'] - 1)
 				except KeyboardInterrupt: print '\n\t\033[32m Enter q to quit\033[0;0m'
 				

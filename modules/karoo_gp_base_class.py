@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 2.1.2
+# version 2.1.3
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -253,7 +253,10 @@ class Base_GP(object):
 			
 		menu_dict = menu.pause(menu_dict) # call the external function menu.pause
 		
+		
 		### 2) unpack values returned from menu.pause ###
+		input_a = menu_dict['input_a']
+		input_b = menu_dict['input_b']
 		self.display = menu_dict['display']
 		self.tree_depth_min = menu_dict['tree_depth_min']
 		self.gen_max = menu_dict['gen_max']
@@ -263,50 +266,51 @@ class Base_GP(object):
 		self.evolve_branch = menu_dict['evolve_branch']
 		self.evolve_cross = menu_dict['evolve_cross']
 		
-		### 3) execute the user queries returned from menu.pause ###
-		if menu_dict['input_a'] == 'esc': return 0 # ENTER enables next step in generational, interactive, and debug display
 		
-		elif menu_dict['input_a'] == 'test': # evaluate a Tree against the TEST data
-			expr = str(self.algo_sym) # might change this to algo_raw for more correct expression evaluation
-			result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels = True)
-			print '\n\t\033[36mTree', menu_dict['input_b'], 'yields (raw):', self.algo_raw, '\033[0;0m'
-			print '\t\033[36mTree', menu_dict['input_b'], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n'
-			
+		### 3) execute the user queries returned from menu.pause ###
+		if input_a == 'esc': return 0 # ENTER enables next step in generational, interactive, and debug display
+		
+		elif input_a == 'eval': # evaluate a Tree against the TEST data
+			self.fx_eval_poly(self.population_b[input_b]) # generate the raw and sympified expression for the given Tree using SymPy
+			#print '\n\t\033[36mTree', input_b, 'yields (raw):', self.algo_raw, '\033[0;0m' # print the raw expression
+			print '\t\033[36mTree', input_b, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m\n' # print the sympified expression			
+
+			result = self.fx_fitness_eval(str(self.algo_sym), self.data_test, get_pred_labels = True) # might change to algo_raw evaluation			
 			if self.kernel == 'c': self.fx_fitness_test_classify(result) # TF tested 2017 02/02
 			elif self.kernel == 'r': self.fx_fitness_test_regress(result)
 			elif self.kernel == 'm': self.fx_fitness_test_match(result)
 			# elif self.kernel == '[other]': self.fx_fitness_test_[other](result)
 			
-		elif menu_dict['input_a'] == 'print_a': # print a Tree from population_a
-			self.fx_display_tree(self.population_a[menu_dict['input_b']])
+		elif input_a == 'print_a': # print a Tree from population_a
+			self.fx_display_tree(self.population_a[input_b])
 			
-		elif menu_dict['input_a'] == 'print_b': # print a Tree from population_b
-			self.fx_display_tree(self.population_b[menu_dict['input_b']])
+		elif input_a == 'print_b': # print a Tree from population_b
+			self.fx_display_tree(self.population_b[input_b])
 			
-		elif menu_dict['input_a'] == 'pop_a': # list all Trees in population_a
+		elif input_a == 'pop_a': # list all Trees in population_a
 			print ''
 			for tree_id in range(1, len(self.population_a)):
 				self.fx_eval_poly(self.population_a[tree_id]) # extract the expression
 				print '\t\033[36m Tree', self.population_a[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 				
-		elif menu_dict['input_a'] == 'pop_b': # list all Trees in population_b
+		elif input_a == 'pop_b': # list all Trees in population_b
 			print ''
 			for tree_id in range(1, len(self.population_b)):
 				self.fx_eval_poly(self.population_b[tree_id]) # extract the expression
 				print '\t\033[36m Tree', self.population_b[tree_id][0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 				
-		elif menu_dict['input_a'] == 'load': # load population_s to replace population_a
+		elif input_a == 'load': # load population_s to replace population_a
 			self.fx_data_recover(self.filename['s']) # NEED TO replace 's' with a user defined filename
 			
-		elif menu_dict['input_a'] == 'write': # write the evolving population_b to disk
+		elif input_a == 'write': # write the evolving population_b to disk
 			self.fx_data_tree_write(self.population_b, 'b')
 			print '\n\t All current members of the evolving population_b saved to karoo_gp/runs/[date-time]/population_b.csv'
 			
-		elif menu_dict['input_a'] == 'cont': # check for added generations, then exit fx_karoo_pause and continue the run
-			if menu_dict['input_b'] > 0: self.gen_max = self.gen_max + menu_dict['input_b']
+		elif input_a == 'cont': # check for added generations, then exit fx_karoo_pause and continue the run
+			if input_b > 0: self.gen_max = self.gen_max + input_b
 			else: pass
 			
-		elif menu_dict['input_a'] == 'quit': # quit and save run-time parameters to disk
+		elif input_a == 'quit': # quit and save run-time parameters to disk
 			self.fx_data_params_write('Desktop')
 			print '\n\t \033[32mYour Trees and runtime parameters are archived in karoo_gp/runs/[date-time]/\033[0;0m'
 			if pause == 0: sys.exit() # force quit due to being one level below the while loop
@@ -596,7 +600,7 @@ class Base_GP(object):
 				
 			
 			# test the most fit Tree and write to the .txt log
-			self.fx_eval_poly(self.population_b[int(fittest_tree)]) # generate the raw and sympified equation for the given Tree using SymPy
+			self.fx_eval_poly(self.population_b[int(fittest_tree)]) # generate the raw and sympified expression for the given Tree using SymPy
 			expr = str(self.algo_sym) # get simplified expression and process it by TF - tested 2017 02/02
 			result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels = True)
 			
@@ -2515,7 +2519,7 @@ class Base_GP(object):
 			ind = ind + '\t'
 			
 		print ''
-		self.fx_eval_poly(tree) # generate the raw and sympified equation for the entire Tree
+		self.fx_eval_poly(tree) # generate the raw and sympified expression for the entire Tree
 		print '\t\033[36mTree', tree[0][1], 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 		
@@ -2557,7 +2561,7 @@ class Base_GP(object):
 			ind = ind + '\t'
 					
 		print ''
-		self.fx_eval_poly(tree) # generate the raw and sympified equation for the entire Tree
+		self.fx_eval_poly(tree) # generate the raw and sympified expression for the entire Tree
 		print '\t\033[36mTree', tree[0][1], 'yields (raw):', self.algo_raw, '\033[0;0m'
 		print '\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m'
 		
