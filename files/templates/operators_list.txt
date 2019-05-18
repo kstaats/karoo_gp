@@ -1,22 +1,48 @@
-OPERATORS TESTED with Karoo GP v1.4
+This file contains all operators supported by Karoo GP as of v1.0.
 
+Note that some operators are simply entered along with the arity (total number of elements anticipated), while others 
+must be preceded by another operator due the manner in which Karoo flattens the trees into a mathematical expression. 
+Else, Karoo will attempt a function such as (a)sin(b) where sin(b) is correct, but (a)sin requires an operator between 
+the operand 'a' and the operator 'sin'. This will be addressed in a future update to Karoo. 
+
+To apply one or more operator to a given run, copy/paste the desired operators from the USE IN KAROO table(s) below, 
+into the associated file for Classification (files/operators_CLASSIFY.csv) or Regression (files/operators_REGRESS.csv)
+
+* OPERATOR        EXAMPLE *
+	add             a + b
+	subtract        a - b
+	multiply        a * b
+	divide          a / b
+	pow             a ** 2
+	
+USE IN KAROO
 +,2
 -,2
 *,2
 /,2
 **,2
 
+
+* OPERATOR        EXAMPLE *
+	logical_and     a and b
+	logical_or      a or b
+	logical_not     not a
+	
+USE IN KAROO
 and,2
 or,2
 not,1
 
 
-The following must be preceded by another operator due the manner in which Karoo flattens the trees into a 
-mathematical expression. Else, Karoo will attempt a function such as (a)sin(b) where sin(b) is correct, but (a)sin 
-requires an operator between the operand 'a' and the operator 'sin'. This will be addressed in a future update to Karoo. 
+* OPERATOR        EXAMPLE (
+	abs             abs(a)
+	log             log(a)
+	log1p           log1p(a)
+	sign            sign(a)
+	square          square(a)
+	sqrt            sqrt(a)
 
-So, each of these must be presented as given in the following example:
-
+USE IN KAROO
 + abs,2
 - abs,2
 * abs,2
@@ -48,17 +74,54 @@ So, each of these must be presented as given in the following example:
 / sqrt,2
 
 
-The following operators produce TRUE or FALSE statements, and are therefore, at this time, not supported. A future
+* OPERATOR        EXAMPLE *
+	cos             cos(a)
+	sin             sin(a)
+	tan             tan(a)
+	acos            acos(a)
+	asin            asin(a)
+	atan            atan(a)
+
+USE IN KAROO
++ cos,2
+- cos,2
+* cos,2
+/ cos,2
+
++ sin,2
+- sin,2
+* sin,2
+/ sin,2
+
++ tan,2
+- tan,2
+* tan,2
+/ tan,2
+
++ acos,2
+- acos,2
+* acos,2
+/ acos,2
+
++ asin,2
+- asin,2
+* asin,2
+/ asin,2
+
++ atan,2
+- atan,2
+* atan,2
+/ atan,2
+
+
+The following operators produce TRUE or FALSE statements, and are therefore, at this time, not supported. A future 
 version of Karoo will instead output a binary 1 or 0 instead.
-
-		equal           a == b
-		not_equal       a != b
-		less            a < b
-		less_equal      a <= b
-		greater         a > b
-		greater_equal   a >= 1
-
-
-The operator 'pow' requires the format 'pow(a, b)' which is not yet supported by Karoo GP.
+		
+	equal           a == b
+	not_equal       a != b
+	less            a < b
+	less_equal      a <= b
+	greater         a > b
+	greater_equal   a >= 1
 
 
