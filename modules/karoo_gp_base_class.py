@@ -2,7 +2,7 @@
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc; see LICENSE.md
 # Thanks to Emmanuel Dufourq and Arun Kumar for support during 2014-15 devel; TensorFlow support provided by Iurii Milovanov
-# version 2.1.3
+# version 2.1.3 final for Python 2.7
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE

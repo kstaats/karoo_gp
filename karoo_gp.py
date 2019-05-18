@@ -1,7 +1,7 @@
 # Karoo GP (desktop + server combined)
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc; see LICENSE.md
-# version 2.1
+# version 2.1 final for Python 2.7
 
 '''
 A word to the newbie, expert, and brave--

@@ -1,7 +1,7 @@
 # Karoo GP Pause Menu
 # A text-based user interface for mid-run parameter configuration and population studies
 # by Kai Staats, MSc; see LICENSE.md
-# version 2.1.3
+# version 2.1.3 final for Python 2.7
 
 def pause(menu_dict):
 
