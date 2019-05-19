@@ -18,7 +18,7 @@ import time
 
 import numpy as np
 import sklearn.metrics as skm
-import sklearn.cross_validation as skcv
+import sklearn.model_selection as skcv
 
 from sympy import sympify
 from datetime import datetime
