@@ -1,7 +1,7 @@
 # Karoo GP (desktop + server combined)
 # Use Genetic Programming for Classification and Symbolic Regression
-# by Kai Staats, MSc; see LICENSE.md
-# version 2.1 final for Python 2.7
+# by Kai Staats, MSc with TensorFlow support provided by Iurii Milovanov; see LICENSE.md
+# version 2.3 for Python 3.6
 
 '''
 A word to the newbie, expert, and brave--
@@ -22,22 +22,22 @@ If you include the path to an external dataset, it will auto-load at launch:
 
 If you include one or more additional arguments, they will override the default values, as follows:
 
-	-ker [r,c,m]									fitness function: (r)egression, (c)lassification, or (m)atching
-	-typ [f,g,r]									Tree type: (f)ull, (g)row, or (r)amped half/half
-	-bas [3...10]									maximum Tree depth for initial population
-	-max [3...10]									maximum Tree depth for entire run
-	-min [3 to 2^(bas +1) - 1]		minimum number of nodes
-	-pop [10...1000]							number of trees in each generational population
-	-gen [1...100]								number of generations
-	-tor [7 per 100]							number of trees selected for tournament
-	-evr [0.0...1.0]  						decimal percent of pop generated through Reproduction
-	-evp [0.0...1.0]  						decimal percent of pop generated through Point Mutation
-	-evb [0.0...1.0]  						decimal percent of pop generated through Branch Mutation
-	-evc [0.0...1.0]  						decimal percent of pop generated through Crossover
+	-ker [r,c,m]			fitness function: (r)egression, (c)lassification, or (m)atching
+	-typ [f,g,r]			Tree type: (f)ull, (g)row, or (r)amped half/half
+	-bas [3...10]			maximum Tree depth for initial population
+	-max [3...10]			maximum Tree depth for entire run
+	-min [3 to 2^(bas +1) - 1]	minimum number of nodes
+	-pop [10...1000]		number of trees in each generational population
+	-gen [1...100]			number of generations
+	-tor [7 per 100]		number of trees selected for tournament
+	-evr [0.0...1.0]  		decimal percent of pop generated through Reproduction
+	-evp [0.0...1.0]  		decimal percent of pop generated through Point Mutation
+	-evb [0.0...1.0]  		decimal percent of pop generated through Branch Mutation
+	-evc [0.0...1.0]  		decimal percent of pop generated through Crossover
 	
 If you include any of the above flags, then you *must* also include a flag to load an external dataset.
 
-	-fil [path]/[to]/[data].csv		an external dataset
+	-fil [path]/[to]/[data].csv	an external dataset
 
 
 An example is given, as follows:
@@ -52,50 +52,50 @@ import argparse
 import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
 
 os.system('clear')
-print '\n\033[36m\033[1m'
-print '\t **   **   ******    *****    ******    ******       ******    ******'
-print '\t **  **   **    **  **   **  **    **  **    **     **        **    **'
-print '\t ** **    **    **  **   **  **    **  **    **     **        **    **'
-print '\t ****     ********  ******   **    **  **    **     **   ***  *******'
-print '\t ** **    **    **  ** **    **    **  **    **     **    **  **'
-print '\t **  **   **    **  **  **   **    **  **    **     **    **  **'
-print '\t **   **  **    **  **   **  **    **  **    **     **    **  **'
-print '\t **    ** **    **  **    **  ******    ******       ******   **'
-print '\033[0;0m'
-print '\t\033[36m Genetic Programming in Python - by Kai Staats, version 2.1\033[0;0m'
-print ''
+print ('\n\033[36m\033[1m')
+print ('\t **   **   ******    *****    ******    ******       ******    ******')
+print ('\t **  **   **    **  **   **  **    **  **    **     **        **    **')
+print ('\t ** **    **    **  **   **  **    **  **    **     **        **    **')
+print ('\t ****     ********  ******   **    **  **    **     **   ***  *******')
+print ('\t ** **    **    **  ** **    **    **  **    **     **    **  **')
+print ('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
+print ('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
+print ('\t **    ** **    **  **    **  ******    ******       ******   **')
+print ('\033[0;0m')
+print ('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version 2.3\033[0;0m')
+print ('')
 
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Interface for Configuation       |
 #++++++++++++++++++++++++++++++++++++++++++
 
-if len(sys.argv) < 3: # either no command line argument (1) or a filename (2) is provided
+if len(sys.argv) < 3: # either no command line argument, or only a filename is provided
 
 	while True:
 		try:
-			query = raw_input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
-			if query not in ['c','r','m','p','']: raise ValueError()
-			else: kernel = query or 'm'; break
-		except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+			query = input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
+			if query in ['c','r','m','p','']: kernel = query or 'm'; break
+			else: raise ValueError()
+		except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 		except KeyboardInterrupt: sys.exit()
 		
 	if kernel == 'p': # play mode
 		while True:
 			try:
-				query = raw_input('\t Select (f)ull or (g)row (default g): ')
-				if query not in ['f','g','']: raise ValueError()
-				else: tree_type = query or 'f'; break
-			except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+				query = input('\t Select (f)ull or (g)row (default g): ')
+				if query in ['f','g','']: tree_type = query or 'f'; break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
 		while True:
 			try:
-				query = raw_input('\t Enter the depth of the Tree (default 1): ')
-				if query not in str(range(1,11)) or query == '0': raise ValueError()
-				elif query == '': tree_depth_base = 1; break
-				else: tree_depth_base = int(query); break
-			except ValueError: print '\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m'
+				query = input('\t Enter the depth of the Tree (default 1): ')
+				if query == '': tree_depth_base = 1; break
+				elif int(query) in list(range(1,11)): tree_depth_base = int(query); break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
 		tree_depth_max = tree_depth_base
@@ -110,56 +110,57 @@ if len(sys.argv) < 3: # either no command line argument (1) or a filename (2) is
 		
 		while True:
 			try:
-				query = raw_input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
-				if query not in ['f','g','r','']: raise ValueError()
-				else: tree_type = query or 'r'; break
-			except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+				query = input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
+				if query in ['f','g','r','']: tree_type = query or 'r'; break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
 		while True:
 			try:
-				query = raw_input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
-				if query not in str(range(1,11)) or query == '0': raise ValueError()
-				elif query == '': tree_depth_base = 3; break
-				else: tree_depth_base = int(query); break
-			except ValueError: print '\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m'
+				query = input('\t Enter depth of the \033[3minitial\033[0;0m population of Trees (default 3): ')
+				if query == '': tree_depth_base = 3; break
+				elif int(query) in list(range(1,11)): tree_depth_base = int(query); break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
 		while True:
 			try:
-				query = raw_input('\t Enter maximum Tree depth (default %s): ' %str(tree_depth_base))
-				if query not in str(range(tree_depth_base,11)) or query == '0': raise ValueError()
-				elif query == '': tree_depth_max = tree_depth_base; break
-				else: tree_depth_max = int(query); break
-			except ValueError: print '\t\033[32m Enter a number > or = the initial Tree depth. Try again ...\n\033[0;0m'
+				query = input('\t Enter maximum Tree depth (default %s): ' %str(tree_depth_base))
+				if query == '': tree_depth_max = tree_depth_base; break
+				elif int(query) in list(range(tree_depth_base,11)): tree_depth_max = int(query); break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Enter a number from %s including 10. Try again ...\n\033[0;0m' %str(tree_depth_base))
 			except KeyboardInterrupt: sys.exit()
 			
 		max_nodes = 2**(tree_depth_base+1)-1 # calc the max number of nodes for the given depth
 		
 		while True:
 			try:
-				query = raw_input('\t Enter minimum number of nodes for any given Tree (default 3; max %s): ' %str(max_nodes))
-				if query not in str(range(3,max_nodes + 1)) or query == '0' or query == '1' or query == '2': raise ValueError()
-				elif query == '': tree_depth_min = 3; break
-				else: tree_depth_min = int(query); break
-			except ValueError: print '\t\033[32m Enter a number from 3 including %s. Try again ...\n\033[0;0m' %str(max_nodes)
+				query = input('\t Enter minimum number of nodes for any given Tree (default 3; max %s): ' %str(max_nodes))
+				if query == '': tree_depth_min = 3; break
+				elif int(query) in list(range(3,max_nodes + 1)): tree_depth_min = int(query); break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Enter a number from 3 including %s. Try again ...\n\033[0;0m' %str(max_nodes))
 			except KeyboardInterrupt: sys.exit()
 			
 		#while True:
 			#try:
-				#swim = raw_input('\t Select (p)artial or (f)ull operator inclusion (default p): ')
-				#if swim not in ['p','f','']: raise ValueError()
-				#swim = swim or 'p'; break
-			#except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+				#query = input('\t Select (p)artial or (f)ull operator inclusion (default p): ')
+				#if query == '': swim = 'p'; break
+				#elif query in ['p','f']: swim = query; break
+				#else: raise ValueError()
+			#except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 			#except KeyboardInterrupt: sys.exit()
 			
 		while True:
 			try:
-				query = raw_input('\t Enter number of Trees in each population (default 100): ')
-				if query not in str(range(1,1001)) or query == '0': raise ValueError()
-				elif query == '': tree_pop_max = 100; break
-				else: tree_pop_max = int(query); break
-			except ValueError: print '\t\033[32m Enter a number from 1 including 1000. Try again ...\n\033[0;0m'
+				query = input('\t Enter number of Trees in each population (default 100): ')
+				if query == '': tree_pop_max = 100; break
+				elif int(query) in list(range(1,1001)): tree_pop_max = int(query); break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Enter a number from 1 including 1000. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
 		# calculate the tournament size
@@ -169,20 +170,20 @@ if len(sys.argv) < 3: # either no command line argument (1) or a filename (2) is
 		
 		while True:
 			try:
-				query = raw_input('\t Enter max number of generations (default 10): ')
-				if query not in str(range(1,101)) or query == '0': raise ValueError()
-				elif query == '': gen_max = 10; break
-				gen_max = int(query); break
-			except ValueError: print '\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m'
+				query = input('\t Enter max number of generations (default 10): ')
+				if query == '': gen_max = 10; break
+				elif int(query) in list(range(1,101)): gen_max = int(query); break
+				else: raise ValueError()
+			except ValueError: print ('\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m')
 			except KeyboardInterrupt: sys.exit()
 			
 		if gen_max > 1:
 			while True:
 				try:
-					query = raw_input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
-					if query not in ['i','g','m','s','db','']: raise ValueError()
-					display = query or 'm'; break
-				except ValueError: print '\t\033[32m Select from the options given. Try again ...\n\033[0;0m'
+					query = input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
+					if query in ['i','g','m','s','db','']: display = query or 'm'; break
+					else: raise ValueError()
+				except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
 				except KeyboardInterrupt: sys.exit()
 				
 		else: display = 's' # display mode is not used, but a value must be passed
@@ -203,7 +204,7 @@ if len(sys.argv) < 3: # either no command line argument (1) or a filename (2) is
 #   Command Line for Configuation         |
 #++++++++++++++++++++++++++++++++++++++++++
 
-else: # two or more command line arguments provided
+else: # 2 or more command line arguments are provided
 
 	ap = argparse.ArgumentParser(description = 'Karoo GP Server')
 	ap.add_argument('-ker', action = 'store', dest = 'kernel', default = 'c', help = '[c,r,m] fitness function: (r)egression, (c)lassification, or (m)atching')
@@ -248,10 +249,5 @@ else: # two or more command line arguments provided
 #++++++++++++++++++++++++++++++++++++++++++
 
 gp.fx_karoo_gp(kernel, tree_type, tree_depth_base, tree_depth_max, tree_depth_min, tree_pop_max, gen_max, tourn_size, filename, evolve_repro, evolve_point, evolve_branch, evolve_cross, display, precision, swim, mode)
-
-print '\n\033[3m "It is not the strongest of the species that survive, nor the most intelligent,\033[0;0m'
-print '\033[3m  but the one most responsive to change."\033[0;0m --Charles Darwin\n'
-print '\033[3m Congrats!\033[0;0m Your Karoo GP run is complete.\n'
-sys.exit()
 
 

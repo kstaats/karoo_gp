@@ -1,3 +1,16 @@
+2019 06/08
+
+Finally! Full Python 3.6 support!!!
+
+And with this update, a substantial number of improvements and modifications. Most are related to the user interface 
+and associated menu. Namely, the (pause) menu is no longer built upon nested loops, therefore the user does not find
+him or herself unable to conduct a clean exit. The code that supports the text-based queries is reduced in its 
+complexity, and in many cases made more brief. Some re-coloring of the interface text keeps like items in like 
+color schemes. Simple, and does not improve performance, but looks better, overall.
+
+"Per my prior note (below), I do appreciate your patience and support, and do look forward to your feedback." --kai 
+
+
 2019 05/18
 
 "My apology to the users of Karoo GP for the incredible gap between the most recent and this update. My research and 
