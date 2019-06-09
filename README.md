@@ -6,7 +6,7 @@ enabled by means of the powerful library TensorFlow. The packge includes a Deskt
 interface, and a Server application which supports fully scripted runs. Output is automatically archived. Batteries 
 included. No programming required.
 
-For an interesting read on scalar vs vector, and CPU vs GPU performanc with Karoo GP:
+For an interesting read on scalar vs vector, and CPU vs GPU performance with Karoo GP:
 https://arxiv.org/abs/1708.03157
 
 Be certain to read the User Guide!!!
