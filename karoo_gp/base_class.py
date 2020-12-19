@@ -24,7 +24,7 @@ from sympy import sympify
 from datetime import datetime
 from collections import OrderedDict
 
-import karoo_gp_pause as menu
+import pause as menu
 
 # np.random.seed(1000) # for reproducibility
 
