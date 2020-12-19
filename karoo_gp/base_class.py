@@ -24,7 +24,7 @@ from sympy import sympify
 from datetime import datetime
 from collections import OrderedDict
 
-import pause as menu
+from . import pause as menu
 
 # np.random.seed(1000) # for reproducibility
 
@@ -367,7 +367,7 @@ class Base_GP(object):
 		
 		### PART 1 - load the associated data set, operators, operands, fitness type, and coefficients ###
 		# full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # for user Marco Cavaglia
-		cwd = os.getcwd()
+		cwd, _ = os.path.split(__file__)
 		
 		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
 		
@@ -426,7 +426,7 @@ class Base_GP(object):
 		
 		### PART 4 - create a unique directory and initialise all .csv files ###
 		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-		self.path = os.path.join(cwd, 'runs/', filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
+		self.path = os.path.join(os.path.expanduser("~/.karoo_gp/runs/"), filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
 		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
 		self.filename = {} # a dictionary to hold .csv filenames
