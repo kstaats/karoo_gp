@@ -50,8 +50,8 @@ An example is given, as follows:
 import os
 import sys
 import argparse
-from karoo_gp import base_class as karoo_gp_base_class
-gp = karoo_gp_base_class.Base_GP()
+from karoo_gp import base_class
+gp = base_class.Base_GP()
 
 os.system('clear')
 print ('\n\033[36m\033[1m')
