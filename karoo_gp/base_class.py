@@ -426,7 +426,7 @@ class Base_GP(object):
 		
 		### PART 4 - create a unique directory and initialise all .csv files ###
 		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-		self.path = os.path.join(os.path.expanduser("~/.karoo_gp/runs/"), filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
+		self.path = os.path.join(os.getcwd(), 'runs', filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
 		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
 		self.filename = {} # a dictionary to hold .csv filenames
