@@ -1,11 +1,12 @@
 import setuptools
+from karoo_gp import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="karoo_gp",
-    version="2.3",
+    version=__version__,
     author="Kai Staats",
     author_email="github@overthesun.com",
     description="Use Genetic Programming for Classification and Symbolic Regression",

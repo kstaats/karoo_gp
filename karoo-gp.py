@@ -50,7 +50,7 @@ An example is given, as follows:
 import os
 import sys
 import argparse
-from karoo_gp import base_class
+from karoo_gp import base_class, __version__
 gp = base_class.Base_GP()
 
 os.system('clear')
@@ -64,7 +64,7 @@ print ('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
 print ('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
 print ('\t **    ** **    **  **    **  ******    ******       ******   **')
 print ('\033[0;0m')
-print ('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version 2.3\033[0;0m')
+print ('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version {}\033[0;0m'.format(__version__))
 print ('')
 
 
