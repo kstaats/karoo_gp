@@ -1,3 +1,4 @@
+#!/bin/python3
 # Karoo GP (desktop + server combined)
 # Use Genetic Programming for Classification and Symbolic Regression
 # by Kai Staats, MSc with TensorFlow support provided by Iurii Milovanov; see LICENSE.md
@@ -47,9 +48,10 @@ An example is given, as follows:
 '''
 
 import os
-import sys; sys.path.append('modules/') # add directory 'modules' to the current path
+import sys
 import argparse
-import karoo_gp_base_class; gp = karoo_gp_base_class.Base_GP()
+from karoo_gp import base_class, __version__
+gp = base_class.Base_GP()
 
 os.system('clear')
 print ('\n\033[36m\033[1m')
@@ -62,7 +64,7 @@ print ('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
 print ('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
 print ('\t **    ** **    **  **    **  ******    ******       ******   **')
 print ('\033[0;0m')
-print ('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version 2.3\033[0;0m')
+print ('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version {}\033[0;0m'.format(__version__))
 print ('')
 
 

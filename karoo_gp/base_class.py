@@ -24,7 +24,7 @@ from sympy import sympify
 from datetime import datetime
 from collections import OrderedDict
 
-import karoo_gp_pause as menu
+from . import pause as menu
 
 # np.random.seed(1000) # for reproducibility
 
@@ -366,10 +366,10 @@ class Base_GP(object):
 		'''
 		
 		### PART 1 - load the associated data set, operators, operands, fitness type, and coefficients ###
-		# full_path = os.path.realpath(__file__); cwd = os.path.dirname(full_path) # for user Marco Cavaglia
-		cwd = os.getcwd()
+		# full_path = os.path.realpath(__file__); karoo_dir = os.path.dirname(full_path) # for user Marco Cavaglia
+		karoo_dir = os.path.dirname(os.path.realpath(__file__))
 		
-		data_dict = {'c':cwd + '/files/data_CLASSIFY.csv', 'r':cwd + '/files/data_REGRESS.csv', 'm':cwd + '/files/data_MATCH.csv', 'p':cwd + '/files/data_PLAY.csv'}
+		data_dict = {'c':karoo_dir + '/files/data_CLASSIFY.csv', 'r':karoo_dir + '/files/data_REGRESS.csv', 'm':karoo_dir + '/files/data_MATCH.csv', 'p':karoo_dir + '/files/data_PLAY.csv'}
 		
 		if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
 			data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float); data_x = data_x[:,0:-1] # load all but the right-most column
@@ -392,11 +392,11 @@ class Base_GP(object):
 		fitt_dict = {'c':'max', 'r':'min', 'm':'max', 'p':''}
 		self.fitness_type = fitt_dict[self.kernel] # load fitness type
 		
-		func_dict = {'c':cwd + '/files/operators_CLASSIFY.csv', 'r':cwd + '/files/operators_REGRESS.csv', 'm':cwd + '/files/operators_MATCH.csv', 'p':cwd + '/files/operators_PLAY.csv'}
+		func_dict = {'c':karoo_dir + '/files/operators_CLASSIFY.csv', 'r':karoo_dir + '/files/operators_REGRESS.csv', 'm':karoo_dir + '/files/operators_MATCH.csv', 'p':karoo_dir + '/files/operators_PLAY.csv'}
 		self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
 		self.terminals = header.readline().split(','); self.terminals[-1] = self.terminals[-1].replace('\n','') # load the user defined terminals (operands)
 		self.class_labels = len(np.unique(data_y)) # load the user defined true labels for classification or solutions for regression
-		#self.coeff = np.loadtxt(cwd + '/files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients - NOT USED YET
+		#self.coeff = np.loadtxt(karoo_dir + '/files/coefficients.csv', delimiter=',', skiprows=1, dtype = str) # load the user defined coefficients - NOT USED YET
 		
 		### PART 2 - from the dataset, extract TRAINING and TEST data ###
 		if len(data_x) < 11: # for small datasets we will not split them into TRAINING and TEST components
@@ -426,7 +426,7 @@ class Base_GP(object):
 		
 		### PART 4 - create a unique directory and initialise all .csv files ###
 		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-		self.path = os.path.join(cwd, 'runs/', filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
+		self.path = os.path.join(os.getcwd(), 'runs', filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
 		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
 		self.filename = {} # a dictionary to hold .csv filenames
