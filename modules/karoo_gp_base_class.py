@@ -2061,7 +2061,7 @@ class Base_GP(object):
 		
 		if self.display == 'i': print ('\t \033[36mwith nodes\033[1m', branch, '\033[0;0m\033[36mchosen for mutation\033[0;0m')
 		
-		return branch
+		return branch.astype(int)
 		
 	
 	def fx_evolve_branch_insert(self, tree, branch):
