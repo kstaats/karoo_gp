@@ -1,6 +1,6 @@
 # Karoo GP
 
-:warning: It doesn't work with Python >= 3.8
+:warning: At this point in time, we are Python 3.6 compliant and working on 3.8. Stay tuned!
 
 Karoo GP is an evolutionary algorithm, a genetic programming application suite written in Python which supports both 
 symbolic regression and classification data analysis. It is ready to work with your datasets, is multicore and GPU 
