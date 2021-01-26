@@ -1,7 +1,8 @@
 # Karoo GP Base Class
 # Define the methods and global variables used by Karoo GP
 # by Kai Staats, MSc with TensorFlow support provided by Iurii Milovanov; see LICENSE.md
-# version 2.3 for Python 3.6
+# pip install package preparation by Antonio Spadaro and Ezio Melotti
+# version 2.4 for Python 3.8
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
@@ -2061,6 +2062,7 @@ class Base_GP(object):
 		
 		if self.display == 'i': print ('\t \033[36mwith nodes\033[1m', branch, '\033[0;0m\033[36mchosen for mutation\033[0;0m')
 		
+		# return branch per Antonio's fix 20210125
 		return branch.astype(int)
 		
 	

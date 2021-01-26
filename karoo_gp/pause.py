@@ -1,7 +1,8 @@
 # Karoo GP Pause Menu
 # A text-based user interface for mid-run parameter configuration and population studies
 # by Kai Staats, MSc with TensorFlow support provided by Iurii Milovanov; see LICENSE.md
-# version 2.3 for Python 3.6
+# pip install package preparation by Antonio Spadaro and Ezio Melotti
+# version 2.4 for Python 3.8
 
 def pause(menu_dict):
 
