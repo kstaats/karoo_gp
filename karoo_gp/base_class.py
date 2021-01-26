@@ -33,7 +33,8 @@ from . import pause as menu
 ### TensorFlow Imports and Definitions ###
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf; tf.disable_v2_behavior() # from https://www.tensorflow.org/guide/migrate on 20210125
 import ast
 import operator as op
 
