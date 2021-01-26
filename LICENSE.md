@@ -2,7 +2,7 @@
 
 The MIT License (MIT)
 
-Copyright (c) 2015-2018 Kai Staats (www.kaistaats.com)
+Copyright (c) 2015-2021 Kai Staats (www.kaistaats.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the 

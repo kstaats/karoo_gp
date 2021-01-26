@@ -28,7 +28,7 @@ setuptools.setup(
         'numpy',
         'sklearn',
         'sympy',
-        'tensorflow<2',
+        'tensorflow',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

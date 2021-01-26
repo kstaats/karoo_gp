@@ -1,4 +1,4 @@
 numpy
 sklearn
 sympy
-tensorflow<2 # needs Python 3.7 or lower
+tensorflow
