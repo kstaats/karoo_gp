@@ -22,6 +22,7 @@ Be certain to read the User Guide for a starter's guide to Genetic Programming
 and examples of all you can do with this unique body of code.
 
 For an interesting read on scalar vs vector and CPU vs GPU performance with 
-Karoo GP: https://arxiv.org/abs/1708.03157
+Karoo GP: https://arxiv.org/abs/1708.03157 or to learn how Karoo applied to
+supernova detection at LIGO: https://arxiv.org/abs/2002.04591
 
 Learn more at <a href="http://kstaats.github.io/karoo_gp/">kstaats.github.io/karoo_gp/</a> ...
