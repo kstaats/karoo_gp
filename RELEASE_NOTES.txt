@@ -1,3 +1,7 @@
+20210209
+
+This update permits unary math operators to be specified and treated as unary. Miscellaneous bugs also fixed.
+
 20210125
 
 This relatively minor update to the code enables compatibility with Python 3.8 and Tensorflow v2.4.1. In the base_class the 'branch' array is now defined as an integer to comply with what appears to be a change in Numpy. And finally, the director structure is modified in preparation for delivering Karoo GP as a proper pip package.

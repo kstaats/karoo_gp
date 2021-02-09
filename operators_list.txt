@@ -1,0 +1,78 @@
+This file contains all operators supported by Karoo GP as of v2.5.
+
+To apply one or more operator to a given run, copy/paste the desired operators from the USE IN KAROO table(s) below, 
+into the associated file for Classification (files/operators_CLASSIFY.csv) or Regression (files/operators_REGRESS.csv)
+
+* OPERATOR        EXAMPLE *
+	add             a + b
+	subtract        a - b
+	multiply        a * b
+	divide          a / b
+	pow             a ** 2
+	
+USE IN KAROO
++,2
+-,2
+*,2
+/,2
+**,2
+
+
+* OPERATOR        EXAMPLE *
+	logical_and     a and b
+	logical_or      a or b
+	logical_not     not a
+	
+USE IN KAROO
+and,2
+or,2
+not,1
+
+
+* OPERATOR        EXAMPLE *
+	abs             abs(a)
+	exp             exp(a)
+	expm1        expm1(a)
+	log              log(a)
+	log1p          log1p(a)
+	sign            sign(a)
+	square        square(a)
+	sqrt             sqrt(a)
+
+USE IN KAROO
+abs, 1
+log,1
+log1p,1
+sign,1
+square,1
+sqrt,1
+
+* OPERATOR        EXAMPLE *
+	cos             cos(a)
+	sin             sin(a)
+	tan             tan(a)
+	acos            acos(a)
+	asin            asin(a)
+	atan            atan(a)
+
+USE IN KAROO
+cos  
+sin  
+tan  
+acos 
+asin 
+atan 
+
+atan2(a,b) is NOT supported at this time.
+
+The following operators produce TRUE or FALSE statements, and are therefore, at this time, not supported. A future 
+version of Karoo will instead output a binary 1 or 0 instead.
+		
+	equal           a == b
+	not_equal       a != b
+	less            a < b
+	less_equal      a <= b
+	greater         a > b
+	greater_equal   a >= 1
+
+
