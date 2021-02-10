@@ -15,6 +15,7 @@ import sys
 import os
 import csv
 import time
+import math
 
 import numpy as np
 import sklearn.metrics as skm
@@ -27,7 +28,7 @@ from collections import OrderedDict
 
 from . import pause as menu
 
-# np.random.seed(1000) # for reproducibility
+np.random.seed(1000) # for reproducibility
 
 
 ### TensorFlow Imports and Definitions ###
@@ -66,6 +67,8 @@ operators = {ast.Add: tf.add, # e.g., a + b
 	'acos': tf.acos, # e.g., acos(a)
 	'asin': tf.asin, # e.g., asin(a)
 	'atan': tf.atan, # e.g., atan(a)
+	'exp': tf.exp, # e.g. exp(a)
+	'expm1': tf.expm1, # e.g. expm1(a)
 	}
 
 np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
@@ -1048,16 +1051,17 @@ class Base_GP(object):
 		node_id = int(node_id)
 		
 		if tree[8, node_id] == '0': # arity of 0 for the pattern '[term]'
-			return '(' + tree[6, node_id] + ')' # 'node_label' (function or terminal)
+			return tree[6, node_id] # 'node_label' (function or terminal)
 			
 		else:
 			if tree[8, node_id] == '1': # arity of 1 for the explicit pattern 'not [term]'
-				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id]
+				return tree[6, node_id] + '(' + self.fx_eval_label(tree, tree[9, node_id]) + ')'	 # rll 20210201
 				
 			elif tree[8, node_id] == '2': # arity of 2 for the pattern '[func] [term] [func]'
-				return self.fx_eval_label(tree, tree[9, node_id]) + tree[6, node_id] + self.fx_eval_label(tree, tree[10, node_id])
+				return '(' + self.fx_eval_label(tree, tree[9, node_id]) + ')' + tree[6, node_id] + '(' + self.fx_eval_label(tree, tree[10, node_id]) +')'		# rll 20210201
 				
 			elif tree[8, node_id] == '3': # arity of 3 for the explicit pattern 'if [term] then [term] else [term]'
+				# This fails in sympify. rll 20210206
 				return tree[6, node_id] + self.fx_eval_label(tree, tree[9, node_id]) + ' then ' + self.fx_eval_label(tree, tree[10, node_id]) + ' else ' + self.fx_eval_label(tree, tree[11, node_id])
 						
 	
@@ -1161,8 +1165,17 @@ class Base_GP(object):
 			fitness = 0
 			
 			expr = str(self.algo_sym) # get sympified expression and process it with TF - tested 2017 02/02
-			result = self.fx_fitness_eval(expr, self.data_train)
-			fitness = result['fitness'] # extract fitness score
+			# Sympy occasionally returns 'zoo', the complex infinity. This will raise a KeyError exception.	# rll 20210202
+			try:
+				result = self.fx_fitness_eval(expr, self.data_train)
+				fitness = result['fitness'] # extract fitness score
+			except KeyError:
+				if self.kernel == 'c':
+					fitness = float('-Infinity')
+				elif self.kernel == 'r':
+					fitness = float('Infinity')
+				elif self.kernel == 'm':
+					fitness == ('Infinity')		# We assume infinity does not occur in the training data.
 			
 			if self.display == 'i':
 				print ('\t \033[36m with fitness sum:\033[1m', fitness, '\033[0;0m\n')
@@ -1272,7 +1285,9 @@ class Base_GP(object):
 					
 					# was breaking with upgrade from Tensorflow 1.1 to 1.3; fixed by Iurii by replacing [] with () as of 20171026
 					# if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = [tf.int32, tf.string], swap_memory = True)
-					if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = (tf.int32, tf.string), swap_memory = True)
+					# dtype deprecated here with upgrade to TensorFlow 2.4; fixed with fn_output_signature, # rll 20210202
+					# if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = (tf.int32, tf.string), swap_memory = True)
+					if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, fn_output_signature = (tf.int32, tf.string), swap_memory = True)
 					
 					skew = (self.class_labels / 2) - 1
 					
@@ -1299,7 +1314,8 @@ class Base_GP(object):
 					integrating a more sophisticated kernel.
 					'''
 					
-					pairwise_fitness = tf.abs(solution - result)
+					#pairwise_fitness = tf.abs(solution - result)		# Inconsistent with skm.mean_squared_error elsewhere # rll 20210203
+					pairwise_fitness = tf.squared_difference(solution, result)
 					
 					
 				elif self.kernel == 'm': # MATCH kernel
@@ -1500,6 +1516,11 @@ class Base_GP(object):
 			
 				# first time through, 'tourn_test' will be initialised below
 				
+				# Try to avoid NaN blowing up the logic. # rll 20210202
+				if math.isnan(fitness):
+					#print ('*** NaN ***')
+					fitness = float('-inf')
+				
 				if fitness > tourn_test: # if the current Tree's 'fitness' is greater than the priors'
 					if self.display == 'i': print ('\t\033[36m Tree', tree_id, 'has fitness', fitness, '>', tourn_test, 'and leads\033[0;0m')
 					tourn_lead = tree_id # set 'TREE_ID' for the new leader
@@ -1526,6 +1547,11 @@ class Base_GP(object):
 			
 			elif self.fitness_type == 'min': # if the fitness function is Minimising
 			
+				# Try to avoid NaN blowing up the logic. # rll 20210202
+				if math.isnan(fitness):
+					#print ('*** NaN ***')
+					fitness = float('inf')
+				
 				if tourn_test == 0: # first time through, 'tourn_test' is given a baseline value
 					tourn_test = fitness
 					
@@ -1739,10 +1765,9 @@ class Base_GP(object):
 		'''
 		Through tournament selection, a copy of a Tree from the prior generation mutates before being added to the 
 		next generation. Unlike Point Mutation, in this method an entire branch is selected. If the evolutionary run is 
-		designated as Full, the size and shape of the Tree will remain identical, each node mutated sequentially, where 
-		functions remain functions and terminals remain terminals. If the evolutionary run is designated as Grow or 
-		Ramped Half/Half, the size and shape of the Tree may grow smaller or larger, but it may not exceed
-		tree_depth_max as defined by the user.
+		designated as Full, the height of the Tree will remain identical, while the shape may change due to the various 
+		arities of operators. 	If the evolutionary run is designated as Grow or Ramped Half/Half, the size and shape of the 
+		Tree may grow smaller or larger, but it may not exceed tree_depth_max as defined by the user.
 		
 		Called by: fx_karoo_gp
 		
@@ -1837,10 +1862,16 @@ class Base_GP(object):
 		
 		if tree[5][node] == 'root':
 			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
+			while (int(self.functions[rnd][1]) != int(tree[8][node])) :
+				rnd = np.random.randint(0, len(self.functions[:,0])) # keep looking for suitable arity
+				
 			tree[6][node] = self.functions[rnd][0] # replace function (operator)
 			
 		elif tree[5][node] == 'func':
 			rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
+			while (int(self.functions[rnd][1]) != int(tree[8][node])) :
+				rnd = np.random.randint(0, len(self.functions[:,0])) # keep looking for suitable arity
+				
 			tree[6][node] = self.functions[rnd][0] # replace function (operator)
 			
 		elif tree[5][node] == 'term':
@@ -1861,9 +1892,8 @@ class Base_GP(object):
 		'''
 		Mutate a branch of a Full method Tree.
 		
-		The full mutate method is straight-forward. A branch was generated and passed to this method. As the size and 
-		shape of the Tree must remain identical, each node is mutated sequentially (copied from the new Tree to replace
-		the old, node for node), where functions remain functions and terminals remain terminals.
+		The full mutate method receives a branch of identical height as the sub-tree being replaced. Therefore, a simple
+		call to fx_evolve_branch_insert suffices.		rll 20210203
 		
 		Called by: fx_nextgen_branch_mutate
 		
@@ -1872,21 +1902,8 @@ class Base_GP(object):
 		
 		if self.display == 'db': print ('\n\n\033[33m *** Full Mutation: function to function *** \033[0;0m\n\n\033[36m This is the unaltered tourn_winner:\033[0;0m\n', tree)
 		
-		for n in range(len(branch)):
-			
-			# 'root' is not made available for Full mutation as this would build an entirely new Tree
-			
-			if tree[5][branch[n]] == 'func':
-				if self.display == 'i': print ('\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m func \033[0;0m')
-				
-				rnd = np.random.randint(0, len(self.functions[:,0])) # call the previously loaded .csv which contains all operators
-				tree[6][branch[n]] = self.functions[rnd][0] # replace function (operator)
-				
-			elif tree[5][branch[n]] == 'term':
-				if self.display == 'i': print ('\t\033[36m  from\033[1m', tree[5][branch[n]], '\033[0;0m\033[36mto\033[1m term \033[0;0m')
-				
-				rnd = np.random.randint(0, len(self.terminals) - 1) # call the previously loaded .csv which contains all terminals
-				tree[6][branch[n]] = self.terminals[rnd] # replace terminal (variable)
+		tree = self.fx_evolve_branch_insert(tree, branch) # insert new 'branch' at point of mutation 'branch_top' in tourn_winner 'tree'
+		# because we already know the maximum depth of this branch, there is no need to prune after insertion
 				
 		tree = self.fx_evolve_fitness_wipe(tree) # wipe fitness data
 
@@ -1908,7 +1925,7 @@ class Base_GP(object):
 
 		If the top of that branch is a terminal which does not reside at 'tree_depth_max', then it may either remain a 
 		terminal (in which case a new value is randomly assigned) or it may mutate into a function. If it becomes a 
-		function, a new branch (mini-tree) is generated to be appended to that nodes current location. The same is true 
+		function, a new branch (mini-tree) is generated to be appended to that node's current location. The same is true 
 		for function-to-function mutation. Either way, the new branch will be only as deep as allowed by the distance 
 		from it's branch_top to the bottom of the tree.
 		
