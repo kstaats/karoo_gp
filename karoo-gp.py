@@ -194,9 +194,9 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
 	### additional configuration parameters ###
 	
 	evolve_repro = int(0.1 * tree_pop_max) # quantity of a population generated through Reproduction
-	evolve_point = int(0.0 * tree_pop_max) # quantity of a population generated through Point Mutation
+	evolve_point = int(0.1 * tree_pop_max) # quantity of a population generated through Point Mutation
 	evolve_branch = int(0.2 * tree_pop_max) # quantity of a population generated through Branch Mutation
-	evolve_cross = int(0.7 * tree_pop_max) # quantity of a population generated through Crossover
+	evolve_cross = int(0.6 * tree_pop_max) # quantity of a population generated through Crossover
 	filename = '' # not required unless an external file is referenced
 	precision = 6 # number of floating points for the round function in 'fx_fitness_eval'
 	swim = 'p' # require (p)artial or (f)ull set of features (operators) for each Tree entering the gene_pool
@@ -219,9 +219,9 @@ else: # 2 or more command line arguments are provided
 	ap.add_argument('-gen', action = 'store', dest = 'gen_max', default = 10, help = '[1...100] number of generations')
 	ap.add_argument('-tor', action = 'store', dest = 'tor_size', default = 7, help = '[7 for each 100] recommended tournament size')
 	ap.add_argument('-evr', action = 'store', dest = 'evo_r', default = 0.1, help = '[0.0-1.0] decimal percent of pop generated through Reproduction')
-	ap.add_argument('-evp', action = 'store', dest = 'evo_p', default = 0.0, help = '[0.0-1.0] decimal percent of pop generated through Point Mutation')
+	ap.add_argument('-evp', action = 'store', dest = 'evo_p', default = 0.1, help = '[0.0-1.0] decimal percent of pop generated through Point Mutation')
 	ap.add_argument('-evb', action = 'store', dest = 'evo_b', default = 0.2, help = '[0.0-1.0] decimal percent of pop generated through Branch Mutation')
-	ap.add_argument('-evc', action = 'store', dest = 'evo_c', default = 0.7, help = '[0.0-1.0] decimal percent of pop generated through Crossover')
+	ap.add_argument('-evc', action = 'store', dest = 'evo_c', default = 0.6, help = '[0.0-1.0] decimal percent of pop generated through Crossover')
 	ap.add_argument('-fil', action = 'store', dest = 'filename', default = '', help = '/path/to_your/[data].csv')
 	
 	args = ap.parse_args()
