@@ -1,6 +1,16 @@
+20210404
+
+In review of a branch of Karoo being developed by user Richard, Richard advised me of a few nuances that are readidly 
+corrected, including a default setting that excluded point mutation (was set to 0% but should be 10%) and several
+changes to the User Guide to match the current code base. Richard is working on a version that accepts unary operators
+without the current addition of +,-,*,\ as in '+ cos'. We hope to integrate his work soon ...
+
+
 20210125
 
-This relatively minor update to the code enables compatibility with Python 3.8 and Tensorflow v2.4.1. In the base_class the 'branch' array is now defined as an integer to comply with what appears to be a change in Numpy. And finally, the director structure is modified in preparation for delivering Karoo GP as a proper pip package.
+This relatively minor update to the code enables compatibility with Python 3.8 and Tensorflow v2.4.1. In the base_class 
+the 'branch' array is now defined as an integer to comply with what appears to be a change in Numpy. And finally, the 
+director structure is modified in preparation for delivering Karoo GP as a proper pip package.
 
 Thank you Antonio Spadaro and Ezio Melotti for all of your help, guidance, and patience.
 
