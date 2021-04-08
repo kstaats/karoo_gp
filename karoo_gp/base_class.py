@@ -593,7 +593,14 @@ class Base_GP(object):
 		
 		if len(self.fittest_dict) > 0:
 		
-			fitness_best = 0
+			if self.kernel == 'c':
+				fitness_best = 0
+				
+			elif self.kernel == 'r':
+				fitness_best = float('Infinity')
+				
+			# elif self.kernel == '[other]': # use others as a template
+
 			fittest_tree = 0
 						
 			# revised method, re-evaluating all Trees from stored fitness score
@@ -602,12 +609,12 @@ class Base_GP(object):
 				fitness = float(self.population_b[tree_id][12][1])
 				
 				if self.kernel == 'c': # display best fit Trees for the CLASSIFY kernel
-					if fitness >= fitness_best: # find the Tree with Maximum fitness score
+					if fitness > fitness_best: # find the Tree with Maximum fitness score
 						fitness_best = fitness; fittest_tree = tree_id # set best fitness Tree
 						
 				elif self.kernel == 'r': # display best fit Trees for the REGRESSION kernel
-					if fitness_best == 0: fitness_best = fitness # set the baseline first time through
-					if fitness <= fitness_best: # find the Tree with Minimum fitness score
+					if fitness_best == float('Infinity'): fitness_best = fitness # set the baseline first time through
+					if fitness < fitness_best: # find the Tree with Minimum fitness score
 						fitness_best = fitness; fittest_tree = tree_id # set best fitness Tree
 						
 				elif self.kernel == 'm': # display best fit Trees for the MATCH kernel
@@ -616,7 +623,7 @@ class Base_GP(object):
 						
 				# elif self.kernel == '[other]': # use others as a template
 						
-				# print ('fitness_best:', fitness_best, 'fittest_tree:', fittest_tree)
+				# print ('fitness_best:', fitness_best, 'fittest_tree:', fittest_tree)	## debug rll20210212
 				
 			
 			# test the most fit Tree and write to the .txt log
