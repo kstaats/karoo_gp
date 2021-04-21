@@ -1457,9 +1457,18 @@ class Base_GP(object):
 		fitness = float(fitness)
 		fitness = round(fitness, self.precision)
 		
-		tree[12][1] = fitness # store the fitness with each tree
+		# store the fitness with each tree
+		tree[12][1] = "{:.14e}".format(fitness)	# It seems that the string cannot exceed ~22 characters, else it gets truncated. Why?
 		tree[12][2] = len(str(self.algo_raw)) # store the length of the raw algo for parsimony
 		# if len(tree[3]) > 4: # if the Tree array is wide enough -- SEE SCRATCHPAD
+		
+		## debug rll20210215
+		#if abs(fitness) == 0.0: 
+		#	return
+		#if abs(fitness - float(tree[12][1]))/fitness >= 1.0e-14 and not math.isnan(fitness) :
+		#  print ('Error case found. Tree number: ', tree[0][1])
+		#  print ('Fitness that was stored: ', fitness)
+		#  print ('Finess retrieved from tree: ', tree[12][1])
 		
 		return
 		
