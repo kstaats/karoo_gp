@@ -1,9 +1,4 @@
-This file contains all operators supported by Karoo GP as of v1.0.
-
-Note that some operators are simply entered along with the arity (total number of elements anticipated), while others 
-must be preceded by another operator due the manner in which Karoo flattens the trees into a mathematical expression. 
-Else, Karoo will attempt a function such as (a)sin(b) where sin(b) is correct, but (a)sin requires an operator between 
-the operand 'a' and the operator 'sin'. This will be addressed in a future update to Karoo. 
+This file contains all operators supported by Karoo GP as of v2.5.
 
 To apply one or more operator to a given run, copy/paste the desired operators from the USE IN KAROO table(s) below, 
 into the associated file for Classification (files/operators_CLASSIFY.csv) or Regression (files/operators_REGRESS.csv)
@@ -34,45 +29,23 @@ or,2
 not,1
 
 
-* OPERATOR        EXAMPLE (
+* OPERATOR        EXAMPLE *
 	abs             abs(a)
-	log             log(a)
-	log1p           log1p(a)
+	exp             exp(a)
+	expm1        expm1(a)
+	log              log(a)
+	log1p          log1p(a)
 	sign            sign(a)
-	square          square(a)
-	sqrt            sqrt(a)
+	square        square(a)
+	sqrt             sqrt(a)
 
 USE IN KAROO
-+ abs,2
-- abs,2
-* abs,2
-/ abs,2
-
-+ log,2
-- log,2
-* log,2
-/ log,2
-
-+ log1p,2
-- log1p,2
-* log1p,2
-/ log1p,2
-
-+ sign,2
-- sign,2
-* sign,2
-/ sign,2
-
-+ square,2
-- square,2
-* square,2
-/ square,2
-
-+ sqrt,2
-- sqrt,2
-* sqrt,2
-/ sqrt,2
-
+abs, 1
+log,1
+log1p,1
+sign,1
+square,1
+sqrt,1
 
 * OPERATOR        EXAMPLE *
 	cos             cos(a)
@@ -83,36 +56,14 @@ USE IN KAROO
 	atan            atan(a)
 
 USE IN KAROO
-+ cos,2
-- cos,2
-* cos,2
-/ cos,2
+cos  
+sin  
+tan  
+acos 
+asin 
+atan 
 
-+ sin,2
-- sin,2
-* sin,2
-/ sin,2
-
-+ tan,2
-- tan,2
-* tan,2
-/ tan,2
-
-+ acos,2
-- acos,2
-* acos,2
-/ acos,2
-
-+ asin,2
-- asin,2
-* asin,2
-/ asin,2
-
-+ atan,2
-- atan,2
-* atan,2
-/ atan,2
-
+atan2(a,b) is NOT supported at this time.
 
 The following operators produce TRUE or FALSE statements, and are therefore, at this time, not supported. A future 
 version of Karoo will instead output a binary 1 or 0 instead.
