@@ -1,3 +1,10 @@
+20220320
+
+Karoo GP is now pip installable and thereby compliant with the latest version of Python. This effort was made possible 
+through the work of Antonio Spadaro in 2021, and now with Ezio Melotti and Kai Staats. The updated User Guide provides 
+instructions for download via GitHub and install via pip.
+
+
 20210404
 
 In review of a branch of Karoo being developed by user Richard, Richard advised me of a few nuances that are readidly 

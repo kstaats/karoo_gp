@@ -1,9 +1,5 @@
 #!/bin/python3
-# Karoo GP (desktop + server combined)
-# Use Genetic Programming for Classification and Symbolic Regression
-# by Kai Staats, MSc with TensorFlow support provided by Iurii Milovanov; see LICENSE.md
-# pip install package preparation by Antonio Spadaro and Ezio Melotti
-# version 2.4 for Python 3.8
+# Karoo GP - Genetic Programming for Classification and Symbolic Regression
 
 '''
 A word to the newbie, expert, and brave--

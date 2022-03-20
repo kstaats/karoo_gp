@@ -1,8 +1,5 @@
 # Karoo GP Base Class
 # Define the methods and global variables used by Karoo GP
-# by Kai Staats, MSc with TensorFlow support provided by Iurii Milovanov; see LICENSE.md
-# pip install package preparation by Antonio Spadaro and Ezio Melotti
-# version 2.4 for Python 3.8
 
 '''
 A NOTE TO THE NEWBIE, EXPERT, AND BRAVE
