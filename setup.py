@@ -41,5 +41,5 @@ setuptools.setup(
         "Intended Audience :: Education",
         "Intended Audience :: Developers",
     ],
-    python_requires='>=3, <3.8',
+    python_requires='>=3',
 )
