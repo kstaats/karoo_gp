@@ -424,8 +424,10 @@ class Base_GP(object):
 		self.tf_device_log = False # TF device usage logging (for debugging)
 		
 		### PART 4 - create a unique directory and initialise all .csv files ###
-		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-		self.path = os.path.join(os.getcwd(), 'runs', filename.split('.')[0] + '_' + self.datetime + '/') # generate a unique directory name
+		self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
+		basename = os.path.basename(filename)  # extract the filename from the path (if any)
+		root, ext = os.path.splitext(basename)  # split root from extension
+		self.path = os.path.join(os.getcwd(), 'runs', root + '_' + self.datetime + '/')  # generate a unique directory name
 		if not os.path.isdir(self.path): os.makedirs(self.path) # make a unique directory
 		
 		self.filename = {} # a dictionary to hold .csv filenames
