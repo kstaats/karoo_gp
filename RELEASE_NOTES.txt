@@ -1,13 +1,13 @@
 20220320
 
-Karoo GP is now pip installable and thereby compliant with the latest version of Python. This effort was made possible 
-through the work of Antonio Spadaro in 2021, and now with Ezio Melotti and Kai Staats. The updated User Guide provides 
+Karoo GP is now pip installable and thereby compliant with the latest version of Python. This effort was made possible
+through the work of Antonio Spadaro in 2021, and now with Ezio Melotti and Kai Staats. The updated User Guide provides
 instructions for download via GitHub and install via pip.
 
 
 20210404
 
-In review of a branch of Karoo being developed by user Richard, Richard advised me of a few nuances that are readidly 
+In review of a branch of Karoo being developed by user Richard, Richard advised me of a few nuances that are readidly
 corrected, including a default setting that excluded point mutation (was set to 0% but should be 10%) and several
 changes to the User Guide to match the current code base. Richard is working on a version that accepts unary operators
 without the current addition of +,-,*,\ as in '+ cos'. We hope to integrate his work soon ...
@@ -15,8 +15,8 @@ without the current addition of +,-,*,\ as in '+ cos'. We hope to integrate his 
 
 20210125
 
-This relatively minor update to the code enables compatibility with Python 3.8 and Tensorflow v2.4.1. In the base_class 
-the 'branch' array is now defined as an integer to comply with what appears to be a change in Numpy. And finally, the 
+This relatively minor update to the code enables compatibility with Python 3.8 and Tensorflow v2.4.1. In the base_class
+the 'branch' array is now defined as an integer to comply with what appears to be a change in Numpy. And finally, the
 director structure is modified in preparation for delivering Karoo GP as a proper pip package.
 
 Thank you Antonio Spadaro and Ezio Melotti for all of your help, guidance, and patience.
@@ -28,19 +28,19 @@ Stay tuned for pip install karoo!
 
 Finally! Full Python 3.6 support!!!
 
-And with this update, a substantial number of improvements and modifications. Most are related to the user interface 
+And with this update, a substantial number of improvements and modifications. Most are related to the user interface
 and associated menu. Namely, the (pause) menu is no longer built upon nested loops, therefore the user does not find
-him or herself unable to conduct a clean exit. The code that supports the text-based queries is reduced in its 
-complexity, and in many cases made more brief. Some re-coloring of the interface text keeps like items in like 
+him or herself unable to conduct a clean exit. The code that supports the text-based queries is reduced in its
+complexity, and in many cases made more brief. Some re-coloring of the interface text keeps like items in like
 color schemes. Simple, and does not improve performance, but looks better, overall.
 
-"Per my prior note (below), I do appreciate your patience and support, and do look forward to your feedback." --kai 
+"Per my prior note (below), I do appreciate your patience and support, and do look forward to your feedback." --kai
 
 
 2019 05/18
 
-"My apology to the users of Karoo GP for the incredible gap between the most recent and this update. My research and 
-work have for the past year taken me in other directions. This update marks my return to an active effort in working on 
+"My apology to the users of Karoo GP for the incredible gap between the most recent and this update. My research and
+work have for the past year taken me in other directions. This update marks my return to an active effort in working on
 Karoo, and GP applied to a growing research space. I appreciate your patience and understanding." --kai
 
 NOTE: this is the *final* update to the Python 2.7 version of Karoo. All future development will be in Python 3.x.
@@ -51,31 +51,31 @@ Fixed the Test function to evaluate the Tree selected by the user.
 
 Modified the menu option from 't'est to 'e'valulate from the Pause menu.
 
-Added a user defined (m)in node count, (f)ull set of features, or (b)oth as the gene_pool regulator. For more about 
+Added a user defined (m)in node count, (f)ull set of features, or (b)oth as the gene_pool regulator. For more about
 the "full set of features" see 2018 04/19 and the new 'swim' variable.
 
 
 2018 05/18
 
-Fixed a bug which automically re-engaged the run after selecting a pause menu option if mid generation. Now, it again 
+Fixed a bug which automically re-engaged the run after selecting a pause menu option if mid generation. Now, it again
 requires ENTER before continuing.
 
 
 2018 05/10
 
-Returned full_path = os.path.realpath(__file__) (approx. line 342) to support bash scripting of automated runs. This 
+Returned full_path = os.path.realpath(__file__) (approx. line 342) to support bash scripting of automated runs. This
 remains commented, but can be readily re-activated (remember to comment the next line down).
 
 
 2018 04/22
 
-1) Completed the isolation of the user interface from the base_class such that all mid-run parameter configurations and 
-population summaries are now conducted in menu.pause(), and any associatede executions (Tree validation) are conducted 
+1) Completed the isolation of the user interface from the base_class such that all mid-run parameter configurations and
+population summaries are now conducted in menu.pause(), and any associatede executions (Tree validation) are conducted
 fully in the base_class.
 
 	karoo_gp.py imports karoo_gp_base_class.py
 		karoo_gp_base_class.py imports karoo_gp_pause.py
-		
+
 The user's initial run configuration is conducted in karoo_gp.py. Those settings are passed into karoo_gp_base_class.py
 where they are used to guide the run. At each 'pause' (generation, interactive, or debug display modes; or end of run)
 the user is taken into menu.pause where additional queries and configurations are conducted. Those value changes are
@@ -84,7 +84,7 @@ to the original karoo_gp.py for salutations and run termination.
 
 Finally, the Karoo GP Python pasta is no longer spaghetti!
 
-2) Modified the function of 'cont' such that it either continues if you yet have additional generations to go, or 
+2) Modified the function of 'cont' such that it either continues if you yet have additional generations to go, or
 querie the user if gen_id = gen_max and the prior run is done.
 
 3) Replaced 'generation_id' with 'gen_id' and 'generation_max' with 'gen_max'.
@@ -98,7 +98,7 @@ karoo_gp_pause.py.
 until the either the Server script is complete, or the user has terminated the run. This allows for the simple addition
 of generations to an existing run. A far better solution than what I had previously coded.
 
-7) Discovered that the loading of seed population_s is far too delicate. Even the slightest change and it fails. I have 
+7) Discovered that the loading of seed population_s is far too delicate. Even the slightest change and it fails. I have
 disabled the load function for now, until I have time to rebuild it.
 
 8) Please note that all modules are now stored in modules/
@@ -106,24 +106,24 @@ disabled the load function for now, until I have time to rebuild it.
 
 2018 04/19
 
-Added a new kind of gene_pool filter (environmental pressure) such that you can select partial or full inclusion of 
+Added a new kind of gene_pool filter (environmental pressure) such that you can select partial or full inclusion of
 the operands (features). While not yet incorporated into the user interface (desktop or server), the new 'swim' setting
 enables you to build consecutive gene pools that have *only* Trees that include at least one instance of each feature.
-This may be helpful for regression problems moreso than classification, as regression tends to fall to a minimum 
+This may be helpful for regression problems moreso than classification, as regression tends to fall to a minimum
 feature set, depending upon the nature of the solution (fixed or rolling value). I desire to merge tree_depth_min
 setting and this new 'swim' into one user defined system that controls the gene_pool.
- 
+
 Discovered 3 more functions that did not include a "Called by: ___" statement. Updated.
 
-Fixed a long-standing issue of total failure if you enter 1 for the total number of generations. This setting, while 
+Fixed a long-standing issue of total failure if you enter 1 for the total number of generations. This setting, while
 it may seem odd, allows Karoo GP to be used to create populations of stochastic multivariate expressions based upon the
-given dataset for use in other applications. Simple fix. The population is written to the runs/ directory as with all 
+given dataset for use in other applications. Simple fix. The population is written to the runs/ directory as with all
 other modes of operation, including Play.
 
 
 2018 04/12c
 
-Updated the User Guide to match the Desktop and Serve merger, and modified a help print statement in the sys args of 
+Updated the User Guide to match the Desktop and Serve merger, and modified a help print statement in the sys args of
 the Server function.
 
 
@@ -134,7 +134,7 @@ Created the 'modules/' directory to hold karoo_base_class and in the future, mor
 
 2018 04/12a
 
-1) Merged 'Karoo GP Server' and 'Karoo GP Main' into a single 'Karoo GP'. So, just one user script now that provides the 
+1) Merged 'Karoo GP Server' and 'Karoo GP Main' into a single 'Karoo GP'. So, just one user script now that provides the
 user interface (TUI) or scripting (comnand line). There are now 3 ways to run Karoo:
 
 	a) $ run karoo_gp.py
@@ -143,7 +143,7 @@ user interface (TUI) or scripting (comnand line). There are now 3 ways to run Ka
 
 Where [arg][val] are the sysargs defined in the body of karoo_gp.py and the User Guide. Both (a) and (b) will auto-
 run the Desktop interface, providing a user query for each entry and holding the user within the script until quit;
-(c) will skip the user query and go directly into execution, dropping the user back to the command line at the end of 
+(c) will skip the user query and go directly into execution, dropping the user back to the command line at the end of
 the run (for scripting).
 
 
@@ -169,18 +169,18 @@ I've been productive!
 
 Two major updates, as follows:
 
-1) I have returned to the basic structure of Karoo GP and worked to make it properly Pythonic. For those of you who 
-recognised the error in my ways, I appreciate your patience. What I have updated with this v1.1 release does not 
-improve performance nor stability (already rock solid), rather, it keeps properly trained developers from cringing 
+1) I have returned to the basic structure of Karoo GP and worked to make it properly Pythonic. For those of you who
+recognised the error in my ways, I appreciate your patience. What I have updated with this v1.1 release does not
+improve performance nor stability (already rock solid), rather, it keeps properly trained developers from cringing
 when they read my code.
 
 In the prior versions, I used one of the loose functions of Python that allows the initiation of a variable outside of
-the base_class. Meaning, I imported the base_class to karoo_gp_main.py and karoo_gp_server.py, called a dozen global 
-variables by "gp.___" and as such initiated them from the user scripts. Yes, it works. But it caused a certain 
-individual with whom I worked at the SKA to yell at me and shake her head (and I had just met her a few days prior). 
+the base_class. Meaning, I imported the base_class to karoo_gp_main.py and karoo_gp_server.py, called a dozen global
+variables by "gp.___" and as such initiated them from the user scripts. Yes, it works. But it caused a certain
+individual with whom I worked at the SKA to yell at me and shake her head (and I had just met her a few days prior).
 I don't like being yelled at, so I fixed it.
 
-Now, all user configurations are set as local variables and their values are passed to the base_class. 
+Now, all user configurations are set as local variables and their values are passed to the base_class.
 
 To make thing a bit easier to read and follow, I have renamed and reorganized several functions (methods) as follows:
 
@@ -188,7 +188,7 @@ a) Created a new category for data and archiving, moving/renaming all related fu
 
 b) Renamed all fx_gen_ to fx_init_ as this is the initial population.
 
-c) Moved the four top-level functions used to construct the next generation of trees into their own fx_nextgen_ 
+c) Moved the four top-level functions used to construct the next generation of trees into their own fx_nextgen_
 category: fx_karoo_reproduce, fx_nextgen_point_mutate, fx_nextgen_branch_mutate, fx_nextgen_crossover
 
 The final breakdown is as follows:
@@ -209,31 +209,31 @@ Updated the Python library versions and improved some explanation of Operators a
 
 
 2017 10/26
-An upgrade from Tensorflow 1.1 to 1.3 caused the Classify kernel test to break. Fixed by Iurii by replacing [] with () 
+An upgrade from Tensorflow 1.1 to 1.3 caused the Classify kernel test to break. Fixed by Iurii by replacing [] with ()
 in the 'fx_fitness_eval' method.
 
 
 2017 10/17
-To be consistent with the anticipated Machine Learning vocabulary, replaced the term 'label' with 'pred_labels' 
+To be consistent with the anticipated Machine Learning vocabulary, replaced the term 'label' with 'pred_labels'
 (predicted labels) in the TF graph methods.
 
 
 2017 08/10
-Iurii fixed a minor bug in which the MATCHING function (used only for demonstrations) would not find a match despite 
-the output being (apprently) correct. This was discovered to be due to the way in which TensorFlow was handling 
+Iurii fixed a minor bug in which the MATCHING function (used only for demonstrations) would not find a match despite
+the output being (apprently) correct. This was discovered to be due to the way in which TensorFlow was handling
 floating points and precision, as follows:
 
 	[ -0.29999995   0.69999981  13.69999981  16.70000076  19.70000076
 		22.70000076  25.70000076  28.70000076  31.70000076  34.70000076]
-		
+
 	[ -0.30000001   0.69999999  13.69999981  16.70000076  19.70000076
 		22.70000076  25.70000076  28.70000076  31.70000076  34.70000076]
 
-As you can see, the values are close, but not equal and so a "match" was not resolved. Iurii used numpy.allclose.html 
+As you can see, the values are close, but not equal and so a "match" was not resolved. Iurii used numpy.allclose.html
 as a reference to resolve the situation.
 
 I also modified the autosave to the runs/ directory such that if you are using an external dataset (quite likely), the
-new directory (for each run) will be saved as [filename]-[date_time_stamp]/ The idea (thank you Marco) is to help keep 
+new directory (for each run) will be saved as [filename]-[date_time_stamp]/ The idea (thank you Marco) is to help keep
 multiple, automated runs organized and more readily, visually inspected by name alone.
 
 
@@ -250,14 +250,14 @@ in order to reduce the quantity of lines of code and simplify the workflow.
 2017 07/03
 
 I am pleased to announce that Karoo GP is now updated to include a full suite of mathematical operators. I thank the
-expert code development of Iurii Milovanov. He was instrumental in bringing TensorFlow into Karoo last year, and has 
+expert code development of Iurii Milovanov. He was instrumental in bringing TensorFlow into Karoo last year, and has
 now provided this important improvement.
 
-Iurii has prpared an efficient and elegant solution for the addition of a full range of operators, adding support for 
-boolean operations (a and b or c), comparison ops (a > b <= c == d) and generally speaking any function available in 
+Iurii has prpared an efficient and elegant solution for the addition of a full range of operators, adding support for
+boolean operations (a and b or c), comparison ops (a > b <= c == d) and generally speaking any function available in
 TensorFlow, as given here: https://www.tensorflow.org/api_guides/python/math_ops
 
-Now there is a mapping in Karoo GP that connects an expression to the TF function: 
+Now there is a mapping in Karoo GP that connects an expression to the TF function:
 
     OPERATOR        EXAMPLE
 		add             a + b
@@ -265,7 +265,7 @@ Now there is a mapping in Karoo GP that connects an expression to the TF functio
 		multiply        a * b
 		divide          a / b
 		pow             a ** 2
-		
+
 		negative        -a
 		logical_and     a and b
 		logical_or      a or b
@@ -276,7 +276,7 @@ Now there is a mapping in Karoo GP that connects an expression to the TF functio
 		less_equal      a <= b
 		greater         a > b
 		greater_equal   a >= 1
-     
+
 		abs             abs(a)
 		sign            sign(a)
 		square          square(a)
@@ -291,10 +291,10 @@ Now there is a mapping in Karoo GP that connects an expression to the TF functio
 		asin            asin(a)
 		atan            atan(a)
 
-Now when Karoo parses an expression like "asin(x + 10)" it first parses and transforms the args "x + 10" and passes 
+Now when Karoo parses an expression like "asin(x + 10)" it first parses and transforms the args "x + 10" and passes
 the output to “tf.asin” function. So now Karoo is able to evaluate incredibly complx mathematical expressions.
 
-It is important to refer to karoo_gp/files/templates/operators_list.txt to learn how to enage operators_[KERNEL].csv 
+It is important to refer to karoo_gp/files/templates/operators_list.txt to learn how to enage operators_[KERNEL].csv
 In its current form Karoo requires some operators, such as abs, cos, and sin to have a unique formating:
 
 	+ sin,2
@@ -309,36 +309,36 @@ expression from a GP Tree.
 2017 06/06
 
 A number of changes applied in March and April. My apologies for the delayed updates to github.
- 
+
 A timer is added. This is helpful when conducting comparisons of run times, given various configurations and datasets.
 If you go looking for this code, search for 'time.time' in _main.py for the Desktop interface, and in _base_class.py
-for the Server interface. 
+for the Server interface.
 
 Raised tree_depth_max to 100 in _main in order to essentially remove the tree depth ceiling, allowing for the multi-
-generational increase in tree depth. While this re-introduces bloat, it does provide for a greater degree of 
+generational increase in tree depth. While this re-introduces bloat, it does provide for a greater degree of
 experimental freedom. A reminder that the _server has always allowed for tree_depth_max to be set to any level.
 
-Changed the balance of operators (reproduction, mutation, crossover) from a percentage to a fixed quantity in both the 
+Changed the balance of operators (reproduction, mutation, crossover) from a percentage to a fixed quantity in both the
 default settings and in the user defined alteration.
 
 The User Guide is updated with some minor adjustments to wording.
 
-I have removed tools/ from Karoo package, as these will be re-launched as their own set of packages and associated 
+I have removed tools/ from Karoo package, as these will be re-launched as their own set of packages and associated
 github repository. I am working to give each a proper interface and more broad functionality outside of the
 Karoo package. Stay tuned!
 
-Please also note that the variable os.environ (line 28 in _base_class.py) can be set to [0, 1, 2] to trigger 3 levels 
+Please also note that the variable os.environ (line 28 in _base_class.py) can be set to [0, 1, 2] to trigger 3 levels
 of on-screen, TensorFlow run-time error logging. You can experiment with this to determine what is right for you.
 
-The much desired trig operators will be returned to Karoo GP v1.0.4. Log and boolean operators shortly thereafter. I 
-offer my apology for the delay, as I know this has inhibited some expanded uses of Karoo in the past few months. 
+The much desired trig operators will be returned to Karoo GP v1.0.4. Log and boolean operators shortly thereafter. I
+offer my apology for the delay, as I know this has inhibited some expanded uses of Karoo in the past few months.
 
 
 2017 02/13
 
 Returned 'cwd = os.getcwd()' to 'cwd = os.path.dirname(full_path)' in fx_karoo_data_load in order to sustain chron
-compliance (sorry Marco). Then split end-of-run logging into 2 files: runtime_config.txt and test.txt. Looking to the 
-future in which the test log, in particular, might be stored in such a way as to be readily parsed by an external 
+compliance (sorry Marco). Then split end-of-run logging into 2 files: runtime_config.txt and test.txt. Looking to the
+future in which the test log, in particular, might be stored in such a way as to be readily parsed by an external
 script for automated comparison of multiple runs.
 
 Ideas are welcomed!
@@ -356,8 +356,8 @@ This file is written to a unique (datetime stamp) directory in karoo_gp/runs/ at
 and with the user executed 'q'uit of _main.py.
 
 The final list of best fit evolved Trees and the test of the highest numbered (usually the highest performing) Tree is
-also recorded, with the test automatically executed based upon the original kernel designation. This functionality 
-supports the fully hands-off execution of Karoo GP on a remote server, from a bash or Python script, for parallel or 
+also recorded, with the test automatically executed based upon the original kernel designation. This functionality
+supports the fully hands-off execution of Karoo GP on a remote server, from a bash or Python script, for parallel or
 multiple serial evolutionary runs.
 
 Thank you Marco Cavaglia for guiding the addition of this functionality to Karoo GP!
@@ -365,46 +365,46 @@ Thank you Marco Cavaglia for guiding the addition of this functionality to Karoo
 
 2017 02/06
 
-Graphics Processing Units (GPU) are now supported with the introduction of the Python library TensorFlow. The end 
+Graphics Processing Units (GPU) are now supported with the introduction of the Python library TensorFlow. The end
 result is a staggering improvement in performance. With one comparison of a 10,000 data points (rows) x 9 features
-(columns) dataset on a 40 core Intel Xeon motherboard versus a 2000 core Nvidia GPU card, the wall time was reduced 
-from 50 hours to less than 4 minutes. On CPU-only computers, the performance on a single core is as much as 10x 
+(columns) dataset on a 40 core Intel Xeon motherboard versus a 2000 core Nvidia GPU card, the wall time was reduced
+from 50 hours to less than 4 minutes. On CPU-only computers, the performance on a single core is as much as 10x
 improved due to the vectorisation of the data and application of the C-based TensorFlow maths library.
 
-To install TensorFlow, I recommend visiting https://www.tensorflow.org/get_started/ It is straight forward for Ubuntu, 
+To install TensorFlow, I recommend visiting https://www.tensorflow.org/get_started/ It is straight forward for Ubuntu,
 but unfortunately can be rather challenging with OSX. Have patience. Review the forums. It's worth the effort.
 
 I owe many thanks to the expertise of Iurii Milovanov, a contract developer whom I engaged for this effort. While the
-number of lines of Karoo GP modified were initially less than a dozen (replacing the multi-core pprocess calls), I asked 
+number of lines of Karoo GP modified were initially less than a dozen (replacing the multi-core pprocess calls), I asked
 Iurii to also rewrite the test functions. As such, both Training and Testing are now fully GPU enabled. Thank you!
 
 A number of other changes have been integrated, including:
 
  - Karoo GP is now developed against Python 2.7 as provided with Ubuntu Desktop 16.04.1.
-   
- - A number of Python methods have been deleted, added, modified and/or renamed. In particular, in the category 
+
+ - A number of Python methods have been deleted, added, modified and/or renamed. In particular, in the category
    'fx_fitness_' If you have built your own code based on the Karoo methods, please review this section carefully.
-   
- - The user engaged 'bal'ance function (pause menu) has been rebuilt to anticipate exact quantities instead of 
-   percentages, enabling the user to define precisely how many of each of the four genetic operators will be applied 
+
+ - The user engaged 'bal'ance function (pause menu) has been rebuilt to anticipate exact quantities instead of
+   percentages, enabling the user to define precisely how many of each of the four genetic operators will be applied
    with the construction of each subsequent population.
-   
- - Activation of the 'test' is now conducted with only the letter 't' and the option to engage a specific number of 
-   'c'ores is removed. Therefore, the 't'imer mode is also removed, as this was a means to discover the optimal number 
+
+ - Activation of the 'test' is now conducted with only the letter 't' and the option to engage a specific number of
+   'c'ores is removed. Therefore, the 't'imer mode is also removed, as this was a means to discover the optimal number
    for multi-core processing which is now automated by TensorFlow.
-   
+
  - The libraries 'pprocess' and 'time' are no longer required nor imported.
-   
- - The population_* files (.csv) are now written into unique directories created inside of karoo_gp/runs/ with the 
-   launch of each run. A .txt file is also written to each directory which captures the run-time configuration of 
+
+ - The population_* files (.csv) are now written into unique directories created inside of karoo_gp/runs/ with the
+   launch of each run. A .txt file is also written to each directory which captures the run-time configuration of
    Karoo GP. This enables truly scriptable runs of Karoo.
- 	 
+
  - The Server interface to Karoo GP (karoo_gp_server.py) now terminates completely, kicking back to the command line.
-   This enables bash or chron launches of multiple sequential or parallel runs, enabling the exploration of multiple 
+   This enables bash or chron launches of multiple sequential or parallel runs, enabling the exploration of multiple
    runs with identical configuration, or that of varied configuration parameters.
-   
-Finally, Karoo GP is now a 1.0 release. I never know when to transition from beta to real, so please forgive me if I 
-jumped the gun. But with GPU support and the revised Server script, I have find Karoo GP to be a fully functional, 
+
+Finally, Karoo GP is now a 1.0 release. I never know when to transition from beta to real, so please forgive me if I
+jumped the gun. But with GPU support and the revised Server script, I have find Karoo GP to be a fully functional,
 powerful machine learning tool. I hope you will agree --kai
 
 
@@ -418,9 +418,9 @@ to the run (eg: change the balance of the genetic operators or the number of eng
 
 2016 09/19b
 
-After another 2 hours of trouble shooting, I learned that sympy.subs throws the 'zoo' error for a divide-by-zero if 
-working with integers--and stalls (as I witnessed last year when developing Karoo), but if throws 'inf' or '-inf' if 
-working with floats and continues to process unencumbered. This means the 'zoo' trap has not been used for over a year. 
+After another 2 hours of trouble shooting, I learned that sympy.subs throws the 'zoo' error for a divide-by-zero if
+working with integers--and stalls (as I witnessed last year when developing Karoo), but if throws 'inf' or '-inf' if
+working with floats and continues to process unencumbered. This means the 'zoo' trap has not been used for over a year.
 It is now removed from the method fx_eval_subs().
 
 
@@ -428,7 +428,7 @@ It is now removed from the method fx_eval_subs().
 
 All experiments with lambdify are on hold as it is throwing 'divide by zero' errors when no 0 exists in the data.
 
-In the evaluation of this issue, I returned to the means by which I deal with 'divide by zero', independent of the 
+In the evaluation of this issue, I returned to the means by which I deal with 'divide by zero', independent of the
 library used to process the trees. Originally, 'result' was replaced by the value 1. But a colleague suggested that I
 might be tossing genetic material of value to future generations. So, now a tree which produces a 'divide by zero'
 error ('zoo' in .subs) is retained, but given a fitness score of 0.
@@ -445,8 +445,8 @@ For now, it is not recommended that you use the lambdify function in fx_eval_sub
 
 2016 09/16
 
-With the 09/14 update I failed to upload the new coefficients.csv file to the files/ directory. While not yet engaged, 
-this will be the means by which the user can define the constants desired for the Karoo GP run. If you had run Karoo GP 
+With the 09/14 update I failed to upload the new coefficients.csv file to the files/ directory. While not yet engaged,
+this will be the means by which the user can define the constants desired for the Karoo GP run. If you had run Karoo GP
 v0.9.2.0 in the past 24 hours without this file, it would have complained. My apology.
 
 Also, a bit of a road map for the 2nd half of 2016, into 2017
@@ -455,7 +455,7 @@ Also, a bit of a road map for the 2nd half of 2016, into 2017
  - complete the introduction of constants in a manner more well defined than is currently supported
  - investigate replacing pprocess with the multi-core library
  - introduce Theano or Tensor Flow for GPU support
- 
+
 I welcome any assistance with these, if anyone has experience and time.
 
 
@@ -470,13 +470,13 @@ In karoo_gp_base_class.py
  	Classification and Regression runs. My apology for not catching this sooner.
 
 "While attending the CHEAPR 2016 workshop hosted by the Center for Cosmology and Astro-Particle Physics, The Ohio State
-University, Michael Zevin of Northwestern University proposed that Karoo GP *should* be able to process trees far faster 
-than what we were seeing. I looked into the Sympy functions I was at that time using. Indeed, '.subs' is noted as easy 
+University, Michael Zevin of Northwestern University proposed that Karoo GP *should* be able to process trees far faster
+than what we were seeing. I looked into the Sympy functions I was at that time using. Indeed, '.subs' is noted as easy
 to use, but terribly slow as it relies upon an internal, Python mathematical library. I therefore replaced '.subs' with
-'.lambdify' which calls upon the C-based Numpy maths library. It is slated to be 500x faster than '.subs', but I am 
+'.lambdify' which calls upon the C-based Numpy maths library. It is slated to be 500x faster than '.subs', but I am
 seeing only a 2x performance increase. Clearly, there are yet other barriers to remove.
 
-In the new 'fx_eval_subs' method you will find both sympy.subs (active) and sympy.lambdify. While preliminary tests 
+In the new 'fx_eval_subs' method you will find both sympy.subs (active) and sympy.lambdify. While preliminary tests
 worked well, I witnessed an erratic outcome which I yet need to reproduce and investigate. Feel free to comment the
 .subs and uncomment the .lambdify sections and take it for a spin.
 
@@ -493,7 +493,7 @@ In karoo_gp_base_class.py
  - Created a new method 'fx_eval_subs()' which conducts the SymPy subs function for both train and test data.
  - Consolidated duplicate SymPy sub calls in both Train and Test methods, at Erik H. suggestion --thank you!
  - Consolidated duplicate lines into single lines in both Train and Test methods.
- - Fixed bug in which Ramped 50/50 trees would not print in Play mode; removed Ramped 50/50 option from Play mode as 
+ - Fixed bug in which Ramped 50/50 trees would not print in Play mode; removed Ramped 50/50 option from Play mode as
    it does not make sense for a single Tree
 
 
@@ -508,17 +508,17 @@ In karoo_gp_base_class.py
  - removed some programmer's comments from experiments resolved
  - modified the screen output for the multi-class classifier such that it is more clear that p (a) is actually
  	predicted (actual) with the addition of the tag "label"
- 
- 
- 
+
+
+
 2016 07/15 - version 0.9.1.7
 
 In karoo_gp_base_class.py
  - Ramped Half/Half, as originally designed by John Koza is now implemented!
  - this offers a greater diversity of trees in the initial population
  - added *** Crossover *** to this method for debug display mode
- 
- 
+
+
 
 2016 07/14 - version 0.9.1.6b
 
@@ -527,7 +527,7 @@ In karoo_gp_base_class.py
  - fixed a few bugs in branch mutation that reduced evolutionary efficiency
  - updated all ERROR messages to be uniform in output
  - added (y/n) to "Are you certain you want to quit?" message --thanks Hunter!
- 
+
 In karoo_gp_main.py
  - reset default evolutionary balance to .1/.1/.1/.7
 
@@ -539,7 +539,7 @@ In karoo_gp_base_class.py
  - enabled auto counting of labels (right column) in loaded data (data_y)
  - re-ordered presentation of screen modes, in order of decreasing feedback [i, g, m, s]
  - added argparse to further enhance karoo_gp_server.py as a scriptable tool --FINALLY! :)
- 
+
 In karoo_gp_main.py
  - removed user query for number of class labels
  - re-ordered presentation of screen modes, in order of decreasing feedback [i, g, m, s]
@@ -557,14 +557,14 @@ In karoo_gp_base_class.py
  - renamed all associated variable and methods to match switch from 'abs_value' to 'regression'
  - reorganised validation methods to match order of fitness functions
  - added [other] place holder to validation methods
- 
+
 In karoo_gp_main.py
  - renamed kernel (fitness function) type from 'a' to 'r' for regression
  - adjusted upper boundary for qty of generations from 1000 to 100
- 
+
 In karoo_go_server.py
  - renamed kernel (fitness function) type from 'a' to 'r' for regression
- 
+
 In files/ data_ABS.csv and functions_ABS.csv were rename data_REGRESS.csv and functions_REGRESS.csv accordingly.
 
 
@@ -582,10 +582,10 @@ In karoo_gp_base_class.py
  - removed not-in-use 'accuracy' test
  - added 'Arguments required:' to each method notes
  - edited a number of method notes
- 
+
 In karoo_gp_main.py
  - renamed variables (according to karoo_gp_base_class.py)
- 
+
 In karoo_go_server.py
  - renamed variables (according to karoo_gp_base_class.py)
 
@@ -594,10 +594,10 @@ In karoo_go_server.py
 2016 07/08-09 - version 0.9.1.3
 
 In karoo_gp_base_class.py
- - added CTRL-C catch to the (pause) menu; removes potential to accidentally kill a run when attempting to 
+ - added CTRL-C catch to the (pause) menu; removes potential to accidentally kill a run when attempting to
    copy/paste an on-screen function to research notes (use the mouse instead).
  - rebuilt each (pause) menu function for improved exception handling
- - added the new gp.tree_depth_adj user defined variable to branch mutation and crossover, enabling Trees to grow 
+ - added the new gp.tree_depth_adj user defined variable to branch mutation and crossover, enabling Trees to grow
    beyond their original size which adds opportunity for more complex solutions, as well as the unavoidable bloat
  - reduced complexity of a few lines in both branch mutation and crossover methods
  - tested, tested, tested
@@ -609,27 +609,27 @@ In karoo_gp_main.py
 
 In karoo_go_server.py
  - added new gp.tree_depth_adj variable
- 
- 
+
+
 
 2016 07/07 - version 0.9.1.2
 
 In preparation for public launch of Karoo GP, a number of updates are complete or underway.
 
-The Quick Start Tutorial is being fully revised. A number of corrections were made, but more importantly, all new 
-content has been added relevant to preparation of datasets and the use of the Karoo GP Tools accordingly. The genetic 
+The Quick Start Tutorial is being fully revised. A number of corrections were made, but more importantly, all new
+content has been added relevant to preparation of datasets and the use of the Karoo GP Tools accordingly. The genetic
 operators descriptions now feature visuals and revised descriptions, as to many other sections.
 
-In the karoo_gp/tools/ directory, all scripts have undergone updates, 2 of which now offer automated scaling and a 
+In the karoo_gp/tools/ directory, all scripts have undergone updates, 2 of which now offer automated scaling and a
 user interface that in the original versions were not present, as follows:
 
 	karoo_data_sort.py (formerly karoo_features_sort.py)
-	This script now engages the user with a query for the number of class labels and the number of data points (rows) 
-	for the new, randomly generated subset of the parent dataset. This script is designed to be used prior to 
+	This script now engages the user with a query for the number of class labels and the number of data points (rows)
+	for the new, randomly generated subset of the parent dataset. This script is designed to be used prior to
 	karoo_normalise.py.
 
 	karoo_normalise.py
-	This script now auto-scales to any number of columns and rows (within the limit of your computer's capability), 
+	This script now auto-scales to any number of columns and rows (within the limit of your computer's capability),
 	and features a text-based user interface. This script is designed to be used following karoo_data_sort.py.
 
 	karoo_multi-classifier.py
@@ -639,26 +639,26 @@ user interface that in the original versions were not present, as follows:
 	This script functions as before, but with improved in-script documentation and cleaner code.
 
 
-In development now are a number of updates and improvements to the base_class such that Karoo GP will more readily 
+In development now are a number of updates and improvements to the base_class such that Karoo GP will more readily
 conform to the GP standards, as follows:
 
 1) Karoo GP currently produces only 1 offspring for each parent, where it should produce 2.
 
-2) The tree generation method 'Ramped Half/Half', in its current state, produces a 50/50 split of Full and Grow 
+2) The tree generation method 'Ramped Half/Half', in its current state, produces a 50/50 split of Full and Grow
 methods, not a graduated ramp through all depths.
 
-3) Karoo GP currently engages a bloat inhibitor, that is, an upper limit on tree depth which is maintained through 
-all modes of mutation and crossover. This will become a user defined setting such that it can be adjusted, enabling 
+3) Karoo GP currently engages a bloat inhibitor, that is, an upper limit on tree depth which is maintained through
+all modes of mutation and crossover. This will become a user defined setting such that it can be adjusted, enabling
 growth of trees beyond the original, user defined limit.
 
-4) Karoo GP will be made to launch as a single, command-line function with all required parameters included, SciKit 
+4) Karoo GP will be made to launch as a single, command-line function with all required parameters included, SciKit
 Learn style.
 
 
 
 2015 12/23 - version 0.9.1.1
 
-It was discovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in 
+It was discovered that when loading external datasets, Karoo was yet extracting variables (terminals) from the data in
 the files/ directory, according to the selected kernel.
 
 This is fixed.
@@ -667,21 +667,21 @@ This is fixed.
 
 2015 11/04 - version 0.9.1.0
 
-Initial development of Karoo GP began in February 2015, on a Python-based evolutionary algorithm for an MSc research 
-project at the University of Cape Town (UCT) / African Institute for Mathematical Sciences (AIMS) and the Square 
-Kilometer Array (SKA). The myriad debug statements evolved into the user interface while the classic Machine Learning 
+Initial development of Karoo GP began in February 2015, on a Python-based evolutionary algorithm for an MSc research
+project at the University of Cape Town (UCT) / African Institute for Mathematical Sciences (AIMS) and the Square
+Kilometer Array (SKA). The myriad debug statements evolved into the user interface while the classic Machine Learning
 test cases became the built-in example runs.
 
-In the course of six months development, the code base grew to become a flexible, easy-to-use platform for Genetic 
+In the course of six months development, the code base grew to become a flexible, easy-to-use platform for Genetic
 Programming.
 
-Karoo GP has been thoroughly tested on a 40-core server at the Square Kilometer Array offices in Cape Town, South 
-Africa, where for one month it chewed through 10,000 rows of data for up to 50 hours without incident. It is proved 
+Karoo GP has been thoroughly tested on a 40-core server at the Square Kilometer Array offices in Cape Town, South
+Africa, where for one month it chewed through 10,000 rows of data for up to 50 hours without incident. It is proved
 as a fully functional, multi-core workhorse.
 
 With all development to date conducted locally, this version 0.9 marks the first release to github.
 
-This initial github release is private, shared with select collaborators only. Please do not distribute any part of 
+This initial github release is private, shared with select collaborators only. Please do not distribute any part of
 the code until it is made public.
 
 Kai Staats
