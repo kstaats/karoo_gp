@@ -9,11 +9,11 @@ To apply one or more operator to a given run, copy/paste the desired operators f
 into the associated file for Classification (files/operators_CLASSIFY.csv) or Regression (files/operators_REGRESS.csv)
 
 * OPERATOR        EXAMPLE *
-	add             a + b
-	subtract        a - b
-	multiply        a * b
-	divide          a / b
-	pow             a ** 2
+  add             a + b
+  subtract        a - b
+  multiply        a * b
+  divide          a / b
+  pow             a ** 2
 
 USE IN KAROO
 +,2
@@ -24,9 +24,9 @@ USE IN KAROO
 
 
 * OPERATOR        EXAMPLE *
-	logical_and     a and b
-	logical_or      a or b
-	logical_not     not a
+  logical_and     a and b
+  logical_or      a or b
+  logical_not     not a
 
 USE IN KAROO
 and,2
@@ -35,12 +35,12 @@ not,1
 
 
 * OPERATOR        EXAMPLE (
-	abs             abs(a)
-	log             log(a)
-	log1p           log1p(a)
-	sign            sign(a)
-	square          square(a)
-	sqrt            sqrt(a)
+  abs             abs(a)
+  log             log(a)
+  log1p           log1p(a)
+  sign            sign(a)
+  square          square(a)
+  sqrt            sqrt(a)
 
 USE IN KAROO
 + abs,2
@@ -75,12 +75,12 @@ USE IN KAROO
 
 
 * OPERATOR        EXAMPLE *
-	cos             cos(a)
-	sin             sin(a)
-	tan             tan(a)
-	acos            acos(a)
-	asin            asin(a)
-	atan            atan(a)
+  cos             cos(a)
+  sin             sin(a)
+  tan             tan(a)
+  acos            acos(a)
+  asin            asin(a)
+  atan            atan(a)
 
 USE IN KAROO
 + cos,2
@@ -117,11 +117,11 @@ USE IN KAROO
 The following operators produce TRUE or FALSE statements, and are therefore, at this time, not supported. A future
 version of Karoo will instead output a binary 1 or 0 instead.
 
-	equal           a == b
-	not_equal       a != b
-	less            a < b
-	less_equal      a <= b
-	greater         a > b
-	greater_equal   a >= 1
+  equal           a == b
+  not_equal       a != b
+  less            a < b
+  less_equal      a <= b
+  greater         a > b
+  greater_equal   a >= 1
 
 
