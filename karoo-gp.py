@@ -69,7 +69,7 @@ print('')
 #   User Interface for Configuation       |
 #++++++++++++++++++++++++++++++++++++++++++
 
-if len(sys.argv) < 3: # either no command line argument, or only a filename is provided
+if len(sys.argv) < 3:  # either no command line argument, or only a filename is provided
 
     while True:
         try:
@@ -84,7 +84,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
         except KeyboardInterrupt:
             sys.exit()
 
-    if kernel == 'p': # play mode
+    if kernel == 'p':  # play mode
         while True:
             try:
                 query = input('\t Select (f)ull or (g)row (default g): ')
@@ -120,9 +120,9 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
         gen_max = 1
         tourn_size = 0
         display = 'm'
-        #    evolve_repro, evolve_point, evolve_branch, evolve_cross, tourn_size, precision, filename are not required
+        # evolve_repro, evolve_point, evolve_branch, evolve_cross, tourn_size, precision, filename are not required
 
-    else: # if any other kernel is selected
+    else:  # if any other kernel is selected
 
         while True:
             try:
@@ -169,7 +169,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
             except KeyboardInterrupt:
                 sys.exit()
 
-        max_nodes = 2**(tree_depth_base+1)-1 # calc the max number of nodes for the given depth
+        max_nodes = 2**(tree_depth_base+1)-1  # calc the max number of nodes for the given depth
 
         while True:
             try:
@@ -213,11 +213,11 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 sys.exit()
 
         # calculate the tournament size
-        tourn_size = int(tree_pop_max * 0.07) # default 7% can be changed by selecting (g)eneration and then 'ts'
+        tourn_size = int(tree_pop_max * 0.07)  # default 7% can be changed by selecting (g)eneration and then 'ts'
         if tourn_size < 2:
-            tourn_size = 2 # forces some diversity for small populations
+            tourn_size = 2  # forces some diversity for small populations
         if tree_pop_max == 1:
-            tourn_size = 1 # in theory, supports the evolution of a single Tree - NEED TO FIX 2018 04/19
+            tourn_size = 1  # in theory, supports the evolution of a single Tree - NEED TO FIX 2018 04/19
 
         while True:
             try:
@@ -250,25 +250,25 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                     sys.exit()
 
         else:
-            display = 's' # display mode is not used, but a value must be passed
+            display = 's'  # display mode is not used, but a value must be passed
 
     ### additional configuration parameters ###
 
-    evolve_repro = int(0.1 * tree_pop_max) # quantity of a population generated through Reproduction
-    evolve_point = int(0.1 * tree_pop_max) # quantity of a population generated through Point Mutation
-    evolve_branch = int(0.2 * tree_pop_max) # quantity of a population generated through Branch Mutation
-    evolve_cross = int(0.6 * tree_pop_max) # quantity of a population generated through Crossover
-    filename = '' # not required unless an external file is referenced
-    precision = 6 # number of floating points for the round function in 'fx_fitness_eval'
-    swim = 'p' # require (p)artial or (f)ull set of features (operators) for each Tree entering the gene_pool
-    mode = 'd' # pause at the (d)esktop when complete, awaiting further user interaction; or terminate in (s)erver mode
+    evolve_repro = int(0.1 * tree_pop_max)  # quantity of a population generated through Reproduction
+    evolve_point = int(0.1 * tree_pop_max)  # quantity of a population generated through Point Mutation
+    evolve_branch = int(0.2 * tree_pop_max)  # quantity of a population generated through Branch Mutation
+    evolve_cross = int(0.6 * tree_pop_max)  # quantity of a population generated through Crossover
+    filename = ''  # not required unless an external file is referenced
+    precision = 6  # number of floating points for the round function in 'fx_fitness_eval'
+    swim = 'p'  # require (p)artial or (f)ull set of features (operators) for each Tree entering the gene_pool
+    mode = 'd'  # pause at the (d)esktop when complete, awaiting further user interaction; or terminate in (s)erver mode
 
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   Command Line for Configuation         |
 #++++++++++++++++++++++++++++++++++++++++++
 
-else: # 2 or more command line arguments are provided
+else:  # 2 or more command line arguments are provided
 
     ap = argparse.ArgumentParser(description='Karoo GP Server')
     ap.add_argument('-ker', action='store', dest='kernel', default='c', help='[c,r,m] fitness function: (r)egression, (c)lassification, or (m)atching')
@@ -302,10 +302,10 @@ else: # 2 or more command line arguments are provided
     evolve_cross = int(float(args.evo_c) * tree_pop_max)
     filename = str(args.filename)
 
-    display = 's' # display mode is set to (s)ilent
-    precision = 6 # number of floating points for the round function in 'fx_fitness_eval'
-    swim = 'p' # require (p)artial or (f)ull set of features (operators) for each Tree entering the gene_pool
-    mode = 's' # pause at the (d)esktop when complete, awaiting further user interaction; or terminate in (s)erver mode
+    display = 's'  # display mode is set to (s)ilent
+    precision = 6  # number of floating points for the round function in 'fx_fitness_eval'
+    swim = 'p'  # require (p)artial or (f)ull set of features (operators) for each Tree entering the gene_pool
+    mode = 's'  # pause at the (d)esktop when complete, awaiting further user interaction; or terminate in (s)erver mode
 
 
 #++++++++++++++++++++++++++++++++++++++++++

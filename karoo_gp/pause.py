@@ -26,7 +26,7 @@ def pause(menu_dict):
             print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     if menu == '':
-        menu_dict['input_a'] = 'esc' # exit (pause) with ENTER
+        menu_dict['input_a'] = 'esc'  # exit (pause) with ENTER
 
     elif menu == '?' or menu == 'help':
         print('\n\t\033[32m Select from one of the following options:\033[0;0m')
@@ -38,7 +38,7 @@ def pause(menu_dict):
         print('')
         print('\t\033[36m\033[1m ts \t\033[0;0m adjust tournament size')
         print('\t\033[36m\033[1m min \t\033[0;0m adjust minimum number of nodes')
-        # print('\t\033[36m\033[1m max \t\033[0;0m adjust maximum Tree depth') # NEED TO ADD
+        # print('\t\033[36m\033[1m max \t\033[0;0m adjust maximum Tree depth')  # NEED TO ADD
         print('\t\033[36m\033[1m bal \t\033[0;0m adjust balance of genetic operators')
         print('')
         print('\t\033[36m\033[1m l \t\033[0;0m list Trees with leading fitness scores')
@@ -48,7 +48,7 @@ def pause(menu_dict):
         print('')
         print('\t\033[36m\033[1m id \t\033[0;0m display current generation ID')
         print('\t\033[36m\033[1m dir \t\033[0;0m display current working directory')
-        # print('\t\033[36m\033[1m load \t\033[0;0m load population_s (seed) to replace population_a (current)') # NEED TO FIX
+        # print('\t\033[36m\033[1m load \t\033[0;0m load population_s (seed) to replace population_a (current)')  # NEED TO FIX
         print('\t\033[36m\033[1m w \t\033[0;0m write the evolving population_b to disk')
         print('')
         print('\t\033[36m\033[1m add \t\033[0;0m add generations and continue your run')
@@ -70,7 +70,7 @@ def pause(menu_dict):
         menu_dict['display'] = 'db'
         print('\n\t De-Bug display mode engaged (for evolutionary biologists)')
 
-    elif menu == 'ts': # adjust the tournament size
+    elif menu == 'ts':  # adjust the tournament size
         while True:
             try:
                 print('\n\t The current tournament size is:', menu_dict['tourn_size'])
@@ -79,7 +79,7 @@ def pause(menu_dict):
                     break
                 elif int(query) in list(range(2,menu_dict['tree_pop_max'] + 1)):
                     menu_dict['tourn_size'] = int(query)
-                    break # rebuilt 20190603
+                    break  # rebuilt 20190603
                 else:
                     raise ValueError()
             except ValueError:
@@ -87,8 +87,8 @@ def pause(menu_dict):
             except KeyboardInterrupt:
                 print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    elif menu == 'min': # adjust the minimum number of nodes per Tree
-        # max_nodes = 2**(tree_depth_base +1) - 1 # NEED TO calc to replace upper limit in range but tree_depth_base is not global - 2018 04/22
+    elif menu == 'min':  # adjust the minimum number of nodes per Tree
+        # max_nodes = 2**(tree_depth_base +1) - 1  # NEED TO calc to replace upper limit in range but tree_depth_base is not global - 2018 04/22
         while True:
             try:
                 print('\n\t The current minimum number of nodes is:', menu_dict['tree_depth_min'])
@@ -97,7 +97,7 @@ def pause(menu_dict):
                     break
                 elif int(query) in list(range(3,1000)):
                     menu_dict['tree_depth_min'] = int(query)
-                    break # rebuilt 20190603
+                    break  # rebuilt 20190603
                 else:
                     raise ValueError()
             except ValueError:
@@ -106,7 +106,7 @@ def pause(menu_dict):
                 print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     # NEED TO ADD
-    #elif menu == 'max': # adjust the maximum Tree depth
+    #elif menu == 'max':  # adjust the maximum Tree depth
     #    while True:
     #        try:
     #            print('\n\t The current \033[3madjusted\033[0;0m maximum Tree depth is:', gp.tree_depth_max)
@@ -119,7 +119,7 @@ def pause(menu_dict):
     #        except ValueError: print('\n\t\033[32m Enter a number from 1 including 10. Try again ...\033[0;0m')
     #        except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    elif menu == 'bal': # adjust the balance of genetic operators'
+    elif menu == 'bal':  # adjust the balance of genetic operators'
         print('\n\t The current balance of genetic operators is:')
         print('\t\t Reproduction:', menu_dict['evolve_repro'])
         tmp_repro = menu_dict['evolve_repro']
@@ -204,22 +204,22 @@ def pause(menu_dict):
             print('\t\t Crossover:', tmp_cross)
             menu_dict['evolve_cross'] = tmp_cross
 
-    elif menu == 'l': # display dictionary of Trees with the best fitness score
+    elif menu == 'l':  # display dictionary of Trees with the best fitness score
         print('\n\t The leading Trees and their associated expressions are:')
         for n in sorted(menu_dict['fittest_dict']):
             print('\t ', n, ':', menu_dict['fittest_dict'][n])
 
-    elif menu == 'pop': # list Trees in the current population
+    elif menu == 'pop':  # list Trees in the current population
         if menu_dict['gen_id'] == 1:
             menu_dict['input_a'] = 'pop_a'
         else:
             menu_dict['input_a'] = 'pop_b'
 
-    elif menu == 'e': # evaluate a Tree against the TEST data
+    elif menu == 'e':  # evaluate a Tree against the TEST data
         if menu_dict['gen_id'] == 1:
             print('\n\t\033[32m You cannot evaluate the foundation population. Be patient ...\033[0;0m')
 
-        else: # gen_id > 1
+        else:  # gen_id > 1
             while True:
                 try:
                     query = input('\n\t Select a Tree to evaluate: ')
@@ -236,9 +236,9 @@ def pause(menu_dict):
                 except KeyboardInterrupt:
                     print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    elif menu == 'p': # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
+    elif menu == 'p':  # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
 
-        if menu_dict['gen_id'] == 1: # first generation
+        if menu_dict['gen_id'] == 1:  # first generation
             while True:
                 try:
                     query = input('\n\t Select a Tree to print: ')
@@ -255,7 +255,7 @@ def pause(menu_dict):
                 except KeyboardInterrupt:
                     print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-        else: # second or higher generation
+        else:  # second or higher generation
             while True:
                 try:
                     query = input('\n\t Select a Tree to print: ')
@@ -279,7 +279,7 @@ def pause(menu_dict):
         print('\n\t Current working directory:', menu_dict['path'])
 
     # NEED TO REBUILD
-    #elif menu == 'load': # load population_s to replace population_a
+    #elif menu == 'load':  # load population_s to replace population_a
     #    while True:
     #        try:
     #            query = input('\n\t Overwrite the current population with population_s? (\033[1my\033[0;0m\033[32m/\033[1mn\033[0;0m\033[32m)\033[0;0m ')
@@ -289,13 +289,13 @@ def pause(menu_dict):
     #        except ValueError: print('\n\t\033[32m Enter (\033[1my\033[0;0m)es or (\033[1mn\033[0;0m)o. Try again ...\033[0;0m')
     #        except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    elif menu == 'w': # write the evolving population_b to disk
+    elif menu == 'w':  # write the evolving population_b to disk
         if menu_dict['gen_id'] > 1:
             menu_dict['input_a'] = 'write'
         else:
             print('\n\t\033[36m The evolving population_b does not yet exist\033[0;0m')
 
-    elif menu == 'add': # add generations and continue a GP run
+    elif menu == 'add':  # add generations and continue a GP run
 
         if menu_dict['gen_id'] == menu_dict['gen_max']:
             while True:
@@ -317,7 +317,7 @@ def pause(menu_dict):
         else:
             menu_dict['input_a'] = 'add'
 
-    elif menu == 'q': # quit (in case you didn't figure that one out :)
+    elif menu == 'q':  # quit (in case you didn't figure that one out :)
         while True:
             try:
                 query = input('\n\t\033[32m Quit Karoo GP? (\033[1my\033[0;0m\033[32m/\033[1mn\033[0;0m\033[32m)\033[0;0m ')
