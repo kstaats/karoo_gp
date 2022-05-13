@@ -67,7 +67,7 @@ operators = {
     'atan': tf.atan, # e.g., atan(a)
     }
 
-np.set_printoptions(linewidth = 320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
+np.set_printoptions(linewidth=320) # set the terminal to print 320 characters before line-wrapping in order to view Trees
 
 
 class Base_GP(object):
@@ -290,7 +290,7 @@ class Base_GP(object):
             #print('\n\t\033[36mTree', input_b, 'yields (raw):', self.algo_raw, '\033[0;0m') # print the raw expression
             print('\n\t\033[36mTree', input_b, 'yields (sym):\033[1m', self.algo_sym, '\033[0;0m') # print the sympified expression
 
-            result = self.fx_fitness_eval(str(self.algo_sym), self.data_test, get_pred_labels = True) # might change to algo_raw evaluation
+            result = self.fx_fitness_eval(str(self.algo_sym), self.data_test, get_pred_labels=True) # might change to algo_raw evaluation
             if self.kernel == 'c':
                 self.fx_fitness_test_classify(result) # TF tested 2017 02/02
             elif self.kernel == 'r':
@@ -383,23 +383,23 @@ class Base_GP(object):
         data_dict = {'c':karoo_dir + '/files/data_CLASSIFY.csv', 'r':karoo_dir + '/files/data_REGRESS.csv', 'm':karoo_dir + '/files/data_MATCH.csv', 'p':karoo_dir + '/files/data_PLAY.csv'}
 
         if len(sys.argv) == 1: # load data from the default karoo_gp/files/ directory
-            data_x = np.loadtxt(data_dict[self.kernel], skiprows = 1, delimiter = ',', dtype = float)
+            data_x = np.loadtxt(data_dict[self.kernel], skiprows=1, delimiter=',', dtype=float)
             data_x = data_x[:,0:-1] # load all but the right-most column
-            data_y = np.loadtxt(data_dict[self.kernel], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
+            data_y = np.loadtxt(data_dict[self.kernel], skiprows=1, usecols=(-1,), delimiter=',', dtype=float) # load only right-most column (class labels)
             header = open(data_dict[self.kernel],'r') # open file to be read (below)
             self.dataset = data_dict[self.kernel] # copy the name only
 
         elif len(sys.argv) == 2: # load an external data file
-            data_x = np.loadtxt(sys.argv[1], skiprows = 1, delimiter = ',', dtype = float)
+            data_x = np.loadtxt(sys.argv[1], skiprows=1, delimiter=',', dtype=float)
             data_x = data_x[:,0:-1] # load all but the right-most column
-            data_y = np.loadtxt(sys.argv[1], skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
+            data_y = np.loadtxt(sys.argv[1], skiprows=1, usecols=(-1,), delimiter=',', dtype=float) # load only right-most column (class labels)
             header = open(sys.argv[1],'r') # open file to be read (below)
             self.dataset = sys.argv[1] # copy the name only
 
         elif len(sys.argv) > 2: # receive filename and additional arguments from karoo_gp.py via argparse
-            data_x = np.loadtxt(filename, skiprows = 1, delimiter = ',', dtype = float)
+            data_x = np.loadtxt(filename, skiprows=1, delimiter=',', dtype=float)
             data_x = data_x[:,0:-1] # load all but the right-most column
-            data_y = np.loadtxt(filename, skiprows = 1, usecols = (-1,), delimiter = ',', dtype = float) # load only right-most column (class labels)
+            data_y = np.loadtxt(filename, skiprows=1, usecols=(-1,), delimiter=',', dtype=float) # load only right-most column (class labels)
             header = open(filename,'r') # open file to be read (below)
             self.dataset = filename # copy the name only
 
@@ -407,7 +407,7 @@ class Base_GP(object):
         self.fitness_type = fitt_dict[self.kernel] # load fitness type
 
         func_dict = {'c':karoo_dir + '/files/operators_CLASSIFY.csv', 'r':karoo_dir + '/files/operators_REGRESS.csv', 'm':karoo_dir + '/files/operators_MATCH.csv', 'p':karoo_dir + '/files/operators_PLAY.csv'}
-        self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype = str) # load the user defined functions (operators)
+        self.functions = np.loadtxt(func_dict[self.kernel], delimiter=',', skiprows=1, dtype=str) # load the user defined functions (operators)
         # load the user defined terminals (operands)
         self.terminals = header.readline().split(',')
         self.terminals[-1] = self.terminals[-1].replace('\n','')
@@ -420,7 +420,7 @@ class Base_GP(object):
             data_test = np.c_[data_x, data_y]
 
         else: # if larger than 10, we run the data through the SciKit Learn's 'random split' function
-            x_train, x_test, y_train, y_test = skcv.train_test_split(data_x, data_y, test_size = 0.2) # 80/20 TRAIN/TEST split
+            x_train, x_test, y_train, y_test = skcv.train_test_split(data_x, data_y, test_size=0.2) # 80/20 TRAIN/TEST split
             data_x, data_y = [], [] # clear from memory
 
             data_train = np.c_[x_train, y_train] # recombine each row of data with its associated class label (right column)
@@ -502,10 +502,10 @@ class Base_GP(object):
 
                     else:
                         if self.tree.shape[1] == 0:
-                            self.tree = np.append(self.tree, [row], axis = 1) # append first row to Tree
+                            self.tree = np.append(self.tree, [row], axis=1) # append first row to Tree
 
                         else:
-                            self.tree = np.append(self.tree, [row], axis = 0) # append subsequent rows to Tree
+                            self.tree = np.append(self.tree, [row], axis=0) # append subsequent rows to Tree
 
                     if self.tree.shape[0] == 13:
                         self.population_a.append(self.tree) # append complete Tree to population list
@@ -651,7 +651,7 @@ class Base_GP(object):
             # test the most fit Tree and write to the .txt log
             self.fx_eval_poly(self.population_b[int(fittest_tree)]) # generate the raw and sympified expression for the given Tree using SymPy
             expr = str(self.algo_sym) # get simplified expression and process it by TF - tested 2017 02/02
-            result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels = True)
+            result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels=True)
 
             file.write('\n\n Tree ' + str(fittest_tree) + ' is the most fit, with expression:')
             file.write('\n\n ' + str(self.algo_sym))
@@ -1238,7 +1238,7 @@ class Base_GP(object):
         return
 
 
-    def fx_fitness_eval(self, expr, data, get_pred_labels = False):
+    def fx_fitness_eval(self, expr, data, get_pred_labels=False):
 
         '''
         Computes tree expression using TensorFlow (TF) returning results and fitness scores.
@@ -1317,7 +1317,7 @@ class Base_GP(object):
                     # was breaking with upgrade from Tensorflow 1.1 to 1.3; fixed by Iurii by replacing [] with () as of 20171026
                     # if get_pred_labels: pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = [tf.int32, tf.string], swap_memory = True)
                     if get_pred_labels:
-                        pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype = (tf.int32, tf.string), swap_memory = True)
+                        pred_labels = tf.map_fn(self.fx_fitness_labels_map, result, dtype=(tf.int32, tf.string), swap_memory=True)
 
                     skew = (self.class_labels / 2) - 1
 
@@ -2050,7 +2050,7 @@ class Base_GP(object):
                 tree[5][branch_top] = 'term' # replace type ('func' to 'term' or 'term' to 'term')
                 tree[6][branch_top] = self.terminals[rnd] # replace label
 
-                tree = np.delete(tree, branch[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
+                tree = np.delete(tree, branch[1:], axis=1) # delete all nodes beneath point of mutation ('branch_top')
                 tree = self.fx_evolve_node_arity_fix(tree) # fix all node arities
                 tree = self.fx_evolve_child_link_fix(tree) # fix all child links
                 tree = self.fx_evolve_node_renum(tree) # renumber all 'NODE_ID's
@@ -2117,7 +2117,7 @@ class Base_GP(object):
             offspring[6][branch_top] = parent[6][crossover] # replace label with that of a particular node in 'branch_x'
             offspring[8][branch_top] = 0 # set terminal arity
 
-            offspring = np.delete(offspring, branch_y[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
+            offspring = np.delete(offspring, branch_y[1:], axis=1) # delete all nodes beneath point of mutation ('branch_top')
             offspring = self.fx_evolve_child_link_fix(offspring) # fix all child links
             offspring = self.fx_evolve_node_renum(offspring) # renumber all 'NODE_ID's
 
@@ -2204,7 +2204,7 @@ class Base_GP(object):
         tree[6][branch_top] = self.tree[6][1] # copy node_label from new tree
         tree[8][branch_top] = self.tree[8][1] # copy node_arity from new tree
 
-        tree = np.delete(tree, branch[1:], axis = 1) # delete all nodes beneath point of mutation ('branch_top')
+        tree = np.delete(tree, branch[1:], axis=1) # delete all nodes beneath point of mutation ('branch_top')
 
         c_buffer = self.fx_evolve_c_buffer(tree, branch_top) # generate c_buffer for point of mutation ('branch_top')
         tree = self.fx_evolve_child_insert(tree, branch_top, c_buffer) # insert a single new node ('branch_top')
@@ -2574,7 +2574,7 @@ class Base_GP(object):
 
             else: pass # as int(tree[4][n]) < depth and will remain untouched
 
-        tree = np.delete(tree, nodes, axis = 1) # delete nodes deeper than the maximum allowed Tree depth
+        tree = np.delete(tree, nodes, axis=1) # delete nodes deeper than the maximum allowed Tree depth
         tree = self.fx_evolve_node_arity_fix(tree) # fix all node arities
 
         return tree
