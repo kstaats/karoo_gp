@@ -73,8 +73,8 @@ remains commented, but can be readily re-activated (remember to comment the next
 population summaries are now conducted in menu.pause(), and any associatede executions (Tree validation) are conducted
 fully in the base_class.
 
-	karoo_gp.py imports karoo_gp_base_class.py
-		karoo_gp_base_class.py imports karoo_gp_pause.py
+    karoo_gp.py imports karoo_gp_base_class.py
+        karoo_gp_base_class.py imports karoo_gp_pause.py
 
 The user's initial run configuration is conducted in karoo_gp.py. Those settings are passed into karoo_gp_base_class.py
 where they are used to guide the run. At each 'pause' (generation, interactive, or debug display modes; or end of run)
@@ -137,9 +137,9 @@ Created the 'modules/' directory to hold karoo_base_class and in the future, mor
 1) Merged 'Karoo GP Server' and 'Karoo GP Main' into a single 'Karoo GP'. So, just one user script now that provides the
 user interface (TUI) or scripting (comnand line). There are now 3 ways to run Karoo:
 
-	a) $ run karoo_gp.py
-	b) $ run karoo_gp.py [path/][dataset.csv]
-	c) $ run karoo_gp.py -fil [path/][dataset.csv] -[arg] [val] -[arg] [val] ... etc.
+    a) $ run karoo_gp.py
+    b) $ run karoo_gp.py [path/][dataset.csv]
+    c) $ run karoo_gp.py -fil [path/][dataset.csv] -[arg] [val] -[arg] [val] ... etc.
 
 Where [arg][val] are the sysargs defined in the body of karoo_gp.py and the User Guide. Both (a) and (b) will auto-
 run the Desktop interface, providing a user query for each entry and holding the user within the script until quit;
@@ -192,14 +192,14 @@ c) Moved the four top-level functions used to construct the next generation of t
 category: fx_karoo_reproduce, fx_nextgen_point_mutate, fx_nextgen_branch_mutate, fx_nextgen_crossover
 
 The final breakdown is as follows:
-		fx_karoo_						Methods to Run Karoo GP
-		fx_data_						Methods to Load and Archive Data
-		fx_init_						Methods to Construct the 1st Generation
-		fx_eval_						Methods to Evaluate a Tree
-		fx_fitness_					Methods to Train and Test a Tree for Fitness
-		fx_nextgen_					Methods to Construct the next Generation
-		fx_evolve_					Methods to Evolve a Population
-		fx_display_					Methods to Visualize a Tree
+    fx_karoo_          Methods to Run Karoo GP
+    fx_data_           Methods to Load and Archive Data
+    fx_init_           Methods to Construct the 1st Generation
+    fx_eval_           Methods to Evaluate a Tree
+    fx_fitness_        Methods to Train and Test a Tree for Fitness
+    fx_nextgen_        Methods to Construct the next Generation
+    fx_evolve_         Methods to Evolve a Population
+    fx_display_        Methods to Visualize a Tree
 
 That's it! --kai
 
@@ -223,11 +223,11 @@ Iurii fixed a minor bug in which the MATCHING function (used only for demonstrat
 the output being (apprently) correct. This was discovered to be due to the way in which TensorFlow was handling
 floating points and precision, as follows:
 
-	[ -0.29999995   0.69999981  13.69999981  16.70000076  19.70000076
-		22.70000076  25.70000076  28.70000076  31.70000076  34.70000076]
+    [ -0.29999995   0.69999981  13.69999981  16.70000076  19.70000076
+      22.70000076  25.70000076  28.70000076  31.70000076  34.70000076]
 
-	[ -0.30000001   0.69999999  13.69999981  16.70000076  19.70000076
-		22.70000076  25.70000076  28.70000076  31.70000076  34.70000076]
+    [ -0.30000001   0.69999999  13.69999981  16.70000076  19.70000076
+      22.70000076  25.70000076  28.70000076  31.70000076  34.70000076]
 
 As you can see, the values are close, but not equal and so a "match" was not resolved. Iurii used numpy.allclose.html
 as a reference to resolve the situation.
@@ -260,36 +260,36 @@ TensorFlow, as given here: https://www.tensorflow.org/api_guides/python/math_ops
 Now there is a mapping in Karoo GP that connects an expression to the TF function:
 
     OPERATOR        EXAMPLE
-		add             a + b
-		subtract        a - b
-		multiply        a * b
-		divide          a / b
-		pow             a ** 2
+    add             a + b
+    subtract        a - b
+    multiply        a * b
+    divide          a / b
+    pow             a ** 2
 
-		negative        -a
-		logical_and     a and b
-		logical_or      a or b
-		logical_not     not a
-		equal           a == b
-		not_equal       a != b
-		less            a < b
-		less_equal      a <= b
-		greater         a > b
-		greater_equal   a >= 1
+    negative        -a
+    logical_and     a and b
+    logical_or      a or b
+    logical_not     not a
+    equal           a == b
+    not_equal       a != b
+    less            a < b
+    less_equal      a <= b
+    greater         a > b
+    greater_equal   a >= 1
 
-		abs             abs(a)
-		sign            sign(a)
-		square          square(a)
-		sqrt            sqrt(a)
-		pow             pow(a, b)
-		log             log(a)
-		log1p           log1p(a)
-		cos             cos(a)
-		sin             sin(a)
-		tan             tan(a)
-		acos            acos(a)
-		asin            asin(a)
-		atan            atan(a)
+    abs             abs(a)
+    sign            sign(a)
+    square          square(a)
+    sqrt            sqrt(a)
+    pow             pow(a, b)
+    log             log(a)
+    log1p           log1p(a)
+    cos             cos(a)
+    sin             sin(a)
+    tan             tan(a)
+    acos            acos(a)
+    asin            asin(a)
+    atan            atan(a)
 
 Now when Karoo parses an expression like "asin(x + 10)" it first parses and transforms the args "x + 10" and passes
 the output to “tf.asin” function. So now Karoo is able to evaluate incredibly complx mathematical expressions.
@@ -297,10 +297,10 @@ the output to “tf.asin” function. So now Karoo is able to evaluate incredibl
 It is important to refer to karoo_gp/files/templates/operators_list.txt to learn how to enage operators_[KERNEL].csv
 In its current form Karoo requires some operators, such as abs, cos, and sin to have a unique formating:
 
-	+ sin,2
-	- sin,2
-	* sin,2
-	/ sin,2
+    + sin,2
+    - sin,2
+    * sin,2
+    / sin,2
 
 In a future version of Karoo, this will be managed automatically by the recursive function which extracts the
 expression from a GP Tree.
@@ -466,8 +466,8 @@ In karoo_gp_base_class.py
  - Added support for the Sympy 'lambdify' function in 'fx_karoo_data_load' (see explanation below)
  - Added a draft means of catching divide-by-zero errors in the new 'lambdify' function
  - Discovered the prior 'fx_eval_subs' uncorrectly applied a value of 1 to the variable 'result' as a means to
- 	replace the 'zoo' function for divide by zero errors. However, this could inadvertently undermine the success of
- 	Classification and Regression runs. My apology for not catching this sooner.
+   replace the 'zoo' function for divide by zero errors. However, this could inadvertently undermine the success of
+   Classification and Regression runs. My apology for not catching this sooner.
 
 "While attending the CHEAPR 2016 workshop hosted by the Center for Cosmology and Astro-Particle Physics, The Ohio State
 University, Michael Zevin of Northwestern University proposed that Karoo GP *should* be able to process trees far faster
@@ -507,7 +507,7 @@ Sorry. Switched all references to "LOGIC" back to "BOOLEAN". Don't ask.
 In karoo_gp_base_class.py
  - removed some programmer's comments from experiments resolved
  - modified the screen output for the multi-class classifier such that it is more clear that p (a) is actually
- 	predicted (actual) with the addition of the tag "label"
+   predicted (actual) with the addition of the tag "label"
 
 
 
@@ -623,20 +623,20 @@ operators descriptions now feature visuals and revised descriptions, as to many 
 In the karoo_gp/tools/ directory, all scripts have undergone updates, 2 of which now offer automated scaling and a
 user interface that in the original versions were not present, as follows:
 
-	karoo_data_sort.py (formerly karoo_features_sort.py)
-	This script now engages the user with a query for the number of class labels and the number of data points (rows)
-	for the new, randomly generated subset of the parent dataset. This script is designed to be used prior to
-	karoo_normalise.py.
+    karoo_data_sort.py (formerly karoo_features_sort.py)
+    This script now engages the user with a query for the number of class labels and the number of data points (rows)
+    for the new, randomly generated subset of the parent dataset. This script is designed to be used prior to
+    karoo_normalise.py.
 
-	karoo_normalise.py
-	This script now auto-scales to any number of columns and rows (within the limit of your computer's capability),
-	and features a text-based user interface. This script is designed to be used following karoo_data_sort.py.
+    karoo_normalise.py
+    This script now auto-scales to any number of columns and rows (within the limit of your computer's capability),
+    and features a text-based user interface. This script is designed to be used following karoo_data_sort.py.
 
-	karoo_multi-classifier.py
-	This script functions as before, but with a minor bug fixed in which the final class was mislabeled.
+    karoo_multi-classifier.py
+    This script functions as before, but with a minor bug fixed in which the final class was mislabeled.
 
-	karoo_iris_plot.py
-	This script functions as before, but with improved in-script documentation and cleaner code.
+    karoo_iris_plot.py
+    This script functions as before, but with improved in-script documentation and cleaner code.
 
 
 In development now are a number of updates and improvements to the base_class such that Karoo GP will more readily
