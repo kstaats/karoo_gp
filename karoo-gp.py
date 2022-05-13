@@ -51,18 +51,18 @@ from karoo_gp import base_class, __version__
 gp = base_class.Base_GP()
 
 os.system('clear')
-print ('\n\033[36m\033[1m')
-print ('\t **   **   ******    *****    ******    ******       ******    ******')
-print ('\t **  **   **    **  **   **  **    **  **    **     **        **    **')
-print ('\t ** **    **    **  **   **  **    **  **    **     **        **    **')
-print ('\t ****     ********  ******   **    **  **    **     **   ***  *******')
-print ('\t ** **    **    **  ** **    **    **  **    **     **    **  **')
-print ('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
-print ('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
-print ('\t **    ** **    **  **    **  ******    ******       ******   **')
-print ('\033[0;0m')
-print ('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version {}\033[0;0m'.format(__version__))
-print ('')
+print('\n\033[36m\033[1m')
+print('\t **   **   ******    *****    ******    ******       ******    ******')
+print('\t **  **   **    **  **   **  **    **  **    **     **        **    **')
+print('\t ** **    **    **  **   **  **    **  **    **     **        **    **')
+print('\t ****     ********  ******   **    **  **    **     **   ***  *******')
+print('\t ** **    **    **  ** **    **    **  **    **     **    **  **')
+print('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
+print('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
+print('\t **    ** **    **  **    **  ******    ******       ******   **')
+print('\033[0;0m')
+print('\t\033[36m Genetic Programming in Python with TensorFlow - by Kai Staats, version {}\033[0;0m'.format(__version__))
+print('')
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -76,7 +76,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
             query = input('\t Select (c)lassification, (r)egression, (m)atching, or (p)lay (default m): ')
             if query in ['c','r','m','p','']: kernel = query or 'm'; break
             else: raise ValueError()
-        except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
+        except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
         except KeyboardInterrupt: sys.exit()
 
     if kernel == 'p': # play mode
@@ -85,7 +85,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 query = input('\t Select (f)ull or (g)row (default g): ')
                 if query in ['f','g','']: tree_type = query or 'f'; break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
+            except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
             except KeyboardInterrupt: sys.exit()
 
         while True:
@@ -94,7 +94,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 if query == '': tree_depth_base = 1; break
                 elif int(query) in list(range(1,11)): tree_depth_base = int(query); break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
+            except ValueError: print('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
             except KeyboardInterrupt: sys.exit()
 
         tree_depth_max = tree_depth_base
@@ -112,7 +112,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 query = input('\t Select (f)ull, (g)row, or (r)amped 50/50 method (default r): ')
                 if query in ['f','g','r','']: tree_type = query or 'r'; break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
+            except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
             except KeyboardInterrupt: sys.exit()
 
         while True:
@@ -121,7 +121,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 if query == '': tree_depth_base = 3; break
                 elif int(query) in list(range(1,11)): tree_depth_base = int(query); break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
+            except ValueError: print('\t\033[32m Enter a number from 1 including 10. Try again ...\n\033[0;0m')
             except KeyboardInterrupt: sys.exit()
 
         while True:
@@ -130,7 +130,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 if query == '': tree_depth_max = tree_depth_base; break
                 elif int(query) in list(range(tree_depth_base,11)): tree_depth_max = int(query); break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Enter a number from %s including 10. Try again ...\n\033[0;0m' %str(tree_depth_base))
+            except ValueError: print('\t\033[32m Enter a number from %s including 10. Try again ...\n\033[0;0m' %str(tree_depth_base))
             except KeyboardInterrupt: sys.exit()
 
         max_nodes = 2**(tree_depth_base+1)-1 # calc the max number of nodes for the given depth
@@ -141,7 +141,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 if query == '': tree_depth_min = 3; break
                 elif int(query) in list(range(3,max_nodes + 1)): tree_depth_min = int(query); break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Enter a number from 3 including %s. Try again ...\n\033[0;0m' %str(max_nodes))
+            except ValueError: print('\t\033[32m Enter a number from 3 including %s. Try again ...\n\033[0;0m' %str(max_nodes))
             except KeyboardInterrupt: sys.exit()
 
         #while True:
@@ -150,7 +150,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 #if query == '': swim = 'p'; break
                 #elif query in ['p','f']: swim = query; break
                 #else: raise ValueError()
-            #except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
+            #except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
             #except KeyboardInterrupt: sys.exit()
 
         while True:
@@ -159,7 +159,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 if query == '': tree_pop_max = 100; break
                 elif int(query) in list(range(1,1001)): tree_pop_max = int(query); break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Enter a number from 1 including 1000. Try again ...\n\033[0;0m')
+            except ValueError: print('\t\033[32m Enter a number from 1 including 1000. Try again ...\n\033[0;0m')
             except KeyboardInterrupt: sys.exit()
 
         # calculate the tournament size
@@ -173,7 +173,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                 if query == '': gen_max = 10; break
                 elif int(query) in list(range(1,101)): gen_max = int(query); break
                 else: raise ValueError()
-            except ValueError: print ('\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m')
+            except ValueError: print('\t\033[32m Enter a number from 1 including 100. Try again ...\n\033[0;0m')
             except KeyboardInterrupt: sys.exit()
 
         if gen_max > 1:
@@ -182,7 +182,7 @@ if len(sys.argv) < 3: # either no command line argument, or only a filename is p
                     query = input('\t Display (i)nteractive, (g)eneration, (m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
                     if query in ['i','g','m','s','db','']: display = query or 'm'; break
                     else: raise ValueError()
-                except ValueError: print ('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
+                except ValueError: print('\t\033[32m Select from the options given. Try again ...\n\033[0;0m')
                 except KeyboardInterrupt: sys.exit()
 
         else: display = 's' # display mode is not used, but a value must be passed
