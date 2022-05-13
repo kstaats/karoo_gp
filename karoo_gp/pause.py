@@ -16,12 +16,17 @@ def pause(menu_dict):
     while True:
         try:
             menu = input('\n\t\033[36m (pause) \033[0;0m')
-            if menu in options: break
-            else: raise ValueError()
-        except ValueError: print('\n\t\033[32m Enter \033[1m?\033[0;0m\033[32m to review your options. Try again ...\033[0;0m')
-        except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+            if menu in options:
+                break
+            else:
+                raise ValueError()
+        except ValueError:
+            print('\n\t\033[32m Enter \033[1m?\033[0;0m\033[32m to review your options. Try again ...\033[0;0m')
+        except KeyboardInterrupt:
+            print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    if menu == '': menu_dict['input_a'] = 'esc' # exit (pause) with ENTER
+    if menu == '':
+        menu_dict['input_a'] = 'esc' # exit (pause) with ENTER
 
     elif menu == '?' or menu == 'help':
         print('\n\t\033[32m Select from one of the following options:\033[0;0m')
@@ -49,22 +54,38 @@ def pause(menu_dict):
         print('\t\033[36m\033[1m add \t\033[0;0m add generations and continue your run')
         print('\t\033[36m\033[1m q \t\033[0;0m quit Karoo GP')
 
-    elif menu == 'i': menu_dict['display'] = 'i'; print('\n\t Interactive display mode engaged (for control freaks)')
-    elif menu == 'g': menu_dict['display'] = 'g'; print('\n\t Generation display mode engaged (for recovering control freaks)')
-    elif menu == 'm': menu_dict['display'] = 'm'; print('\n\t Minimal display mode engaged (for GP gurus)')
-    elif menu == 's': menu_dict['display'] = 's'; print('\n\t Silent display mode engaged (for zen masters)')
-    elif menu == 'db': menu_dict['display'] = 'db'; print('\n\t De-Bug display mode engaged (for evolutionary biologists)')
+    elif menu == 'i':
+        menu_dict['display'] = 'i'
+        print('\n\t Interactive display mode engaged (for control freaks)')
+    elif menu == 'g':
+        menu_dict['display'] = 'g'
+        print('\n\t Generation display mode engaged (for recovering control freaks)')
+    elif menu == 'm':
+        menu_dict['display'] = 'm'
+        print('\n\t Minimal display mode engaged (for GP gurus)')
+    elif menu == 's':
+        menu_dict['display'] = 's'
+        print('\n\t Silent display mode engaged (for zen masters)')
+    elif menu == 'db':
+        menu_dict['display'] = 'db'
+        print('\n\t De-Bug display mode engaged (for evolutionary biologists)')
 
     elif menu == 'ts': # adjust the tournament size
         while True:
             try:
                 print('\n\t The current tournament size is:', menu_dict['tourn_size'])
                 query = input('\t Adjust the tournament size (suggest 7 for each 100): ')
-                if query == '': break
-                elif int(query) in list(range(2,menu_dict['tree_pop_max'] + 1)): menu_dict['tourn_size'] = int(query); break # rebuilt 20190603
-                else: raise ValueError()
-            except ValueError: print('\n\t\033[32m Enter a number from 2 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == '':
+                    break
+                elif int(query) in list(range(2,menu_dict['tree_pop_max'] + 1)):
+                    menu_dict['tourn_size'] = int(query)
+                    break # rebuilt 20190603
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 2 including %s. Try again ...\033[0;0m' % str(menu_dict['tree_pop_max']))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     elif menu == 'min': # adjust the minimum number of nodes per Tree
         # max_nodes = 2**(tree_depth_base +1) - 1 # NEED TO calc to replace upper limit in range but tree_depth_base is not global - 2018 04/22
@@ -72,11 +93,17 @@ def pause(menu_dict):
             try:
                 print('\n\t The current minimum number of nodes is:', menu_dict['tree_depth_min'])
                 query = input('\t Adjust the minimum number of nodes for all Trees (min 3): ')
-                if query == '': break
-                elif int(query) in list(range(3,1000)): menu_dict['tree_depth_min'] = int(query); break # rebuilt 20190603
-                else: raise ValueError()
-            except ValueError: print('\n\t\033[32m Enter a number from 3 including 1000. Try again ...\033[0;0m')
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == '':
+                    break
+                elif int(query) in list(range(3,1000)):
+                    menu_dict['tree_depth_min'] = int(query)
+                    break # rebuilt 20190603
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 3 including 1000. Try again ...\033[0;0m')
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     # NEED TO ADD
     #elif menu == 'max': # adjust the maximum Tree depth
@@ -94,77 +121,120 @@ def pause(menu_dict):
 
     elif menu == 'bal': # adjust the balance of genetic operators'
         print('\n\t The current balance of genetic operators is:')
-        print('\t\t Reproduction:', menu_dict['evolve_repro']); tmp_repro = menu_dict['evolve_repro']
-        print('\t\t Point Mutation:', menu_dict['evolve_point']); tmp_point = menu_dict['evolve_point']
-        print('\t\t Branch Mutation:', menu_dict['evolve_branch']); tmp_branch = menu_dict['evolve_branch']
-        print('\t\t Crossover:', menu_dict['evolve_cross'], '\n'); tmp_cross = menu_dict['evolve_cross']
+        print('\t\t Reproduction:', menu_dict['evolve_repro'])
+        tmp_repro = menu_dict['evolve_repro']
+        print('\t\t Point Mutation:', menu_dict['evolve_point'])
+        tmp_point = menu_dict['evolve_point']
+        print('\t\t Branch Mutation:', menu_dict['evolve_branch'])
+        tmp_branch = menu_dict['evolve_branch']
+        print('\t\t Crossover:', menu_dict['evolve_cross'], '\n')
+        tmp_cross = menu_dict['evolve_cross']
 
         while True:
             try:
                 query = input('\t Enter quantity of Trees to be generated by Reproduction: ')
-                if query == '': break
-                elif int(query) in list(range(0,1000)): tmp_repro = int(query); break
-                else: raise ValueError()
-            except ValueError: print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == '':
+                    break
+                elif int(query) in list(range(0,1000)):
+                    tmp_repro = int(query)
+                    break
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
         while True:
             try:
                 query = input('\t Enter quantity of Trees to be generated by Point Mutation: ')
-                if query == '': break
-                elif int(query) in list(range(0,1000)): tmp_point = int(query); break
-                else: raise ValueError()
-            except ValueError: print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == '':
+                    break
+                elif int(query) in list(range(0,1000)):
+                    tmp_point = int(query)
+                    break
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
         while True:
             try:
                 query = input('\t Enter quantity of Trees to be generated by Branch Mutation: ')
-                if query == '': break
-                elif int(query) in list(range(0,1000)): tmp_branch = int(query); break
-                else: raise ValueError()
-            except ValueError: print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == '':
+                    break
+                elif int(query) in list(range(0,1000)):
+                    tmp_branch = int(query)
+                    break
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
         while True:
             try:
                 query = input('\t Enter quantity of Trees to be generated by Crossover: ')
-                if query == '': break
-                elif int(query) in list(range(0,1000)): tmp_cross = int(query); break
-                else: raise ValueError()
-            except ValueError: print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == '':
+                    break
+                elif int(query) in list(range(0,1000)):
+                    tmp_cross = int(query)
+                    break
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 0 including %s. Try again ...\033[0;0m' %str(menu_dict['tree_pop_max']))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
         if tmp_repro + tmp_point + tmp_branch + tmp_cross != menu_dict['tree_pop_max']:
             print('\n\t The sum of the above does not equal %s. Try again ...' %str(menu_dict['tree_pop_max']))
 
         else:
             print('\n\t The revised balance of genetic operators is:')
-            print('\t\t Reproduction:', tmp_repro); menu_dict['evolve_repro'] = tmp_repro
-            print('\t\t Point Mutation:', tmp_point); menu_dict['evolve_point'] = tmp_point
-            print('\t\t Branch Mutation:', tmp_branch); menu_dict['evolve_branch'] = tmp_branch
-            print('\t\t Crossover:', tmp_cross); menu_dict['evolve_cross'] = tmp_cross
+            print('\t\t Reproduction:', tmp_repro)
+            menu_dict['evolve_repro'] = tmp_repro
+            print('\t\t Point Mutation:', tmp_point)
+            menu_dict['evolve_point'] = tmp_point
+            print('\t\t Branch Mutation:', tmp_branch)
+            menu_dict['evolve_branch'] = tmp_branch
+            print('\t\t Crossover:', tmp_cross)
+            menu_dict['evolve_cross'] = tmp_cross
 
     elif menu == 'l': # display dictionary of Trees with the best fitness score
         print('\n\t The leading Trees and their associated expressions are:')
-        for n in sorted(menu_dict['fittest_dict']): print('\t ', n, ':', menu_dict['fittest_dict'][n])
+        for n in sorted(menu_dict['fittest_dict']):
+            print('\t ', n, ':', menu_dict['fittest_dict'][n])
 
     elif menu == 'pop': # list Trees in the current population
-        if menu_dict['gen_id'] == 1: menu_dict['input_a'] = 'pop_a'
-        else: menu_dict['input_a'] = 'pop_b'
+        if menu_dict['gen_id'] == 1:
+            menu_dict['input_a'] = 'pop_a'
+        else:
+            menu_dict['input_a'] = 'pop_b'
 
     elif menu == 'e': # evaluate a Tree against the TEST data
-        if menu_dict['gen_id'] == 1: print('\n\t\033[32m You cannot evaluate the foundation population. Be patient ...\033[0;0m')
+        if menu_dict['gen_id'] == 1:
+            print('\n\t\033[32m You cannot evaluate the foundation population. Be patient ...\033[0;0m')
 
         else: # gen_id > 1
             while True:
                 try:
                     query = input('\n\t Select a Tree to evaluate: ')
-                    if query == '': break
-                    elif int(query) in list(range(1, menu_dict['pop_b_len'])): menu_dict['input_a'] = 'eval'; menu_dict['input_b'] = int(query); break
-                    else: raise ValueError()
-                except ValueError: print('\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_b_len'] - 1))
-                except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                    if query == '':
+                        break
+                    elif int(query) in list(range(1, menu_dict['pop_b_len'])):
+                        menu_dict['input_a'] = 'eval'
+                        menu_dict['input_b'] = int(query)
+                        break
+                    else:
+                        raise ValueError()
+                except ValueError:
+                    print('\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_b_len'] - 1))
+                except KeyboardInterrupt:
+                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     elif menu == 'p': # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
 
@@ -172,25 +242,41 @@ def pause(menu_dict):
             while True:
                 try:
                     query = input('\n\t Select a Tree to print: ')
-                    if query == '': break
-                    elif int(query) in list(range(1, menu_dict['pop_a_len'])) and menu_dict['gen_id'] == 1: menu_dict['input_a'] = 'print_a'; menu_dict['input_b'] = int(query); break
-                    else: raise ValueError()
-                except ValueError: print('\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_a_len'] - 1))
-                except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                    if query == '':
+                        break
+                    elif int(query) in list(range(1, menu_dict['pop_a_len'])) and menu_dict['gen_id'] == 1:
+                        menu_dict['input_a'] = 'print_a'
+                        menu_dict['input_b'] = int(query)
+                        break
+                    else:
+                        raise ValueError()
+                except ValueError:
+                    print('\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_a_len'] - 1))
+                except KeyboardInterrupt:
+                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
         else: # second or higher generation
             while True:
                 try:
                     query = input('\n\t Select a Tree to print: ')
-                    if query == '': break
-                    elif int(query) in list(range(1, menu_dict['pop_b_len'])): menu_dict['input_a'] = 'print_b'; menu_dict['input_b'] = int(query); break
-                    else: raise ValueError()
-                except ValueError: print('\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_b_len'] - 1))
-                except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                    if query == '':
+                        break
+                    elif int(query) in list(range(1, menu_dict['pop_b_len'])):
+                        menu_dict['input_a'] = 'print_b'
+                        menu_dict['input_b'] = int(query)
+                        break
+                    else:
+                        raise ValueError()
+                except ValueError:
+                    print('\n\t\033[32m Enter a number from 1 including %s. Try again ...\033[0;0m' %str(menu_dict['pop_b_len'] - 1))
+                except KeyboardInterrupt:
+                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    elif menu == 'id': print('\n\t Current generation:', menu_dict['gen_id'])
+    elif menu == 'id':
+        print('\n\t Current generation:', menu_dict['gen_id'])
 
-    elif menu == 'dir': print('\n\t Current working directory:', menu_dict['path'])
+    elif menu == 'dir':
+        print('\n\t Current working directory:', menu_dict['path'])
 
     # NEED TO REBUILD
     #elif menu == 'load': # load population_s to replace population_a
@@ -204,8 +290,10 @@ def pause(menu_dict):
     #        except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     elif menu == 'w': # write the evolving population_b to disk
-        if menu_dict['gen_id'] > 1: menu_dict['input_a'] = 'write'
-        else: print('\n\t\033[36m The evolving population_b does not yet exist\033[0;0m')
+        if menu_dict['gen_id'] > 1:
+            menu_dict['input_a'] = 'write'
+        else:
+            print('\n\t\033[36m The evolving population_b does not yet exist\033[0;0m')
 
     elif menu == 'add': # add generations and continue a GP run
 
@@ -213,22 +301,35 @@ def pause(menu_dict):
             while True:
                 try:
                     query = input('\n\t\033[3m You are at the end of your run.\033[0;0m\n\t Add more generations to continue (1-100 or ENTER to escape): ')
-                    if query == '': break
-                    elif int(query) in list(range(1,101)): menu_dict['input_a'] = 'add'; menu_dict['input_b'] = int(query); break
-                    else: raise ValueError()
-                except ValueError: print('\n\t\033[32m Enter a number from 1 including 100. Try again ...\033[0;0m')
-                except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                    if query == '':
+                        break
+                    elif int(query) in list(range(1,101)):
+                        menu_dict['input_a'] = 'add'
+                        menu_dict['input_b'] = int(query)
+                        break
+                    else:
+                        raise ValueError()
+                except ValueError:
+                    print('\n\t\033[32m Enter a number from 1 including 100. Try again ...\033[0;0m')
+                except KeyboardInterrupt:
+                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-        else: menu_dict['input_a'] = 'add'
+        else:
+            menu_dict['input_a'] = 'add'
 
     elif menu == 'q': # quit (in case you didn't figure that one out :)
         while True:
             try:
                 query = input('\n\t\033[32m Quit Karoo GP? (\033[1my\033[0;0m\033[32m/\033[1mn\033[0;0m\033[32m)\033[0;0m ')
-                if query == 'y': menu_dict['input_a'] = 'quit'; break
-                else: break
-            except ValueError: print('\n\t\033[32m Enter \033[1my\033[0;0m\033[32mes or \033[1mn\033[0;0m\033[32mo\033[0;0m')
-            except KeyboardInterrupt: print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+                if query == 'y':
+                    menu_dict['input_a'] = 'quit'
+                    break
+                else:
+                    break
+            except ValueError:
+                print('\n\t\033[32m Enter \033[1my\033[0;0m\033[32mes or \033[1mn\033[0;0m\033[32mo\033[0;0m')
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     return menu_dict
 
