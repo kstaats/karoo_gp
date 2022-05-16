@@ -296,23 +296,25 @@ class Base_GP(object):
         '''
 
         ### PART 1 - reset and pack values to send to menu.pause ###
-        menu_dict = {'input_a':'',
-            'input_b':0,
-            'display':self.display,
-            'tree_depth_max':self.tree_depth_max,
-            'tree_depth_min':self.tree_depth_min,
-            'tree_pop_max':self.tree_pop_max,
-            'gen_id':self.gen_id,
-            'gen_max':self.gen_max,
-            'tourn_size':self.tourn_size,
-            'evolve_repro':self.evolve_repro,
-            'evolve_point':self.evolve_point,
-            'evolve_branch':self.evolve_branch,
-            'evolve_cross':self.evolve_cross,
-            'fittest_dict':self.fittest_dict,
-            'pop_a_len':len(self.population_a),
-            'pop_b_len':len(self.population_b),
-            'path':self.path}
+        menu_dict = {
+            'input_a': '',
+            'input_b': 0,
+            'display': self.display,
+            'tree_depth_max': self.tree_depth_max,
+            'tree_depth_min': self.tree_depth_min,
+            'tree_pop_max': self.tree_pop_max,
+            'gen_id': self.gen_id,
+            'gen_max': self.gen_max,
+            'tourn_size': self.tourn_size,
+            'evolve_repro': self.evolve_repro,
+            'evolve_point': self.evolve_point,
+            'evolve_branch': self.evolve_branch,
+            'evolve_cross': self.evolve_cross,
+            'fittest_dict': self.fittest_dict,
+            'pop_a_len': len(self.population_a),
+            'pop_b_len': len(self.population_b),
+            'path': self.path,
+        }
 
         # call the external function menu.pause
         menu_dict = menu.pause(menu_dict)
@@ -477,7 +479,7 @@ class Base_GP(object):
             # load only right-most column (class labels)
             data_y = np.loadtxt(sys.argv[1], skiprows=1, usecols=(-1,),
                                 delimiter=',', dtype=float)
-            header = open(sys.argv[1],'r')  # open file to be read (below)
+            header = open(sys.argv[1], 'r')  # open file to be read (below)
             self.dataset = sys.argv[1]  # copy the name only
 
         elif len(sys.argv) > 2:
@@ -487,7 +489,7 @@ class Base_GP(object):
             # load only right-most column (class labels)
             data_y = np.loadtxt(filename, skiprows=1, usecols=(-1,),
                                 delimiter=',', dtype=float)
-            header = open(filename,'r')  # open file to be read (below)
+            header = open(filename, 'r')  # open file to be read (below)
             self.dataset = filename  # copy the name only
 
         fitt_dict = {'c': 'max', 'r': 'min', 'm': 'max', 'p': ''}
@@ -504,7 +506,7 @@ class Base_GP(object):
                                     skiprows=1, dtype=str)
         # load the user defined terminals (operands)
         self.terminals = header.readline().split(',')
-        self.terminals[-1] = self.terminals[-1].replace('\n','')
+        self.terminals[-1] = self.terminals[-1].replace('\n', '')
         # load the user defined true labels for classification or
         # solutions for regression
         self.class_labels = len(np.unique(data_y))
@@ -558,22 +560,22 @@ class Base_GP(object):
 
         self.filename = {}  # a dictionary to hold .csv filenames
 
-        self.filename.update( {'a':self.path + 'population_a.csv'} )
+        self.filename.update({'a': self.path + 'population_a.csv'})
         # initialise a .csv file for population 'a' (foundation)
         target = open(self.filename['a'], 'w')
         target.close()
 
-        self.filename.update( {'b':self.path + 'population_b.csv'} )
+        self.filename.update({'b': self.path + 'population_b.csv'})
         # initialise a .csv file for population 'b' (evolving)
         target = open(self.filename['b'], 'w')
         target.close()
 
-        self.filename.update( {'f':self.path + 'population_f.csv'} )
+        self.filename.update({'f': self.path + 'population_f.csv'})
         # initialise a .csv file for the final population (test)
         target = open(self.filename['f'], 'w')
         target.close()
 
-        self.filename.update( {'s':self.path + 'population_s.csv'} )
+        self.filename.update({'s': self.path + 'population_s.csv'})
         # initialise a .csv file to manually load (seed)
         target = open(self.filename['s'], 'w')
         target.close()
@@ -1113,7 +1115,7 @@ class Base_GP(object):
             if int(self.tree[4][j]) == self.pop_node_depth - 1:
 
                 # increment through each degree of arity for each parent node
-                for k in range(1,(int(self.tree[8][j]) + 1)):
+                for k in range(1, (int(self.tree[8][j]) + 1)):
                     # set the parent 'NODE_ID'  ...
                     self.pop_node_parent = int(self.tree[3][j])
                     self.fx_init_terminal_gen()  # ... generate a Terminal node
@@ -1176,7 +1178,7 @@ class Base_GP(object):
         c_buffer = 0
 
         # increment through all nodes (exclude 0) in array 'tree'
-        for n in range(1, len(self.tree[3]) ):
+        for n in range(1, len(self.tree[3])):
 
             # find all nodes that reside at the prior (parent) 'node_depth'
             if int(self.tree[4][n]) == self.pop_node_depth - 1:
@@ -1447,7 +1449,7 @@ class Base_GP(object):
                 if fitness >= fitness_best:
                     fitness_best = fitness  # set best fitness score
                     # add to dictionary if fitness >= prior
-                    self.fittest_dict.update({tree_id:self.algo_sym})
+                    self.fittest_dict.update({tree_id: self.algo_sym})
 
             # display best fit Trees for the REGRESSION kernel
             elif self.kernel == 'r':
@@ -1457,7 +1459,7 @@ class Base_GP(object):
                 if fitness <= fitness_best:
                     fitness_best = fitness  # set best fitness score
                     # add to dictionary if fitness <= prior
-                    self.fittest_dict.update({tree_id:self.algo_sym})
+                    self.fittest_dict.update({tree_id: self.algo_sym})
 
             # display best fit Trees for the MATCH kernel
             elif self.kernel == 'm':
@@ -1465,7 +1467,7 @@ class Base_GP(object):
                 if fitness == self.data_train_rows:
                     fitness_best = fitness  # set best fitness score
                     # add to dictionary if all rows match
-                    self.fittest_dict.update({tree_id:self.algo_sym})
+                    self.fittest_dict.update({tree_id: self.algo_sym})
 
             # elif self.kernel == '[other]':  # use others as a template
 
@@ -2851,7 +2853,7 @@ class Base_GP(object):
         new_tree = np.array([
             ['TREE_ID'], ['tree_type'], ['tree_depth_base'],
             ['NODE_ID'], ['node_depth'], ['node_type'], ['node_label'],
-            ['node_parent'],['node_arity'],
+            ['node_parent'], ['node_arity'],
             ['node_c1'], ['node_c2'], ['node_c3'], ['fitness']
         ])
 
@@ -3270,18 +3272,19 @@ class Base_GP(object):
 
         # increment through all possible Tree depths - tested 2016 07/09
         for depth in range(0, self.tree_depth_max + 1):
-            print('\n', ind,'\033[36m Tree Depth:', depth, 'of',
+            print('\n', ind, '\033[36m Tree Depth:', depth, 'of',
                   tree[2][1], '\033[0;0m')
 
             # increment through all nodes (redundant, I know)
             for node in range(1, len(tree[3])):
                 if int(tree[4][node]) == depth:
                     print('')
-                    print(ind,'\033[1m\033[36m NODE:', tree[3][node], '\033[0;0m')
-                    print(ind,'  type:', tree[5][node])
-                    print(ind,'  label:', tree[6][node], '\tparent node:',
+                    print(ind, '\033[1m\033[36m NODE:', tree[3][node],
+                          '\033[0;0m')
+                    print(ind, '  type:', tree[5][node])
+                    print(ind, '  label:', tree[6][node], '\tparent node:',
                           tree[7][node])
-                    print(ind,'  arity:', tree[8][node], '\tchild node(s):',
+                    print(ind, '  arity:', tree[8][node], '\tchild node(s):',
                           tree[9][node], tree[10][node], tree[11][node])
 
             ind = ind + '\t'
@@ -3324,7 +3327,7 @@ class Base_GP(object):
         #  + self.tree_depth_max + 1):
         # increment through all Tree depths - tested 2016 07/09
         for depth in range(int(tree[4][start]), self.tree_depth_max + 1):
-            print('\n', ind,'\033[36m Tree Depth:', depth, 'of',
+            print('\n', ind, '\033[36m Tree Depth:', depth, 'of',
                   tree[2][1], '\033[0;0m')
 
             # increment through all nodes listed in the branch
@@ -3333,11 +3336,11 @@ class Base_GP(object):
 
                 if int(tree[4][node]) == depth:
                     print('')
-                    print(ind,'\033[1m\033[36m NODE:', node, '\033[0;0m')
-                    print(ind,'  type:', tree[5][node])
-                    print(ind,'  label:', tree[6][node], '\tparent node:',
+                    print(ind, '\033[1m\033[36m NODE:', node, '\033[0;0m')
+                    print(ind, '  type:', tree[5][node])
+                    print(ind, '  label:', tree[6][node], '\tparent node:',
                           tree[7][node])
-                    print(ind,'  arity:', tree[8][node], '\tchild node(s):',
+                    print(ind, '  arity:', tree[8][node], '\tchild node(s):',
                           tree[9][node], tree[10][node], tree[11][node])
 
             ind = ind + '\t'

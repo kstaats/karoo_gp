@@ -82,7 +82,7 @@ if len(sys.argv) < 3:
         try:
             query = input('\t Select (c)lassification, (r)egression, '
                           '(m)atching, or (p)lay (default m): ')
-            if query in ['c','r','m','p','']:
+            if query in ['c', 'r', 'm', 'p', '']:
                 kernel = query or 'm'
                 break
             else:
@@ -97,7 +97,7 @@ if len(sys.argv) < 3:
         while True:
             try:
                 query = input('\t Select (f)ull or (g)row (default g): ')
-                if query in ['f','g','']:
+                if query in ['f', 'g', '']:
                     tree_type = query or 'f'
                     break
                 else:
@@ -114,7 +114,7 @@ if len(sys.argv) < 3:
                 if query == '':
                     tree_depth_base = 1
                     break
-                elif int(query) in list(range(1,11)):
+                elif int(query) in list(range(1, 11)):
                     tree_depth_base = int(query)
                     break
                 else:
@@ -140,7 +140,7 @@ if len(sys.argv) < 3:
             try:
                 query = input('\t Select (f)ull, (g)row, or '
                               '(r)amped 50/50 method (default r): ')
-                if query in ['f','g','r','']:
+                if query in ['f', 'g', 'r', '']:
                     tree_type = query or 'r'
                     break
                 else:
@@ -158,7 +158,7 @@ if len(sys.argv) < 3:
                 if query == '':
                     tree_depth_base = 3
                     break
-                elif int(query) in list(range(1,11)):
+                elif int(query) in list(range(1, 11)):
                     tree_depth_base = int(query)
                     break
                 else:
@@ -176,7 +176,7 @@ if len(sys.argv) < 3:
                 if query == '':
                     tree_depth_max = tree_depth_base
                     break
-                elif int(query) in list(range(tree_depth_base,11)):
+                elif int(query) in list(range(tree_depth_base, 11)):
                     tree_depth_max = int(query)
                     break
                 else:
@@ -188,7 +188,7 @@ if len(sys.argv) < 3:
                 sys.exit()
 
         # calc the max number of nodes for the given depth
-        max_nodes = 2**(tree_depth_base+1)-1
+        max_nodes = 2**(tree_depth_base+1) - 1
 
         while True:
             try:
@@ -197,7 +197,7 @@ if len(sys.argv) < 3:
                 if query == '':
                     tree_depth_min = 3
                     break
-                elif int(query) in list(range(3,max_nodes + 1)):
+                elif int(query) in list(range(3, max_nodes+1)):
                     tree_depth_min = int(query)
                     break
                 else:
@@ -233,7 +233,7 @@ if len(sys.argv) < 3:
                 if query == '':
                     tree_pop_max = 100
                     break
-                elif int(query) in list(range(1,1001)):
+                elif int(query) in list(range(1, 1001)):
                     tree_pop_max = int(query)
                     break
                 else:
@@ -260,7 +260,7 @@ if len(sys.argv) < 3:
                 if query == '':
                     gen_max = 10
                     break
-                elif int(query) in list(range(1,101)):
+                elif int(query) in list(range(1, 101)):
                     gen_max = int(query)
                     break
                 else:
@@ -276,7 +276,7 @@ if len(sys.argv) < 3:
                 try:
                     query = input('\t Display (i)nteractive, (g)eneration, '
                                   '(m)iminal, (s)ilent, or (d)e(b)ug (default m): ')
-                    if query in ['i','g','m','s','db','']:
+                    if query in ['i', 'g', 'm', 's', 'db', '']:
                         display = query or 'm'
                         break
                     else:
