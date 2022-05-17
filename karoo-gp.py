@@ -292,13 +292,13 @@ if len(sys.argv) < 3:
     ### additional configuration parameters ###
 
     # quantity of a population generated through Reproduction
-    evolve_repro = int(0.1 * tree_pop_max)
+    evolve_repro = 0.1
     # quantity of a population generated through Point Mutation
-    evolve_point = int(0.1 * tree_pop_max)
+    evolve_point = 0.1
     # quantity of a population generated through Branch Mutation
-    evolve_branch = int(0.2 * tree_pop_max)
+    evolve_branch = 0.2
     # quantity of a population generated through Crossover
-    evolve_cross = int(0.6 * tree_pop_max)
+    evolve_cross = 0.6
     # not required unless an external file is referenced
     filename = ''
     # number of floating points for the round function in 'fx_fitness_eval'
@@ -361,10 +361,10 @@ else:  # 2 or more command line arguments are provided
     tree_pop_max = int(args.pop_max)
     gen_max = int(args.gen_max)
     tourn_size = int(args.tor_size)
-    evolve_repro = int(float(args.evo_r) * tree_pop_max)
-    evolve_point = int(float(args.evo_p) * tree_pop_max)
-    evolve_branch = int(float(args.evo_b) * tree_pop_max)
-    evolve_cross = int(float(args.evo_c) * tree_pop_max)
+    evolve_repro = float(args.evo_r)
+    evolve_point = float(args.evo_p)
+    evolve_branch = float(args.evo_b)
+    evolve_cross = float(args.evo_c)
     filename = str(args.filename)
 
     # display mode is set to (s)ilent
@@ -403,3 +403,4 @@ kwargs = dict(kernel=kernel,
 
 gp = base_class.Base_GP(**kwargs)
 gp.fit()
+gp.fx_karoo_terminate()
