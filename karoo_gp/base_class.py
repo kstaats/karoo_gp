@@ -96,7 +96,11 @@ class Base_GP(object):
     Error checks are quickly located by searching for 'ERROR!'
     '''
 
-    def __init__(self):
+    def __init__(self, kernel='m', tree_type='r', tree_depth_base=3,
+                 tree_depth_max=3, tree_depth_min=None, tree_pop_max=100,
+                 gen_max=10, tourn_size=7, filename='', evolve_repro=0.1,
+                 evolve_point=0.1, evolve_branch=0.2, evolve_cross=0.6, 
+                 display='m', precision=6, swim='p', mode='d'):
 
         '''
         ### Global variables used for data management ###
@@ -145,27 +149,7 @@ class Base_GP(object):
         self.gene_pool = []  # store all Tree IDs for use by Tournament
         self.class_labels = 0  # the number of true class labels (data_y)
 
-        return
-
-
-    #+++++++++++++++++++++++++++++++++++++++++++++
-    #   Methods to Run Karoo GP                  |
-    #+++++++++++++++++++++++++++++++++++++++++++++
-
-    def fx_karoo_gp(self, kernel, tree_type, tree_depth_base, tree_depth_max,
-                    tree_depth_min, tree_pop_max, gen_max, tourn_size,
-                    filename, evolve_repro, evolve_point, evolve_branch,
-                    evolve_cross, display, precision, swim, mode):
-
-        '''
-        This method enables the engagement of the entire Karoo GP application.
-        Instead of returning the user to the pause menu, this script terminates
-        at the command-line, providing support for bash and chron job execution.
-
-        Calld by: user script karoo_gp.py
-
-        Arguments required: (see below)
-        '''
+        # API REFACTOR: Relocated from fx_karoo_gp
 
         ### PART 1 - set global variables to those local values passed from the user script ###
         self.kernel = kernel  # fitness function
@@ -184,7 +168,7 @@ class Base_GP(object):
         self.display = display  # display mode is set to (s)ilent # level of on-screen feedback
         self.precision = precision  # the number of floating points for the round function in 'fx_fitness_eval'
         self.swim = swim  # pass along the gene_pool restriction methodology
-        # mode is engaged at the end of the run, below
+        self.mode = mode  # mode is engaged in fit()
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
@@ -221,6 +205,25 @@ class Base_GP(object):
         # save the first generation of Trees to disk
         self.fx_data_tree_write(self.population_a, 'a')
 
+        return
+
+
+    #+++++++++++++++++++++++++++++++++++++++++++++
+    #   Methods to Run Karoo GP                  |
+    #+++++++++++++++++++++++++++++++++++++++++++++
+
+    def fit(self):
+
+        '''
+        This method enables the engagement of the entire Karoo GP application.
+        Instead of returning the user to the pause menu, this script terminates
+        at the command-line, providing support for bash and chron job execution.
+
+        Calld by: user script karoo_gp.py
+
+        Arguments required: (see below)
+        '''
+
         ### PART 4 - evolve multiple generations of Trees ###
         menu = 1
         while menu != 0:
@@ -244,7 +247,7 @@ class Base_GP(object):
                     ['Karoo GP by Kai Staats - Generation ' + str(self.gen_id)]
                 )
 
-            if mode == 's':
+            if self.mode == 's':
                 # (s)erver mode - termination with completiont of prescribed run
                 menu = 0
             else:

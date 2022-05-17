@@ -53,7 +53,6 @@ import os
 import sys
 import argparse
 from karoo_gp import base_class, __version__
-gp = base_class.Base_GP()
 
 os.system('clear')
 print('\n\033[36m\033[1m')
@@ -384,9 +383,23 @@ else:  # 2 or more command line arguments are provided
 #   Conduct the GP run                    |
 #++++++++++++++++++++++++++++++++++++++++++
 
-gp.fx_karoo_gp(kernel, tree_type, tree_depth_base, tree_depth_max,
-               tree_depth_min, tree_pop_max, gen_max, tourn_size, filename,
-               evolve_repro, evolve_point, evolve_branch, evolve_cross,
-               display, precision, swim, mode)
+kwargs = dict(kernel=kernel, 
+              tree_type=tree_type, 
+              tree_depth_base=tree_depth_base, 
+              tree_depth_max=tree_depth_max,
+              tree_depth_min=tree_depth_min,
+              tree_pop_max=tree_pop_max,
+              gen_max=gen_max,
+              tourn_size=tourn_size,
+              filename=filename,
+              evolve_repro=evolve_repro,
+              evolve_point=evolve_point,
+              evolve_branch=evolve_branch,
+              evolve_cross=evolve_cross,
+              display=display,
+              precision=precision,
+              swim=swim,
+              mode=mode)
 
-
+gp = base_class.Base_GP(**kwargs)
+gp.fit()
