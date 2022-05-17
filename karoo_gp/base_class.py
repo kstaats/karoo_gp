@@ -27,7 +27,7 @@ from collections import OrderedDict
 
 from . import pause as menu
 
-# np.random.seed(1000)  # for reproducibility
+np.random.seed(1000)  # for reproducibility
 
 
 ### TensorFlow Imports and Definitions ###
