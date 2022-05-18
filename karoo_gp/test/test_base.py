@@ -4,7 +4,6 @@ import pytest
 
 from karoo_gp import Base_GP
 
-@pytest.fixture(scope="module")
 def kwargs():
     return dict(
         kernel='m',
@@ -27,7 +26,6 @@ def kwargs():
         mode='s'
     )
 
-@pytest.fixture(scope="module")
 def model(kwargs):
     """Produces a single model used by all tests in module"""
     model = Base_GP(**kwargs)

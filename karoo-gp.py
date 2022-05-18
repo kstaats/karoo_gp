@@ -302,7 +302,7 @@ if len(sys.argv) < 3:
     # not required unless an external file is referenced
     filename = ''
     # not required unless saving to a specific dir in runs/
-    save_dir = ''
+    output_dir = ''
     # number of floating points for the round function in 'fx_fitness_eval'
     precision = 6
     # require (p)artial or (f)ull set of features (operators)
@@ -351,8 +351,8 @@ else:  # 2 or more command line arguments are provided
                          'through Crossover')
     ap.add_argument('-fil', action='store', dest='filename', default='',
                     help='/path/to_your/[data].csv')
-    ap.add_argument('-sav', action='store', dest='save_dir', default='',
-                    help='/path/to_your/save_dir/')
+    ap.add_argument('-sav', action='store', dest='output_dir', default='',
+                    help='/path/to_your/output_dir/')
 
     args = ap.parse_args()
 
@@ -370,7 +370,7 @@ else:  # 2 or more command line arguments are provided
     evolve_branch = float(args.evo_b)
     evolve_cross = float(args.evo_c)
     filename = str(args.filename)
-    save_dir = str(args.save_dir)
+    output_dir = str(args.output_dir)
 
     # display mode is set to (s)ilent
     display = 's'
@@ -388,25 +388,25 @@ else:  # 2 or more command line arguments are provided
 #   Conduct the GP run                    |
 #++++++++++++++++++++++++++++++++++++++++++
 
-kwargs = dict(kernel=kernel, 
-              tree_type=tree_type, 
-              tree_depth_base=tree_depth_base, 
-              tree_depth_max=tree_depth_max,
-              tree_depth_min=tree_depth_min,
-              tree_pop_max=tree_pop_max,
-              gen_max=gen_max,
-              tourn_size=tourn_size,
-              filename=filename,
-              save_dir=save_dir,
-              evolve_repro=evolve_repro,
-              evolve_point=evolve_point,
-              evolve_branch=evolve_branch,
-              evolve_cross=evolve_cross,
-              display=display,
-              precision=precision,
-              swim=swim,
-              mode=mode)
-
-gp = base_class.Base_GP(**kwargs)
+gp = base_class.Base_GP(
+    kernel=kernel, 
+    tree_type=tree_type, 
+    tree_depth_base=tree_depth_base, 
+    tree_depth_max=tree_depth_max,
+    tree_depth_min=tree_depth_min,
+    tree_pop_max=tree_pop_max,
+    gen_max=gen_max,
+    tourn_size=tourn_size,
+    filename=filename,
+    output_dir=output_dir,
+    evolve_repro=evolve_repro,
+    evolve_point=evolve_point,
+    evolve_branch=evolve_branch,
+    evolve_cross=evolve_cross,
+    display=display,
+    precision=precision,
+    swim=swim,
+    mode=mode
+)
 gp.fit()
 gp.fx_karoo_terminate()
