@@ -388,7 +388,7 @@ class Base_GP(object):
             self.log()
             for tree_id in range(1, len(self.population_b)):
                 self.fx_eval_poly(self.population_b[tree_id])  # extract the expression
-                self.log(f'\t\033[36m Tree {self.population_b[tree_id][0][1]} ',
+                self.log(f'\t\033[36m Tree {self.population_b[tree_id][0][1]} '
                          f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
 
         elif input_a == 'load':  # load population_s to replace population_a
@@ -2118,7 +2118,7 @@ class Base_GP(object):
             res = result['result'][i]
             soln = result['solution'][i]
             self.log(f'\t\033[36m Data row {i} predicts value: '
-                     f'\033[1m {res} ({soln} True)\033[0;0m')
+                     f'\033[1m {res:.2f} ({soln:.2f} True)\033[0;0m')
         MSE = skm.mean_squared_error(result['result'], result['solution'])
         fitness = result['fitness']
         self.log(f'\n\t Regression fitness score: {fitness}')
@@ -2140,8 +2140,8 @@ class Base_GP(object):
         for i in range(len(result['result'])):
             res = result['result'][i]
             soln = result['solution'][i]
-            self.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res} '
-                     f'({soln} True)\033[0;0m')
+            self.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res:.2f} '
+                     f'({soln:.2f} True)\033[0;0m')
 
         self.log(f'\n\tMatching fitness score: {result["fitness"]}')
 
