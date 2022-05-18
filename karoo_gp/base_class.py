@@ -27,6 +27,7 @@ from collections import OrderedDict
 
 from . import pause as menu
 
+
 # TODO: replace this with a cmdline arg
 np.random.seed(1000)  # for reproducibility
 
