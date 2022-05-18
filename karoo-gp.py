@@ -301,6 +301,8 @@ if len(sys.argv) < 3:
     evolve_cross = 0.6
     # not required unless an external file is referenced
     filename = ''
+    # not required unless saving to a specific dir in runs/
+    save_dir = ''
     # number of floating points for the round function in 'fx_fitness_eval'
     precision = 6
     # require (p)artial or (f)ull set of features (operators)
@@ -349,6 +351,8 @@ else:  # 2 or more command line arguments are provided
                          'through Crossover')
     ap.add_argument('-fil', action='store', dest='filename', default='',
                     help='/path/to_your/[data].csv')
+    ap.add_argument('-sav', action='store', dest='save_dir', default='',
+                    help='/path/to_your/save_dir/')
 
     args = ap.parse_args()
 
@@ -366,6 +370,7 @@ else:  # 2 or more command line arguments are provided
     evolve_branch = float(args.evo_b)
     evolve_cross = float(args.evo_c)
     filename = str(args.filename)
+    save_dir = str(args.save_dir)
 
     # display mode is set to (s)ilent
     display = 's'
@@ -392,6 +397,7 @@ kwargs = dict(kernel=kernel,
               gen_max=gen_max,
               tourn_size=tourn_size,
               filename=filename,
+              save_dir=save_dir,
               evolve_repro=evolve_repro,
               evolve_point=evolve_point,
               evolve_branch=evolve_branch,

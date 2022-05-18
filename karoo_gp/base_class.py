@@ -98,9 +98,10 @@ class Base_GP(object):
 
     def __init__(self, kernel='m', tree_type='r', tree_depth_base=3,
                  tree_depth_max=3, tree_depth_min=1, tree_pop_max=100,
-                 gen_max=10, tourn_size=7, filename='', evolve_repro=0.1,
-                 evolve_point=0.1, evolve_branch=0.2, evolve_cross=0.6, 
-                 display='s', precision=6, swim='p', mode='s'):
+                 gen_max=10, tourn_size=7, filename='', save_dir='',
+                 evolve_repro=0.1, evolve_point=0.1, evolve_branch=0.2, 
+                 evolve_cross=0.6, display='s', precision=6, swim='p', 
+                 mode='s'):
 
         '''
         ### Global variables used for data management ###
@@ -161,6 +162,7 @@ class Base_GP(object):
         self.gen_max = gen_max  # maximum number of generations
         self.tourn_size = tourn_size  # number of Trees selected for each tournament
         self.filename = filename  # passed between methods to work with specific populations
+        self.save_dir = save_dir  # determines where output records are saved
         self.evolve_repro = evolve_repro  # quantity of a population generated through Reproduction
         self.evolve_point = evolve_point  # quantity of a population generated through Point Mutation
         self.evolve_branch = evolve_branch  # quantity of a population generated through Branch Mutation
@@ -390,7 +392,7 @@ class Base_GP(object):
 
         elif input_a == 'load':  # load population_s to replace population_a
             # NEED TO replace 's' with a user defined filename
-            self.fx_data_recover(self.filename['s'])
+            self.fx_data_recover(self.savefile['s'])
 
         elif input_a == 'write':  # write the evolving population_b to disk
             self.fx_data_tree_write(self.population_b, 'b')
@@ -422,7 +424,7 @@ class Base_GP(object):
 
         self.fx_data_params_write()
         # initialize the .csv file for the final population
-        target = open(self.filename['f'], 'w')
+        target = open(self.savefile['f'], 'w')
         target.close()
         # save the final generation of Trees to disk
         self.fx_data_tree_write(self.population_b, 'f')
@@ -474,12 +476,12 @@ class Base_GP(object):
         }
 
         filename = filename if filename != '' else data_dict[self.kernel]
+        # receive filename and additional arguments from karoo_gp.py via argparse
         if len(sys.argv) == 2:
             passed_file = sys.argv[1]
             if os.path.exists(passed_file):
                 filename = passed_file
 
-        # receive filename and additional arguments from karoo_gp.py via argparse
         data_x = np.loadtxt(filename, skiprows=1, delimiter=',', dtype=float)
         data_x = data_x[:,0:-1]  # load all but the right-most column
         # load only right-most column (class labels)
@@ -548,35 +550,39 @@ class Base_GP(object):
 
         ### PART 4 - create a unique directory and initialise all .csv files ###
         self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
-        basename = os.path.basename(filename)  # extract the filename (if any)
-        root, ext = os.path.splitext(basename)  # split root from extension
         # generate a unique directory name
-        self.path = os.path.join(os.getcwd(), 'runs',
-                                 root + '_' + self.datetime + '/')
+        runs_dir = os.path.join(os.getcwd(), 'runs')
+        if self.save_dir != '':
+            self.path = os.path.join(runs_dir, self.save_dir + '/')
+        else:
+            basename = os.path.basename(filename)  # extract the filename (if any)
+            root, ext = os.path.splitext(basename)  # split root from extension
+            self.path = os.path.join(runs_dir,
+                                    root + '_' + self.datetime + '/')
 
         if not os.path.isdir(self.path):
             os.makedirs(self.path)  # make a unique directory
 
-        self.filename = {}  # a dictionary to hold .csv filenames
+        self.savefile = {}  # a dictionary to hold .csv filenames
 
-        self.filename.update({'a': self.path + 'population_a.csv'})
+        self.savefile.update({'a': self.path + 'population_a.csv'})
         # initialise a .csv file for population 'a' (foundation)
-        target = open(self.filename['a'], 'w')
+        target = open(self.savefile['a'], 'w')
         target.close()
 
-        self.filename.update({'b': self.path + 'population_b.csv'})
+        self.savefile.update({'b': self.path + 'population_b.csv'})
         # initialise a .csv file for population 'b' (evolving)
-        target = open(self.filename['b'], 'w')
+        target = open(self.savefile['b'], 'w')
         target.close()
 
-        self.filename.update({'f': self.path + 'population_f.csv'})
+        self.savefile.update({'f': self.path + 'population_f.csv'})
         # initialise a .csv file for the final population (test)
-        target = open(self.filename['f'], 'w')
+        target = open(self.savefile['f'], 'w')
         target.close()
 
-        self.filename.update({'s': self.path + 'population_s.csv'})
+        self.savefile.update({'s': self.path + 'population_s.csv'})
         # initialise a .csv file to manually load (seed)
-        target = open(self.filename['s'], 'w')
+        target = open(self.savefile['s'], 'w')
         target.close()
 
         return
@@ -671,7 +677,7 @@ class Base_GP(object):
         Arguments required: population, key
         '''
 
-        with open(self.filename[key], 'a') as csv_file:
+        with open(self.savefile[key], 'a') as csv_file:
             target = csv.writer(csv_file, delimiter=',')
             if self.gen_id != 1:
                 target.writerows([''])  # empty row before each generation
