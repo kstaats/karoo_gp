@@ -1,4 +1,4 @@
-name: Smoke test
+name: Tests
 
 on:
   push:
@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
   
 jobs:
-  smoke_test:
+  run_tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
       - name: Install Dependencies
         run: python3 -m pip install -r requirements.txt
-      - name: Run Karoo GP
-        run: python3 karoo-gp.py -ker c -typ g -bas 3 -fil karoo_gp/files/data_CLASSIFY.csv
+      - name: Run Karoo GP tests
+        run: pytest -v
