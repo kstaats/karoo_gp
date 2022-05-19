@@ -28,10 +28,6 @@ from collections import OrderedDict
 from . import pause as menu
 
 
-# TODO: replace this with a cmdline arg
-np.random.seed(1000)  # for reproducibility
-
-
 ### TensorFlow Imports and Definitions ###
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
@@ -103,7 +99,7 @@ class Base_GP(object):
                  gen_max=10, tourn_size=7, filename='', output_dir='',
                  evolve_repro=0.1, evolve_point=0.1, evolve_branch=0.2,
                  evolve_cross=0.6, display='s', precision=6, swim='p',
-                 mode='s'):
+                 mode='s', seed=None):
 
         '''
         ### Global variables used for data management ###
@@ -173,6 +169,8 @@ class Base_GP(object):
         self.precision = precision  # the number of floating points for the round function in 'fx_fitness_eval'
         self.swim = swim  # pass along the gene_pool restriction methodology
         self.mode = mode  # mode is engaged in fit()
+        # initialize RNG with the given seed
+        self.rng = np.random.default_rng(seed)
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
@@ -1054,7 +1052,7 @@ class Base_GP(object):
             self.fx_init_child_link(parent_arity_sum, prior_sibling_arity, prior_siblings)
 
         elif self.pop_tree_type == 'g':  # user defined as (g)row
-            rnd = np.random.randint(2)
+            rnd = self.rng.integers(2)
 
             if rnd == 0:  # randomly selected as Function
                 self.fx_init_function_select()  # retrieve a function
@@ -1087,7 +1085,7 @@ class Base_GP(object):
 
         self.pop_node_type = 'func'
         # call the previously loaded .csv which contains all operators
-        rnd = np.random.randint(0, len(self.functions[:,0]))
+        rnd = self.rng.integers(0, len(self.functions[:,0]))
         self.pop_node_label = self.functions[rnd][0]
         self.pop_node_arity = int(self.functions[rnd][1])
 
@@ -1157,7 +1155,7 @@ class Base_GP(object):
 
         self.pop_node_type = 'term'
         # call the previously loaded .csv which contains all terminals
-        rnd = np.random.randint(0, len(self.terminals) - 1)
+        rnd = self.rng.integers(0, len(self.terminals) - 1)
         self.pop_node_label = self.terminals[rnd]
         self.pop_node_arity = 0
 
@@ -1872,9 +1870,9 @@ class Base_GP(object):
 
         for n in range(tourn_size):
             # former method of selection from the unfiltered population
-            # tree_id = np.random.randint(1, self.tree_pop_max + 1)
+            # tree_id = self.rng.integers(1, self.tree_pop_max + 1)
             # select one Tree at random from the gene pool
-            rnd = np.random.randint(len(self.gene_pool))
+            rnd = self.rng.integers(len(self.gene_pool))
             tree_id = int(self.gene_pool[rnd])
 
             # extract the fitness from the array
@@ -2344,7 +2342,7 @@ class Base_GP(object):
         '''
 
         # randomly select a point in the Tree (including root)
-        node = np.random.randint(1, len(tree[3]))
+        node = self.rng.integers(1, len(tree[3]))
         self.log(f'\t\033[36m with {tree[5][node]} node\033[1m '
                  f'{tree[3][node]} \033[0;0m\033[36mchosen for '
                  'mutation\n\033[0;0m', display=['i'])
@@ -2354,17 +2352,17 @@ class Base_GP(object):
 
         if tree[5][node] == 'root':
             # call the previously loaded .csv which contains all operators
-            rnd = np.random.randint(0, len(self.functions[:,0]))
+            rnd = self.rng.integers(0, len(self.functions[:,0]))
             tree[6][node] = self.functions[rnd][0]  # replace function (operator)
 
         elif tree[5][node] == 'func':
             # call the previously loaded .csv which contains all operators
-            rnd = np.random.randint(0, len(self.functions[:,0]))
+            rnd = self.rng.integers(0, len(self.functions[:,0]))
             tree[6][node] = self.functions[rnd][0]  # replace function (operator)
 
         elif tree[5][node] == 'term':
             # call the previously loaded .csv which contains all terminals
-            rnd = np.random.randint(0, len(self.terminals) - 1)
+            rnd = self.rng.integers(0, len(self.terminals) - 1)
             tree[6][node] = self.terminals[rnd]  # replace terminal (variable)
 
         else:
@@ -2415,7 +2413,7 @@ class Base_GP(object):
                          display=['i'])
 
                 # call the previously loaded .csv which contains all operators
-                rnd = np.random.randint(0, len(self.functions[:,0]))
+                rnd = self.rng.integers(0, len(self.functions[:,0]))
                 # replace function (operator)
                 tree[6][branch[n]] = self.functions[rnd][0]
 
@@ -2425,7 +2423,7 @@ class Base_GP(object):
                          display=['i'])
 
                 # call the previously loaded .csv which contains all terminals
-                rnd = np.random.randint(0, len(self.terminals) - 1)
+                rnd = self.rng.integers(0, len(self.terminals) - 1)
                 # replace terminal (variable)
                 tree[6][branch[n]] = self.terminals[rnd]
 
@@ -2495,7 +2493,7 @@ class Base_GP(object):
                      f'tourn_winner:\033[0;0m\n {tree}', display=['db'])
 
             # call the previously loaded .csv which contains all terminals
-            rnd = np.random.randint(0, len(self.terminals) - 1)
+            rnd = self.rng.integers(0, len(self.terminals) - 1)
             tree[6][branch_top] = self.terminals[rnd]  # replace terminal (variable)
 
             self.log('\n\033[36m This is tourn_winner after terminal\033[1m '
@@ -2509,7 +2507,7 @@ class Base_GP(object):
 
             # TEST & DEBUG: force to 'func' or 'term' and comment the next 3 lines
             # type_mod = '[func or term]'
-            rnd = np.random.randint(2)
+            rnd = self.rng.integers(2)
             if rnd == 0:
                 type_mod = 'func'  # randomly selected as Function
             elif rnd == 1:
@@ -2530,7 +2528,7 @@ class Base_GP(object):
                          display=['db'])
 
                 # call the previously loaded .csv which contains all terminals
-                rnd = np.random.randint(0, len(self.terminals) - 1)
+                rnd = self.rng.integers(0, len(self.terminals) - 1)
                 # replace type ('func' to 'term' or 'term' to 'term')
                 tree[5][branch_top] = 'term'
                 tree[6][branch_top] = self.terminals[rnd]  # replace label
@@ -2695,7 +2693,7 @@ class Base_GP(object):
         # has only one element
         branch = np.array([])
         # randomly select a non-root node
-        branch_top = np.random.randint(2, len(tree[3]))
+        branch_top = self.rng.integers(2, len(tree[3]))
         # generate tuple of 'branch_top' and subseqent nodes
         branch_eval = self.fx_eval_id(tree, branch_top)
         branch_symp = sympify(branch_eval)  # convert string into something useful
@@ -3171,7 +3169,7 @@ class Base_GP(object):
 
             if int(tree[4][n]) == depth and tree[5][n] == 'func':
                 # call the previously loaded .csv which contains all terminals
-                rnd = np.random.randint(0, len(self.terminals) - 1)
+                rnd = self.rng.integers(0, len(self.terminals) - 1)
                 tree[5][n] = 'term'  # mutate type 'func' to 'term'
                 tree[6][n] = self.terminals[rnd]  # replace label
 

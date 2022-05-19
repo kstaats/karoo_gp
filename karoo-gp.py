@@ -351,8 +351,10 @@ else:  # 2 or more command line arguments are provided
                          'through Crossover')
     ap.add_argument('-fil', action='store', dest='filename', default='',
                     help='/path/to_your/[data].csv')
-    ap.add_argument('-sav', action='store', dest='output_dir', default='',
+    ap.add_argument('-out', action='store', dest='output_dir', default='',
                     help='/path/to_your/output_dir/')
+    ap.add_argument('-rsd', action='store', dest='seed', default=None,
+                    help='seed for the random number generator')
 
     args = ap.parse_args()
 
@@ -371,6 +373,7 @@ else:  # 2 or more command line arguments are provided
     evolve_cross = float(args.evo_c)
     filename = str(args.filename)
     output_dir = str(args.output_dir)
+    seed = None if args.seed is None else int(args.seed)
 
     # display mode is set to (s)ilent
     display = 's'
@@ -389,9 +392,9 @@ else:  # 2 or more command line arguments are provided
 #++++++++++++++++++++++++++++++++++++++++++
 
 gp = base_class.Base_GP(
-    kernel=kernel, 
-    tree_type=tree_type, 
-    tree_depth_base=tree_depth_base, 
+    kernel=kernel,
+    tree_type=tree_type,
+    tree_depth_base=tree_depth_base,
     tree_depth_max=tree_depth_max,
     tree_depth_min=tree_depth_min,
     tree_pop_max=tree_pop_max,
@@ -406,7 +409,8 @@ gp = base_class.Base_GP(
     display=display,
     precision=precision,
     swim=swim,
-    mode=mode
+    mode=mode,
+    seed=seed,
 )
 gp.fit()
 gp.fx_karoo_terminate()
