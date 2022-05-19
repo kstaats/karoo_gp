@@ -16,7 +16,7 @@ def kwargs():
         gen_max=10,
         tourn_size=7,
         filename='',
-        save_dir='test',
+        output_dir='test',
         evolve_repro=0.1,
         evolve_point=0.1,
         evolve_branch=0.2,
