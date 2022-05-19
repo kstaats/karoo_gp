@@ -170,6 +170,7 @@ class Base_GP(object):
         self.swim = swim  # pass along the gene_pool restriction methodology
         self.mode = mode  # mode is engaged in fit()
         # initialize RNG with the given seed
+        self.seed = seed
         self.rng = np.random.default_rng(seed)
 
         ### PART 2 - construct first generation of Trees ###
