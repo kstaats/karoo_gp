@@ -16,15 +16,16 @@ def kwargs():
         gen_max=10,
         tourn_size=7,
         filename='',
-        save_dir='test',
+        output_dir='test',
         evolve_repro=0.1,
         evolve_point=0.1,
         evolve_branch=0.2,
-        evolve_cross=0.6, 
+        evolve_cross=0.6,
         display='s',
         precision=6,
         swim='p',
-        mode='s'
+        mode='s',
+        seed=1000,
     )
 
 @pytest.fixture
@@ -40,7 +41,7 @@ def test_base_init(kwargs, model):
 def test_base_fit(model):
     model.fit()
     # Hash of expected output.csv in /runs/
-    hashes = {'a': '76afe1c7c10d7498a1f514f7c9b86998',
+    hashes = {'a': '7e01d00c00c58abe90adfae393acaad3',
               'b': 'd41d8cd98f00b204e9800998ecf8427e',
               'f': 'd41d8cd98f00b204e9800998ecf8427e',
               's': 'd41d8cd98f00b204e9800998ecf8427e'}
@@ -52,4 +53,4 @@ def test_base_fit(model):
         hasher.update(bytestring)
         hash = hasher.hexdigest()
         assert v == hash
-            
+
