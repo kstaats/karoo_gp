@@ -274,143 +274,6 @@ class Base_GP(object):
 
         return
 
-
-    def fx_karoo_pause_refer(self):
-
-        '''
-        Enables (g)eneration, (i)nteractive, and (d)e(b)ug display modes
-        to offer the (pause) menu at each prompt.
-
-        See fx_karoo_pause() for an explanation of the value being passed.
-
-        Called by: the functions called by PART 4 of fx_karoo_gp()
-
-        Arguments required: none
-        '''
-
-        menu = 1
-        while menu == 1:
-            menu = self.fx_karoo_pause()
-
-        return
-
-
-    def fx_karoo_pause(self):
-
-        '''
-        Pause the program execution and engage the user, providing a number of options.
-
-        Called by: fx_karoo_pause_refer
-
-        Arguments required: [0,1,2] where (0) refers to an end-of-run;
-        (1) refers to any use of the (pause) menu from within the run,
-        and anticipates ENTER as an escape from the menu to continue the run;
-        and (2) refers to an 'ERROR!' for which the user may want to archive
-        data before terminating. At this point in time, (2) is associated
-        with each error but does not provide any special options).
-        '''
-
-        ### PART 1 - reset and pack values to send to menu.pause ###
-        menu_dict = {
-            'input_a': '',
-            'input_b': 0,
-            'display': self.display,
-            'tree_depth_max': self.tree_depth_max,
-            'tree_depth_min': self.tree_depth_min,
-            'tree_pop_max': self.tree_pop_max,
-            'gen_id': self.gen_id,
-            'gen_max': self.gen_max,
-            'tourn_size': self.tourn_size,
-            'evolve_repro': self.evolve_repro,
-            'evolve_point': self.evolve_point,
-            'evolve_branch': self.evolve_branch,
-            'evolve_cross': self.evolve_cross,
-            'fittest_dict': self.fittest_dict,
-            'pop_a_len': len(self.population_a),
-            'pop_b_len': len(self.population_b),
-            'path': self.path,
-        }
-
-        # call the external function menu.pause
-        menu_dict = menu.pause(menu_dict)
-
-        ### PART 2 - unpack values returned from menu.pause ###
-        input_a = menu_dict['input_a']
-        input_b = menu_dict['input_b']
-        self.display = menu_dict['display']
-        self.tree_depth_min = menu_dict['tree_depth_min']
-        self.gen_max = menu_dict['gen_max']
-        self.tourn_size = menu_dict['tourn_size']
-        self.evolve_repro = menu_dict['evolve_repro']
-        self.evolve_point = menu_dict['evolve_point']
-        self.evolve_branch = menu_dict['evolve_branch']
-        self.evolve_cross = menu_dict['evolve_cross']
-
-        ### PART 3 - execute the user queries returned from menu.pause ###
-        if input_a == 'esc':
-            # breaks out of the fx_karoo_gp() or fx_karoo_pause_refer() loop
-            return 2
-
-        elif input_a == 'eval':  # evaluate a Tree against the TEST data
-            # generate the raw and sympified expression for the given Tree using SymPy
-            self.fx_eval_poly(self.population_b[input_b])
-            #print('\n\t\033[36mTree', input_b, 'yields (raw):',
-            #      self.algo_raw, '\033[0;0m')  # print the raw expression
-            self.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
-                     f'{self.algo_sym} \033[0;0m')  # print the sympified expression
-
-            # might change to algo_raw evaluation
-            result = self.fx_fitness_eval(str(self.algo_sym), self.data_test,
-                                          get_pred_labels=True)
-            if self.kernel == 'c':
-                self.fx_fitness_test_classify(result)  # TF tested 2017 02/02
-            elif self.kernel == 'r':
-                self.fx_fitness_test_regress(result)
-            elif self.kernel == 'm':
-                self.fx_fitness_test_match(result)
-            # elif self.kernel == '[other]':  # use others as a template
-
-        elif input_a == 'print_a':  # print a Tree from population_a
-            self.fx_display_tree(self.population_a[input_b])
-
-        elif input_a == 'print_b':  # print a Tree from population_b
-            self.fx_display_tree(self.population_b[input_b])
-
-        elif input_a == 'pop_a':  # list all Trees in population_a
-            self.log()
-            for tree_id in range(1, len(self.population_a)):
-                self.fx_eval_poly(self.population_a[tree_id])  # extract the expression
-                self.log(f'\t\033[36m Tree {self.population_a[tree_id][0][1]} '
-                         f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
-
-        elif input_a == 'pop_b':  # list all Trees in population_b
-            self.log()
-            for tree_id in range(1, len(self.population_b)):
-                self.fx_eval_poly(self.population_b[tree_id])  # extract the expression
-                self.log(f'\t\033[36m Tree {self.population_b[tree_id][0][1]} '
-                         f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
-
-        elif input_a == 'load':  # load population_s to replace population_a
-            # NEED TO replace 's' with a user defined filename
-            self.fx_data_recover(self.savefile['s'])
-
-        elif input_a == 'write':  # write the evolving population_b to disk
-            self.fx_data_tree_write(self.population_b, 'b')
-            self.log('\n\t All current members of the evolving population_b '
-                     f'saved to {self.savefile["b"]}')
-
-        elif input_a == 'add':
-            # check for added generations, then exit fx_karoo_pause
-            # and continue the run
-            # if input_b > 0: self.gen_max = self.gen_max + input_b - REMOVED 2019 06/05
-            self.gen_max = self.gen_max + input_b
-
-        elif input_a == 'quit':
-            self.fx_karoo_terminate()  # archive populations and exit
-
-        return 1
-
-
     def fx_karoo_terminate(self):
         '''
         Terminates the evolutionary run (if yet in progress),
@@ -629,23 +492,6 @@ class Base_GP(object):
         return
 
 
-    def fx_data_tree_clean(self, tree):
-
-        '''
-        This method aesthetically cleans the Tree array, removing redundant data.
-
-        Called by: fx_data_tree_append, fx_evolve_branch_copy
-
-        Arguments required: tree
-        '''
-
-        tree[0][2:] = ''  # A little clean-up to make things look pretty :)
-        tree[1][2:] = ''  # Ignore the man behind the curtain!
-        tree[2][2:] = ''  # Yes, I am a bit OCD ... but you *know* you appreciate clean arrays.
-
-        return tree
-
-
     def fx_data_tree_append(self, tree):
 
         '''
@@ -808,11 +654,174 @@ class Base_GP(object):
 
         return
 
+# ----------------------------
+# MAY REDESIGN
+#
+# These functions have to do with reading/manipulating populations and trees,
+# and will be moved to the Population and Tree classes. As a first step, they
+# removed from the Base_GP object and revised in order to:
+#    (1) work only on inputs and outputs, i.e. no calls to 'self'
+#    (2) take advantage of new features of the Population and Tree objects
+
+    # used by: karoo-gp interactive
+    def fx_karoo_pause_refer(self):
+
+        '''
+        Enables (g)eneration, (i)nteractive, and (d)e(b)ug display modes
+        to offer the (pause) menu at each prompt.
+
+        See fx_karoo_pause() for an explanation of the value being passed.
+
+        Called by: the functions called by PART 4 of fx_karoo_gp()
+
+        Arguments required: none
+        '''
+
+        menu = 1
+        while menu == 1:
+            menu = self.fx_karoo_pause()
+
+        return
+
+    # used by: karoo-gp interactive
+    def fx_karoo_pause(self):
+
+        '''
+        Pause the program execution and engage the user, providing a number of options.
+
+        Called by: fx_karoo_pause_refer
+
+        Arguments required: [0,1,2] where (0) refers to an end-of-run;
+        (1) refers to any use of the (pause) menu from within the run,
+        and anticipates ENTER as an escape from the menu to continue the run;
+        and (2) refers to an 'ERROR!' for which the user may want to archive
+        data before terminating. At this point in time, (2) is associated
+        with each error but does not provide any special options).
+        '''
+
+        ### PART 1 - reset and pack values to send to menu.pause ###
+        menu_dict = {
+            'input_a': '',
+            'input_b': 0,
+            'display': self.display,
+            'tree_depth_max': self.tree_depth_max,
+            'tree_depth_min': self.tree_depth_min,
+            'tree_pop_max': self.tree_pop_max,
+            'gen_id': self.gen_id,
+            'gen_max': self.gen_max,
+            'tourn_size': self.tourn_size,
+            'evolve_repro': self.evolve_repro,
+            'evolve_point': self.evolve_point,
+            'evolve_branch': self.evolve_branch,
+            'evolve_cross': self.evolve_cross,
+            'fittest_dict': self.fittest_dict,
+            'pop_a_len': len(self.population_a),
+            'pop_b_len': len(self.population_b),
+            'path': self.path,
+        }
+
+        # call the external function menu.pause
+        menu_dict = menu.pause(menu_dict)
+
+        ### PART 2 - unpack values returned from menu.pause ###
+        input_a = menu_dict['input_a']
+        input_b = menu_dict['input_b']
+        self.display = menu_dict['display']
+        self.tree_depth_min = menu_dict['tree_depth_min']
+        self.gen_max = menu_dict['gen_max']
+        self.tourn_size = menu_dict['tourn_size']
+        self.evolve_repro = menu_dict['evolve_repro']
+        self.evolve_point = menu_dict['evolve_point']
+        self.evolve_branch = menu_dict['evolve_branch']
+        self.evolve_cross = menu_dict['evolve_cross']
+
+        ### PART 3 - execute the user queries returned from menu.pause ###
+        if input_a == 'esc':
+            # breaks out of the fx_karoo_gp() or fx_karoo_pause_refer() loop
+            return 2
+
+        elif input_a == 'eval':  # evaluate a Tree against the TEST data
+            # generate the raw and sympified expression for the given Tree using SymPy
+            self.fx_eval_poly(self.population_b[input_b])
+            #print('\n\t\033[36mTree', input_b, 'yields (raw):',
+            #      self.algo_raw, '\033[0;0m')  # print the raw expression
+            self.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
+                     f'{self.algo_sym} \033[0;0m')  # print the sympified expression
+
+            # might change to algo_raw evaluation
+            result = self.fx_fitness_eval(str(self.algo_sym), self.data_test,
+                                          get_pred_labels=True)
+            if self.kernel == 'c':
+                self.fx_fitness_test_classify(result)  # TF tested 2017 02/02
+            elif self.kernel == 'r':
+                self.fx_fitness_test_regress(result)
+            elif self.kernel == 'm':
+                self.fx_fitness_test_match(result)
+            # elif self.kernel == '[other]':  # use others as a template
+
+        elif input_a == 'print_a':  # print a Tree from population_a
+            self.fx_display_tree(self.population_a[input_b])
+
+        elif input_a == 'print_b':  # print a Tree from population_b
+            self.fx_display_tree(self.population_b[input_b])
+
+        elif input_a == 'pop_a':  # list all Trees in population_a
+            self.log()
+            for tree_id in range(1, len(self.population_a)):
+                self.fx_eval_poly(self.population_a[tree_id])  # extract the expression
+                self.log(f'\t\033[36m Tree {self.population_a[tree_id][0][1]} '
+                         f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
+
+        elif input_a == 'pop_b':  # list all Trees in population_b
+            self.log()
+            for tree_id in range(1, len(self.population_b)):
+                self.fx_eval_poly(self.population_b[tree_id])  # extract the expression
+                self.log(f'\t\033[36m Tree {self.population_b[tree_id][0][1]} '
+                         f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
+
+        elif input_a == 'load':  # load population_s to replace population_a
+            # NEED TO replace 's' with a user defined filename
+            self.fx_data_recover(self.savefile['s'])
+
+        elif input_a == 'write':  # write the evolving population_b to disk
+            self.fx_data_tree_write(self.population_b, 'b')
+            self.log('\n\t All current members of the evolving population_b '
+                     f'saved to {self.savefile["b"]}')
+
+        elif input_a == 'add':
+            # check for added generations, then exit fx_karoo_pause
+            # and continue the run
+            # if input_b > 0: self.gen_max = self.gen_max + input_b - REMOVED 2019 06/05
+            self.gen_max = self.gen_max + input_b
+
+        elif input_a == 'quit':
+            self.fx_karoo_terminate()  # archive populations and exit
+
+        return 1
+
+    # used by: Population, Tree
+    def fx_data_tree_clean(self, tree):
+
+        '''
+        This method aesthetically cleans the Tree array, removing redundant data.
+
+        Called by: fx_data_tree_append, fx_evolve_branch_copy
+
+        Arguments required: tree
+        '''
+
+        tree[0][2:] = ''  # A little clean-up to make things look pretty :)
+        tree[1][2:] = ''  # Ignore the man behind the curtain!
+        tree[2][2:] = ''  # Yes, I am a bit OCD ... but you *know* you appreciate clean arrays.
+
+        return tree
+
 
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Construct the 1st Generation  |
     #+++++++++++++++++++++++++++++++++++++++++++++
 
+    # used by: None (replaced by population.generate)
     def fx_init_construct(self, tree_type, tree_depth_base):
 
         '''
@@ -863,7 +872,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: None (replaced by tree.generate)
     def fx_init_tree_build(self, TREE_ID, tree_type, tree_depth_base):
 
         '''
@@ -888,7 +897,7 @@ class Base_GP(object):
 
         return  # each Tree is written to 'gp.tree'
 
-
+    # used by: Tree
     def fx_init_tree_initialise(self, TREE_ID, tree_type, tree_depth_base):
 
         '''
@@ -945,7 +954,7 @@ class Base_GP(object):
 
 
     ### Root Node ###
-
+    # used by: Tree
     def fx_init_root_build(self):
 
         '''
@@ -987,7 +996,7 @@ class Base_GP(object):
 
 
     ### Function Nodes ###
-
+    # used by: Tree
     def fx_init_function_build(self):
 
         '''
@@ -1036,7 +1045,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Tree
     def fx_init_function_gen(self, parent_arity_sum, prior_sibling_arity, prior_siblings):
 
         '''
@@ -1072,7 +1081,7 @@ class Base_GP(object):
 
         return prior_sibling_arity
 
-
+    # used by: Tree
     def fx_init_function_select(self):
 
         '''
@@ -1094,7 +1103,7 @@ class Base_GP(object):
 
 
     ### Terminal Nodes ###
-
+    # used by: Tree
     def fx_init_terminal_build(self):
 
         '''
@@ -1122,7 +1131,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Tree
     def fx_init_terminal_gen(self):
 
         '''
@@ -1142,7 +1151,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Tree
     def fx_init_terminal_select(self):
 
         '''
@@ -1164,7 +1173,7 @@ class Base_GP(object):
 
 
     ### The Lovely Children ###
-
+    # used by: Tree
     def fx_init_child_link(self, parent_arity_sum, prior_sibling_arity, prior_siblings):
 
         '''
@@ -1213,7 +1222,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Tree
     def fx_init_node_commit(self):
 
         '''
@@ -1239,7 +1248,7 @@ class Base_GP(object):
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Evaluate a Tree               |
     #+++++++++++++++++++++++++++++++++++++++++++++
-
+    # used by: Tree
     def fx_eval_poly(self, tree):
 
         '''
@@ -1264,7 +1273,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Tree
     def fx_eval_label(self, tree, node_id):
 
         '''
@@ -1307,7 +1316,7 @@ class Base_GP(object):
                         ' then ' + self.fx_eval_label(tree, tree[10, node_id]) +
                         ' else ' + self.fx_eval_label(tree, tree[11, node_id]))
 
-
+    # used by: Population
     def fx_eval_id(self, tree, node_id):
 
         '''
@@ -1350,7 +1359,7 @@ class Base_GP(object):
                         self.fx_eval_id(tree, tree[10, node_id]) + ', ' +
                         self.fx_eval_id(tree, tree[11, node_id]))
 
-
+    # used by: Population
     def fx_eval_generation(self):
 
         '''
@@ -1383,7 +1392,7 @@ class Base_GP(object):
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Train and Test a Tree         |
     #+++++++++++++++++++++++++++++++++++++++++++++
-
+    # used by: Population
     def fx_fitness_gym(self, population):
 
         '''
@@ -1474,7 +1483,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Population
     def fx_fitness_eval(self, expr, data, get_pred_labels=False):
 
         '''
@@ -1653,7 +1662,7 @@ class Base_GP(object):
                 'solution': solution, 'fitness': float(fitness),
                 'pairwise_fitness': pairwise_fitness}
 
-
+    # used by: Population
     def fx_fitness_expr_parse(self, expr, tensors):
 
         '''
@@ -1669,7 +1678,7 @@ class Base_GP(object):
 
         return self.fx_fitness_node_parse(tree, tensors)
 
-
+    # used by: Population
     def fx_fitness_chain_bool(self, values, operation, tensors):
 
         '''
@@ -1688,7 +1697,7 @@ class Base_GP(object):
         else:
             return x
 
-
+    # used by: Population
     def fx_fitness_chain_compare(self, comparators, ops, tensors):
 
         '''
@@ -1707,7 +1716,7 @@ class Base_GP(object):
         else:
             return operators[type(ops[0])](x, y)
 
-
+    # used by: Population
     def fx_fitness_node_parse(self, node, tensors):
 
         '''
@@ -1756,7 +1765,7 @@ class Base_GP(object):
         else:
             raise TypeError(node)
 
-
+    # used by: Population (change to fx_fitness_labels_map_maker)
     def fx_fitness_labels_map(self, result):
 
         '''
@@ -1812,7 +1821,7 @@ class Base_GP(object):
 
         return pred_label
 
-
+    # used by: Population
     def fx_fitness_store(self, tree, fitness):
 
         '''
@@ -1837,7 +1846,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Population
     def fx_fitness_tournament(self, tourn_size):
 
         '''
@@ -1974,7 +1983,7 @@ class Base_GP(object):
 
         return tourn_winner
 
-
+    # used by: Population
     def fx_fitness_gene_pool(self):
 
         '''
@@ -2061,7 +2070,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: None (replaced by Population.evaluate_tree() and pause_callback)
     def fx_fitness_test_classify(self, result):
 
         '''
@@ -2100,7 +2109,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: None (replaced by Population.evaluate_tree() and pause_callback)
     def fx_fitness_test_regress(self, result):
 
         '''
@@ -2125,7 +2134,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: None (replaced by Population.evaluate_tree() and pause_callback)
     def fx_fitness_test_match(self, result):
 
         '''
@@ -2153,7 +2162,7 @@ class Base_GP(object):
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Construct the next Generation |
     #+++++++++++++++++++++++++++++++++++++++++++++
-
+    # used by: Population
     def fx_nextgen_reproduce(self):
 
         '''
@@ -2182,7 +2191,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Population
     def fx_nextgen_point_mutate(self):
 
         '''
@@ -2213,7 +2222,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Population
     def fx_nextgen_branch_mutate(self):
 
         '''
@@ -2258,7 +2267,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: Population
     def fx_nextgen_crossover(self):
 
         '''
@@ -2331,7 +2340,7 @@ class Base_GP(object):
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Evolve a Population           |
     #+++++++++++++++++++++++++++++++++++++++++++++
-
+    # used by: Population
     def fx_evolve_point_mutate(self, tree):
 
         '''
@@ -2382,7 +2391,7 @@ class Base_GP(object):
         # 'node' is returned only to be assigned to the 'tourn_trees' record keeping
         return tree, node
 
-
+    # used by: Population
     def fx_evolve_full_mutate(self, tree, branch):
 
         '''
@@ -2437,7 +2446,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_grow_mutate(self, tree, branch):
 
         '''
@@ -2577,7 +2586,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_crossover(self, parent, branch_x, offspring, branch_y):
 
         '''
@@ -2672,7 +2681,7 @@ class Base_GP(object):
 
         return offspring
 
-
+    # used by: Population
     def fx_evolve_branch_select(self, tree):
 
         '''
@@ -2709,7 +2718,7 @@ class Base_GP(object):
         # return branch per Antonio's fix 20210125
         return branch.astype(int)
 
-
+    # used by: Population
     def fx_evolve_branch_insert(self, tree, branch):
 
         '''
@@ -2804,7 +2813,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_branch_copy(self, tree, branch):
 
         '''
@@ -2858,7 +2867,7 @@ class Base_GP(object):
 
         return new_tree
 
-
+    # used by: Population
     def fx_evolve_c_buffer(self, tree, node):
 
         '''
@@ -2905,7 +2914,7 @@ class Base_GP(object):
 
         return c_buffer
 
-
+    # used by: Population
     def fx_evolve_child_link(self, tree, node, c_buffer):
 
         '''
@@ -2950,7 +2959,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_child_link_fix(self, tree):
 
         '''
@@ -2975,7 +2984,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_child_insert(self, tree, node, c_buffer):
 
         '''
@@ -3039,7 +3048,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_parent_link_fix(self, tree):
 
         '''
@@ -3079,7 +3088,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_node_arity_fix(self, tree):
 
         '''
@@ -3106,7 +3115,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_node_renum(self, tree):
 
         '''
@@ -3128,7 +3137,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_fitness_wipe(self, tree):
 
         '''
@@ -3148,7 +3157,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: Population
     def fx_evolve_tree_prune(self, tree, depth):
 
         '''
@@ -3187,7 +3196,7 @@ class Base_GP(object):
 
         return tree
 
-
+    # used by: None (replaced by tree.copy())
     def fx_evolve_pop_copy(self, pop_a, title):
 
         '''
@@ -3218,7 +3227,7 @@ class Base_GP(object):
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Visualize a Tree              |
     #+++++++++++++++++++++++++++++++++++++++++++++
-
+    # used by: Tree
     def fx_display_tree(self, tree):
 
         '''
@@ -3264,7 +3273,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: None (see docstring)
     def fx_display_branch(self, tree, start):
 
         '''
