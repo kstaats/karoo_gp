@@ -52,7 +52,9 @@ An example is given, as follows:
 import os
 import sys
 import argparse
+from karoo_gp import pause as menu
 from karoo_gp import base_class, __version__
+from karoo_gp import fx_karoo_pause_refer
 
 os.system('clear')
 print('\n\033[36m\033[1m')
@@ -311,6 +313,8 @@ if len(sys.argv) < 3:
     # pause at the (d)esktop when complete, awaiting further
     # user interaction; or terminate in (s)erver mode
     mode = 'd'
+    # random seed for reproducibility
+    seed = None
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -411,6 +415,7 @@ gp = base_class.Base_GP(
     swim=swim,
     mode=mode,
     seed=seed,
+    pause_callback=fx_karoo_pause_refer,
 )
 gp.fit()
 gp.fx_karoo_terminate()

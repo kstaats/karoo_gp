@@ -243,14 +243,14 @@ def pause(menu_dict):
                     query = input('\n\t Select a Tree to evaluate: ')
                     if query == '':
                         break
-                    elif int(query) in list(range(1, menu_dict['pop_b_len'])):
+                    elif int(query) in list(range(0, menu_dict['pop_b_len'])):
                         menu_dict['input_a'] = 'eval'
                         menu_dict['input_b'] = int(query)
                         break
                     else:
                         raise ValueError()
                 except ValueError:
-                    print('\n\t\033[32m Enter a number from 1 including %s. '
+                    print('\n\t\033[32m Enter a number from 0 including %s. '
                           'Try again ...\033[0;0m' % str(menu_dict['pop_b_len'] - 1))
                 except KeyboardInterrupt:
                     print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')

@@ -100,7 +100,7 @@ class Base_GP(object):
                  gen_max=10, tourn_size=7, filename='', output_dir='',
                  evolve_repro=0.1, evolve_point=0.1, evolve_branch=0.2,
                  evolve_cross=0.6, display='s', precision=6, swim='p',
-                 mode='s', seed=None):
+                 mode='s', seed=None, pause_callback=None):
 
         '''
         ### Global variables used for data management ###
@@ -173,6 +173,7 @@ class Base_GP(object):
         # initialize RNG with the given seed
         self.seed = seed
         self.rng = np.random.default_rng(seed)
+        self.pause_callback = pause_callback
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
@@ -213,19 +214,19 @@ class Base_GP(object):
 
 
     def log(self, msg, display={'i', 'g', 'm', 'db'}):
-        show = self.display in display or display == 'all'
-        if show:
+        if self.display in display or display == 'all':
             print(msg)
 
-
     def pause(self, display={'i', 'g', 'm', 'db'}):
-        if (self.pause_callback and
-            (self.display in display or display == None)):
-            self.pause_callback()
+        if not self.pause_callback or not callable(self.pause_callback):
+            self.log('No pause callback function provided')
+            return
+        if self.display in display or display == None:
+            self.pause_callback(self)
 
-
-    def pause_callback(self):
-        self.fx_karoo_pause_refer()
+    def error(self, msg, display={'i', 'g', 'm', 'db'}):
+        self.log(msg, display)
+        self.pause(display)
 
 
     #+++++++++++++++++++++++++++++++++++++++++++++
@@ -872,7 +873,7 @@ class Tree:
 #    (2) take advantage of new features of the Population and Tree objects
 
 # used by: karoo-gp interactive
-def fx_karoo_pause_refer(self):
+def fx_karoo_pause_refer(model):
 
     '''
     Enables (g)eneration, (i)nteractive, and (d)e(b)ug display modes
@@ -887,12 +888,12 @@ def fx_karoo_pause_refer(self):
 
     menu = 1
     while menu == 1:
-        menu = self.fx_karoo_pause()
+        menu = fx_karoo_pause(model)
 
     return
 
 # used by: karoo-gp interactive
-def fx_karoo_pause(self):
+def fx_karoo_pause(model):
 
     '''
     Pause the program execution and engage the user, providing a number of options.
@@ -911,37 +912,37 @@ def fx_karoo_pause(self):
     menu_dict = {
         'input_a': '',
         'input_b': 0,
-        'display': self.display,
-        'tree_depth_max': self.tree_depth_max,
-        'tree_depth_min': self.tree_depth_min,
-        'tree_pop_max': self.tree_pop_max,
-        'gen_id': self.gen_id,
-        'gen_max': self.gen_max,
-        'tourn_size': self.tourn_size,
-        'evolve_repro': self.evolve_repro,
-        'evolve_point': self.evolve_point,
-        'evolve_branch': self.evolve_branch,
-        'evolve_cross': self.evolve_cross,
-        'fittest_dict': self.fittest_dict,
-        'pop_a_len': len(self.population_a),
-        'pop_b_len': len(self.population_b),
-        'path': self.path,
+        'display': model.display,
+        'tree_depth_max': model.tree_depth_max,
+        'tree_depth_min': model.tree_depth_min,
+        'tree_pop_max': model.tree_pop_max,
+        'gen_id': model.population.gen_id,
+        'gen_max': model.gen_max,
+        'tourn_size': model.tourn_size,
+        'evolve_repro': model.evolve_repro,
+        'evolve_point': model.evolve_point,
+        'evolve_branch': model.evolve_branch,
+        'evolve_cross': model.evolve_cross,
+        'fittest_dict': model.fittest_dict,
+        'pop_a_len': len(model.population.trees),
+        'pop_b_len': len(model.population.population_b),
+        'path': model.path,
     }
 
     # call the external function menu.pause
-    menu_dict = menu.pause(menu_dict)
+    menu_dict = menu(menu_dict)
 
     ### PART 2 - unpack values returned from menu.pause ###
     input_a = menu_dict['input_a']
     input_b = menu_dict['input_b']
-    self.display = menu_dict['display']
-    self.tree_depth_min = menu_dict['tree_depth_min']
-    self.gen_max = menu_dict['gen_max']
-    self.tourn_size = menu_dict['tourn_size']
-    self.evolve_repro = menu_dict['evolve_repro']
-    self.evolve_point = menu_dict['evolve_point']
-    self.evolve_branch = menu_dict['evolve_branch']
-    self.evolve_cross = menu_dict['evolve_cross']
+    model.display = menu_dict['display']
+    model.tree_depth_min = menu_dict['tree_depth_min']
+    model.gen_max = menu_dict['gen_max']
+    model.tourn_size = menu_dict['tourn_size']
+    model.evolve_repro = menu_dict['evolve_repro']
+    model.evolve_point = menu_dict['evolve_point']
+    model.evolve_branch = menu_dict['evolve_branch']
+    model.evolve_cross = menu_dict['evolve_cross']
 
     ### PART 3 - execute the user queries returned from menu.pause ###
     if input_a == 'esc':
@@ -950,65 +951,95 @@ def fx_karoo_pause(self):
 
     elif input_a == 'eval':  # evaluate a Tree against the TEST data
         # generate the raw and sympified expression for the given Tree using SymPy
-        self.fx_eval_poly(self.population_b[input_b])
-        #print('\n\t\033[36mTree', input_b, 'yields (raw):',
-        #      self.algo_raw, '\033[0;0m')  # print the raw expression
-        self.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
-                    f'{self.algo_sym} \033[0;0m')  # print the sympified expression
-
+        # self.fx_eval_poly(self.population_b[input_b])
+        tree = model.population.population_b[input_b]
+        model.log(f'\n\t\033[36mTree {input_b} yields (raw): '
+                  f'{tree.parse()}\033[0;0m')  # print the raw expression
+        model.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
+                    f'{str(tree.sym())} \033[0;0m')  # print the sympified expression
         # might change to algo_raw evaluation
-        result = self.fx_fitness_eval(str(self.algo_sym), self.data_test,
-                                        get_pred_labels=True)
-        if self.kernel == 'c':
-            self.fx_fitness_test_classify(result)  # TF tested 2017 02/02
-        elif self.kernel == 'r':
-            self.fx_fitness_test_regress(result)
-        elif self.kernel == 'm':
-            self.fx_fitness_test_match(result)
+        # MAY REDESIGN: The code block below, along with updates to
+        # fx_fitness_store, replace the old fx_fitness_test_... methods,
+        # which were redundant.
+        tree = model.population.evaluate_tree(tree,
+                                              model.data_train,
+                                              model.tf_device_log,
+                                              model.kernel,
+                                              model.class_labels,
+                                              model.tf_device,
+                                              model.terminals,
+                                              model.precision,
+                                              model.log,
+                                              model.fx_fitness_labels_map)
+
+        if model.kernel == 'c':
+            for i, (pred, soln, res, lab) in enumerate(zip(
+                tree.result['pred_labels'][0],
+                tree.result['solution'],
+                tree.result['result'],
+                tree.result['pred_labels'][1])):
+                pred, soln = int(pred), int(soln)
+                model.log(f'\t\033[36m Data row {i} predicts class:\033[1m {pred} '
+                          f'({soln} True)\033[0;0m\033[36m as {res}{lab}\033[0;0m')
+            model.log(f'\n Fitness score: {tree.fitness()}')
+            model.log(f'\n Precision-Recall report:\n{tree.result["precision_recall"]}')
+            model.log(f' Confusion matrix:\n{tree.result["confusion_matrix"]}')
+
+        elif model.kernel == 'r':
+            for i, (res, soln) in enumerate(zip(tree.result['result'],
+                                                tree.result['solution'])):
+                model.log(f'\t\033[36m Data row {i} predicts value: '
+                          f'\033[1m {res:.2f} ({soln:.2f} True)\033[0;0m')
+            model.log(f'\n\t Regression fitness score: {tree.fitness()}')
+            model.log(f'\t Mean Squared Error: {tree.result["mean_squared_error"]}')
+
+        elif model.kernel == 'm':
+            for i, (res, soln) in enumerate(zip(tree.result['result'],
+                                                tree.result['solution'])):
+                model.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res:.2f} '
+                          f'({soln:.2f} True)\033[0;0m')
+            model.log(f'\n\tMatching fitness score: {tree.fitness()}')
+
         # elif self.kernel == '[other]':  # use others as a template
 
     elif input_a == 'print_a':  # print a Tree from population_a
-        self.fx_display_tree(self.population_a[input_b])
+        model.population.trees[input_b].display()
 
     elif input_a == 'print_b':  # print a Tree from population_b
-        self.fx_display_tree(self.population_b[input_b])
+        model.population.population_b[input_b].display()
 
     elif input_a == 'pop_a':  # list all Trees in population_a
-        self.log()
-        for tree_id in range(1, len(self.population_a)):
-            self.fx_eval_poly(self.population_a[tree_id])  # extract the expression
-            self.log(f'\t\033[36m Tree {self.population_a[tree_id][0][1]} '
-                        f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
+        for tree in model.population.trees:
+            model.log(f'\t\033[36m Tree {tree.id} '
+                        f'yields (sym):\033[1m {str(tree.sym())} \033[0;0m')
 
     elif input_a == 'pop_b':  # list all Trees in population_b
-        self.log()
-        for tree_id in range(1, len(self.population_b)):
-            self.fx_eval_poly(self.population_b[tree_id])  # extract the expression
-            self.log(f'\t\033[36m Tree {self.population_b[tree_id][0][1]} '
-                        f'yields (sym):\033[1m {self.algo_sym} \033[0;0m')
+        for i, tree in enumerate(model.population.population_b):
+            model.log(f'\t\033[36m Tree {i} '
+                      f'yields (sym):\033[1m {str(tree.sym())} \033[0;0m')
 
     elif input_a == 'load':  # load population_s to replace population_a
         # NEED TO replace 's' with a user defined filename
-        self.fx_data_recover(self.savefile['s'])
+        model.fx_data_recover(model.savefile['s'])
 
     elif input_a == 'write':  # write the evolving population_b to disk
-        self.fx_data_tree_write(self.population_b, 'b')
-        self.log('\n\t All current members of the evolving population_b '
-                    f'saved to {self.savefile["b"]}')
+        model.fx_data_tree_write(model.population.population_b, 'b')
+        model.log('\n\t All current members of the evolving population_b '
+                    f'saved to {model.savefile["b"]}')
 
     elif input_a == 'add':
         # check for added generations, then exit fx_karoo_pause
         # and continue the run
         # if input_b > 0: self.gen_max = self.gen_max + input_b - REMOVED 2019 06/05
-        self.gen_max = self.gen_max + input_b
+        model.gen_max = model.gen_max + input_b
 
     elif input_a == 'quit':
-        self.fx_karoo_terminate()  # archive populations and exit
+        model.fx_karoo_terminate()  # archive populations and exit
 
     return 1
 
 # used by: Population, Tree
-def fx_data_tree_clean(self, tree):
+def fx_data_tree_clean(tree):
 
     '''
     This method aesthetically cleans the Tree array, removing redundant data.
@@ -1018,9 +1049,9 @@ def fx_data_tree_clean(self, tree):
     Arguments required: tree
     '''
 
-    tree[0][2:] = ''  # A little clean-up to make things look pretty :)
-    tree[1][2:] = ''  # Ignore the man behind the curtain!
-    tree[2][2:] = ''  # Yes, I am a bit OCD ... but you *know* you appreciate clean arrays.
+    tree.root[0][2:] = ''  # A little clean-up to make things look pretty :)
+    tree.root[1][2:] = ''  # Ignore the man behind the curtain!
+    tree.root[2][2:] = ''  # Yes, I am a bit OCD ... but you *know* you appreciate clean arrays.
 
     return tree
 
