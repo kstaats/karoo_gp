@@ -15,6 +15,7 @@ import sys
 import os
 import csv
 import time
+import functools
 
 import numpy as np
 import sklearn.metrics as skm
@@ -175,50 +176,53 @@ class Base_GP(object):
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
-        self.gen_id = 1  # set initial generation ID
+        self.fx_fitness_labels_map = fx_fitness_labels_map_maker(self.class_labels)
+
         # initialise population_a to host the first generation
-        self.population_a = ['Karoo GP by Kai Staats, Generation ' + str(self.gen_id)]
-        # initialise population_b to satisfy fx_karoo_pause()
-        self.population_b = ['placeholder']
-        # construct the first population of Trees
-        self.fx_init_construct(tree_type, tree_depth_base)
+        self.population = Population.generate(log=self.log,
+                                              pause=self.pause,
+                                              error=self.error,
+                                              tree_type=self.tree_type,
+                                              tree_depth_base=self.tree_depth_base,
+                                              tree_depth_max=tree_depth_max,
+                                              tree_pop_max=tree_pop_max,
+                                              functions=self.functions,
+                                              terminals=self.terminals,
+                                              rng=self.rng,
+                                              fitness_type=self.fitness_type)
 
-        if self.kernel == 'p':  # terminate here for Play mode
-            # print the current Tree
-            self.fx_display_tree(self.tree)
-            # save this one Tree to disk
-            self.fx_data_tree_write(self.population_a, 'a')
-            sys.exit()
-
-        elif self.gen_max == 1:  # terminate here if constructing just one generation
-            # save this single population to disk
-            self.fx_data_tree_write(self.population_a, 'a')
-            self.log('\n We have constructed a single, stochastic population of '
-                     f'{self.tree_pop_max} Trees, and saved to disk')
-            sys.exit()
-
-        else:
-            self.log('\n We have constructed the first, stochastic population of ',
-                     f'{self.tree_pop_max} Trees')
-
-        ### PART 3 - evaluate first generation of Trees ###
-        self.log('\n Evaluate the first generation of Trees ...')
-        # generate expression, evaluate fitness, compare fitness
-        self.fx_fitness_gym(self.population_a)
-        # save the first generation of Trees to disk
-        self.fx_data_tree_write(self.population_a, 'a')
-
+        self.log(f'\n\t\033[32m Press \033[36m\033[1m?\033[0;0m\033[32m at any '
+                 f'\033[36m\033[1m(pause)\033[0;0m\033[32m, or '
+                 f'\033[36m\033[1mENTER\033[0;0m \033[32mto continue the run\033[0;0m',
+                 display=['i'])
+        self.pause(display=['i'])
+        self.population.evaluate(log=self.log,
+                                 pause=self.pause,
+                                 error=self.error,
+                                 data_train=self.data_train,
+                                 kernel=self.kernel,
+                                 data_train_rows=self.data_train_rows,
+                                 tf_device_log=self.tf_device_log,
+                                 class_labels=self.class_labels,
+                                 tf_device=self.tf_device,
+                                 terminals=self.terminals,
+                                 precision=self.precision,
+                                 savefile=self.savefile,
+                                 fx_data_tree_write=self.fx_data_tree_write)
         return
+
 
     def log(self, msg, display={'i', 'g', 'm', 'db'}):
         show = self.display in display or display == 'all'
         if show:
             print(msg)
 
+
     def pause(self, display={'i', 'g', 'm', 'db'}):
         if (self.pause_callback and
             (self.display in display or display == None)):
             self.pause_callback()
+
 
     def pause_callback(self):
         self.fx_karoo_pause_refer()
@@ -245,22 +249,16 @@ class Base_GP(object):
         while menu != 0:
             # this allows the user to add generations mid-run and
             # not get buried in nested iterations
-            for self.gen_id in range(self.gen_id + 1, self.gen_max + 1):
-                # evolve additional generations of Trees
-                self.log(f'\n Evolve a population of Trees for Generation {self.gen_id} ...')
-                # initialise population_b to host the next generation
-                self.population_b = ['Karoo GP by Kai Staats - Evolving Generation']
-                # generate the viable gene pool (compares against gp.tree_depth_min)
-                self.fx_fitness_gene_pool()
-                self.fx_nextgen_reproduce()  # method 1 - Reproduction
-                self.fx_nextgen_point_mutate()  # method 2 - Point Mutation
-                self.fx_nextgen_branch_mutate()  # method 3 - Branch Mutation
-                self.fx_nextgen_crossover()  # method 4 - Crossover
-                self.fx_eval_generation()  # evaluate all Trees in a single generation
-                self.population_a = self.fx_evolve_pop_copy(
-                    self.population_b,
-                    ['Karoo GP by Kai Staats - Generation ' + str(self.gen_id)]
-                )
+            for gen in range(self.population.gen_id, self.gen_max):
+                self.population = self.population.evolve(
+                    self.swim, self.tree_depth_min, self.functions,
+                    self.terminals, self.evolve_repro, self.evolve_point,
+                    self.evolve_branch, self.evolve_cross, self.tree_pop_max,
+                    self.tourn_size, self.precision, self.fitness_type,
+                    self.tree_depth_max, self.data_train, self.kernel,
+                    self.data_train_rows, self.tf_device_log, self.class_labels,
+                    self.tf_device, self.savefile, self.rng, self.log,
+                    self.pause, self.error, self.fx_data_tree_write)
 
             if self.mode == 's':
                 # (s)erver mode - termination with completiont of prescribed run
@@ -270,7 +268,7 @@ class Base_GP(object):
                 # and/or modify parameters; 'add' generations continues the run
                 self.log('\n\t\033[32m Enter \033[1m?\033[0;0m\033[32m to review '
                          'your options or \033[1mq\033[0;0m\033[32muit\033[0;0m')
-                menu = self.fx_karoo_pause()
+                menu = self.pause()
 
         return
 
@@ -290,7 +288,7 @@ class Base_GP(object):
         target = open(self.savefile['f'], 'w')
         target.close()
         # save the final generation of Trees to disk
-        self.fx_data_tree_write(self.population_b, 'f')
+        self.fx_data_tree_write(self.population.population_b, 'f')
         self.log('\n\t\033[32m Your Trees and runtime parameters are archived '
                  f'in {self.savefile["f"]}/\033[0;0m')
 
@@ -456,6 +454,8 @@ class Base_GP(object):
         Called by: fx_karoo_pause
 
         Arguments required: population (filename['s'])
+
+        TODO: MAY REDESIGN need up to update
         '''
 
         with open(population, 'rb') as csv_file:
@@ -491,7 +491,7 @@ class Base_GP(object):
 
         return
 
-
+    # used by: None
     def fx_data_tree_append(self, tree):
 
         '''
@@ -508,7 +508,7 @@ class Base_GP(object):
         return
 
 
-    def fx_data_tree_write(self, population, key):
+    def fx_data_tree_write(self, trees, key):
 
         '''
         Save population_* to disk.
@@ -520,16 +520,16 @@ class Base_GP(object):
 
         with open(self.savefile[key], 'a') as csv_file:
             target = csv.writer(csv_file, delimiter=',')
-            if self.gen_id != 1:
+            if self.population.gen_id != 1:
                 target.writerows([''])  # empty row before each generation
             target.writerows([['Karoo GP by Kai Staats', 'Generation:',
-                               str(self.gen_id)]])
+                               str(self.population.gen_id)]])
 
-            for tree in range(1, len(population)):
+            for tree in trees:
                 target.writerows([''])  # empty row before each Tree
                 for row in range(0, 13):
                     # increment through each row in the array Tree
-                    target.writerows([population[tree][row]])
+                    target.writerows([tree.root[row]])
 
         return
 
@@ -565,7 +565,7 @@ class Base_GP(object):
         file.write('\n')
         file.write('\n tournament size: ' + str(self.tourn_size))
         file.write('\n population: ' + str(self.tree_pop_max))
-        file.write('\n number of generations: ' + str(self.gen_id))
+        file.write('\n number of generations: ' + str(self.population.gen_id))
         file.write('\n\n')
         file.close()
 
@@ -619,7 +619,7 @@ class Base_GP(object):
             self.fx_eval_poly(self.population_b[int(fittest_tree)])
             # get simplified expression and process it by TF - tested 2017 02/02
             expr = str(self.algo_sym)
-            result = self.fx_fitness_eval(expr, self.data_test, get_pred_labels=True)
+            result = fx_fitness_eval(expr, self.data_test, fx_fitness_labels_map=self.fx_fitness_labels_map, get_pred_labels=True)
 
             file.write('\n\n Tree ' + str(fittest_tree) +
                        ' is the most fit, with expression:')
@@ -653,6 +653,214 @@ class Base_GP(object):
         file.close()
 
         return
+
+
+# ----------------------------
+# MAY REDESIGN
+#
+# The Population and Tree objects implement basic api methods, initially as
+# wrappers for 'fx_..' functions.
+#
+# For now, they hold very little in state and take an obscene number of args.
+# This is temporary, while we figure out what should be stored where.
+
+class Population:
+
+    def __init__(self, trees, gen_id=1, fitness_type=None, fittest_dict={},
+                 history=[]):
+        '''TODO'''
+        self.trees = trees                # The list of Trees
+        self.gen_id = gen_id              # population_b if len > 0, else trees
+        self.fitness_type = fitness_type  # Kernel uses 'max' or 'min' fitness
+        self.fittest_dict = fittest_dict  # TODO: Fix or remove
+        self.history = history            # The fittest tree from each gen
+        self.population_b = []            # Evolved from self.trees
+
+    @classmethod
+    def generate(cls, log, pause, error, gen_id=1, tree_type='r',
+                 tree_depth_base=3, tree_depth_max=3, tree_pop_max=100,
+                 functions=None, terminals=None, rng=None, fitness_type='max'):
+        '''Return a new Population of a type/amount trees'''
+        trees = []
+        tree_kwargs = dict(log=log,
+                           pause=pause,
+                           error=error,
+                           id=len(trees)+1,
+                           tree_type=tree_type,
+                           tree_depth_base=tree_depth_base,
+                           tree_depth_max=tree_depth_max,
+                           functions=functions,
+                           terminals=terminals,
+                           rng=rng)
+        if tree_type == 'r':
+            n_cycles = int(tree_pop_max/2/tree_depth_max)
+            for i in range(n_cycles):
+                for d in range(tree_depth_max):
+                    for _type in ['f', 'g']:
+                        tree_kwargs['tree_type'] = _type
+                        trees.append(Tree.generate(**tree_kwargs))
+            extras = tree_pop_max - len(trees)
+            for i in range(extras):
+                tree_kwargs['tree_type'] = 'g'
+                trees.append(Tree.generate(**tree_kwargs))
+        else:
+            for i in range(tree_pop_max):
+                trees.append(Tree.generate(**tree_kwargs))
+        return cls(trees, gen_id, fitness_type)
+
+    def fittest(self):
+        '''Return the fittest tree of the population.
+
+        TODO: cache'''
+        if self.fitness_type == 'max':
+            reducer = lambda a, b: a if a.fitness() > b.fitness() else b
+        elif self.fitness_type == 'min':
+            reducer = lambda a, b: a if a.fitness() < b.fitness() else b
+        return functools.reduce(reducer, self.trees)
+
+    def evaluate(self, log=None, pause=None, error=None, data_train=[],
+                 kernel='m', data_train_rows=0, tf_device_log=None,
+                 class_labels=0, tf_device=None, terminals=[], precision=6,
+                 savefile={}, fx_data_tree_write=None):
+        '''Test all trees against the training data, log results'''
+        # TODO: This is a workaround, explaned more in 'fx_.._maker'
+        fx_fitness_labels_map = fx_fitness_labels_map_maker(class_labels)
+
+        # Evaluate trees, log the results to each tree, and return them.
+        new_trees, fittest_dict = fx_eval_generation(self.trees, data_train,
+            kernel, data_train_rows, tf_device_log, class_labels, tf_device,
+            terminals, precision, savefile, self.gen_id, log, pause, error,
+            self.evaluate_tree, fx_data_tree_write, fx_fitness_labels_map)
+
+        # Replace current trees with evaluated trees
+        self.trees = new_trees
+        self.fittest_dict = fittest_dict
+
+        # Add the fittest of this generation to history
+        if len(self.history) < self.gen_id:
+            self.history.append(self.fittest())
+
+    def evaluate_tree(self, tree, data_train, tf_device_log, kernel,
+                      class_labels, tf_device, terminals, precision,
+                      log, fx_fitness_labels_map):
+        '''Test a single tree against training data, log results'''
+        expr = str(tree.sym())
+        result = fx_fitness_eval(expr, data_train, tf_device_log, kernel,
+                                 class_labels, tf_device, terminals,
+                                 fx_fitness_labels_map, get_pred_labels=True)
+        log(f'\t \033[36m with fitness sum:\033[1m {result["fitness"]}'
+            f'\033[0;0m\n', display=['i'])
+        tree = fx_fitness_store(tree, result, kernel, precision)
+        return tree
+
+    def evolve(self, swim, tree_depth_min, functions, terminals, evolve_repro,
+               evolve_point, evolve_branch, evolve_cross, tree_pop_max,
+               tourn_size, precision, fitness_type, tree_depth_max, data_train,
+               kernel, data_train_rows, tf_device_log, class_labels, tf_device,
+               savefile, rng, log, pause, error, fx_data_tree_write):
+        '''Return a new population evolved from self'''
+
+        # Create the list of eligible trees
+        gene_pool = fx_fitness_gene_pool(self, swim, tree_depth_min, terminals,
+                                         log, pause, error)
+
+        # Increment gen_id *after* updating gene_pool so that starting
+        # population can be inspected in interactive mode.
+        self.gen_id += 1
+
+        # The interactive mode needs access to the 'working' population at
+        # every step, i.e. within sub-sub loops. This attr / function do that:
+        self.population_b = []  # Accessible to the 'pause' function
+        def add_to_pop_b(tree):  # Used within loops in fx_ below
+            self.population_b.append(tree)
+
+        # Create a list of evolved trees from the eligible pool
+        fx_nextgen_reproduce(gene_pool, add_to_pop_b, evolve_repro,
+                             tree_pop_max, tourn_size, precision,
+                             fitness_type, rng, log, pause, error)
+        fx_nextgen_point_mutate(gene_pool, add_to_pop_b, evolve_point,
+                                tree_pop_max, tourn_size, precision,
+                                fitness_type, functions, terminals, rng,
+                                log, pause, error)
+        fx_nextgen_branch_mutate(gene_pool, add_to_pop_b, evolve_branch,
+                                 tree_pop_max, tourn_size, precision,
+                                 fitness_type, functions, terminals,
+                                 tree_depth_max, kernel, rng, log,
+                                 pause, error)
+        fx_nextgen_crossover(gene_pool, add_to_pop_b, evolve_cross,
+                             tree_pop_max, tourn_size, precision,
+                             fitness_type, functions, terminals,
+                             tree_depth_max, rng, log, pause, error)
+
+        # Turn the evolved trees into a Population object
+        new_population = Population(trees=self.population_b, gen_id=self.gen_id,
+                                    fitness_type=self.fitness_type,
+                                    history=self.history, reset_id=True)
+
+        # Calculate fitness of the evolved trees
+        new_population.evaluate(log, pause, error, data_train, kernel,
+                                data_train_rows, tf_device_log, class_labels,
+                                tf_device, terminals, precision, savefile,
+                                fx_data_tree_write)
+        return new_population
+
+
+class Tree:
+    def __init__(self, id, root, params):
+        self.id = id        # The tree's position (index) with the population
+        self.root = root    # The np.array that hold's the tree's state
+        self.result = params.get('result', {})  # Reports generated by .evaluate
+        self.pop_tree_type = params.get('pop_tree_type')
+        self.tree_depth_max = params.get('tree_depth_max')
+
+    @classmethod
+    def generate(cls, log, pause, error, id, tree_type, tree_depth_base, tree_depth_max, functions,
+                 terminals, rng):
+        '''Generate a new Tree object given starting parameters.'''
+        # Several 'fx_..' work together to create the new 'root', or the
+        # np.array that defines a tree. Previously these functions all relied on
+        # state. Now we store everything in 'roots' and 'params' and pass them
+        # around in order.
+        root, params = fx_init_tree_initialise(id, tree_type, tree_depth_base)
+        params['tree_depth_max'] = tree_depth_max
+        params['functions'] = functions
+        params['terminals'] = terminals
+        tree = cls(id, root, params)
+        tree, params = fx_init_root_build(tree, params, rng, error)
+        tree, params = fx_init_function_build(tree, params, rng)
+        tree, params = fx_init_terminal_build(tree, params, rng)
+        tree = fx_data_tree_clean(tree)
+        return tree
+
+    def display(self):
+        '''Print the full-detail, formatted tree to the console'''
+        fx_display_tree(self)
+
+    def parse(self):
+        '''Return the raw (un-sympified) expression'''
+        algo_raw, algo_sym = fx_eval_poly(self)
+        return algo_raw
+
+    def sym(self):
+        '''Return the sympified expression'''
+        algo_raw, algo_sym = fx_eval_poly(self)
+        return algo_sym
+
+    def copy(self, id=None):
+        '''Return a duplicate, all attributes/state'''
+        id = id or self.id
+        params = dict(pop_tree_type=self.pop_tree_type,
+                      tree_depth_max=self.tree_depth_max,
+                      result=self.result)
+        return Tree(id, np.copy(self.root), params)
+
+    def fitness(self):
+        '''Return fitness or -1 if not yet evaluated'''
+        if len(self.root) < 12 or len(self.root[12]) < 2 or self.root[12][1] == '':
+            return -1
+        else:
+            return float(self.root[12][1])
+
 
 # ----------------------------
 # MAY REDESIGN
@@ -1766,60 +1974,62 @@ def fx_fitness_node_parse(self, node, tensors):
         raise TypeError(node)
 
 # used by: Population (change to fx_fitness_labels_map_maker)
-def fx_fitness_labels_map(self, result):
+def fx_fitness_labels_map_maker(class_labels):
+    def fx_fitness_labels_map(self, result):
 
-    '''
-    For the CLASSIFY kernel, creates a TensorFlow (TF) sub-graph defined
-    as a sequence of boolean conditions based upon the quantity of true
-    class labels provided in the data .csv. Outputs an array of tuples
-    containing the predicted labels based upon the result and
-    corresponding boolean condition triggered.
+        '''
+        For the CLASSIFY kernel, creates a TensorFlow (TF) sub-graph defined
+        as a sequence of boolean conditions based upon the quantity of true
+        class labels provided in the data .csv. Outputs an array of tuples
+        containing the predicted labels based upon the result and
+        corresponding boolean condition triggered.
 
-    For comparison, the original (pre-TensorFlow) cod follows:
+        For comparison, the original (pre-TensorFlow) cod follows:
 
-        # '-1' keeps a binary classification splitting over the origin
+            # '-1' keeps a binary classification splitting over the origin
+            skew = (self.class_labels / 2) - 1
+            # check for first class (the left-most bin)
+            if solution == 0 and result <= 0 - skew:
+                fitness = 1
+            # check for last class (the right-most bin)
+            elif solution == self.class_labels - 1 and result > solution - 1 - skew:
+                fitness = 1
+            # check for class bins between first and last
+            elif solution - 1 - skew < result <= solution - skew:
+                fitness = 1
+            else:
+                fitness = 0  # no class match
+
+        Called by: fx_fitness_eval
+
+        Arguments required: result
+        '''
+
         skew = (self.class_labels / 2) - 1
-        # check for first class (the left-most bin)
-        if solution == 0 and result <= 0 - skew:
-            fitness = 1
-        # check for last class (the right-most bin)
-        elif solution == self.class_labels - 1 and result > solution - 1 - skew:
-            fitness = 1
-        # check for class bins between first and last
-        elif solution - 1 - skew < result <= solution - skew:
-            fitness = 1
-        else:
-            fitness = 0  # no class match
+        label_rules = {
+            self.class_labels - 1: (tf.constant(self.class_labels - 1),
+                                    tf.constant(' > {}'.format(
+                                        self.class_labels - 2 - skew)))
+        }
 
-    Called by: fx_fitness_eval
+        for class_label in range(self.class_labels - 2, 0, -1):
+            cond = ((class_label - 1 - skew < result) &
+                    (result <= class_label - skew))
+            label_rules[class_label] = tf.cond(
+                cond,
+                lambda: (tf.constant(class_label),
+                            tf.constant(' <= {}'.format(class_label - skew))),
+                lambda: label_rules[class_label + 1]
+            )
 
-    Arguments required: result
-    '''
-
-    skew = (self.class_labels / 2) - 1
-    label_rules = {
-        self.class_labels - 1: (tf.constant(self.class_labels - 1),
-                                tf.constant(' > {}'.format(
-                                    self.class_labels - 2 - skew)))
-    }
-
-    for class_label in range(self.class_labels - 2, 0, -1):
-        cond = ((class_label - 1 - skew < result) &
-                (result <= class_label - skew))
-        label_rules[class_label] = tf.cond(
-            cond,
-            lambda: (tf.constant(class_label),
-                        tf.constant(' <= {}'.format(class_label - skew))),
-            lambda: label_rules[class_label + 1]
+        pred_label = tf.cond(
+            result <= 0 - skew,
+            lambda: (tf.constant(0), tf.constant(' <= {}'.format(0 - skew))),
+            lambda: label_rules[1]
         )
 
-    pred_label = tf.cond(
-        result <= 0 - skew,
-        lambda: (tf.constant(0), tf.constant(' <= {}'.format(0 - skew))),
-        lambda: label_rules[1]
-    )
-
-    return pred_label
+        return pred_label
+    return fx_fitness_labels_map
 
 # used by: Population
 def fx_fitness_store(self, tree, fitness):
