@@ -243,7 +243,7 @@ def pause(menu_dict):
                     query = input('\n\t Select a Tree to evaluate: ')
                     if query == '':
                         break
-                    elif int(query) in list(range(0, menu_dict['pop_b_len'])):
+                    elif int(query) in range(menu_dict['pop_b_len']):
                         menu_dict['input_a'] = 'eval'
                         menu_dict['input_b'] = int(query)
                         break

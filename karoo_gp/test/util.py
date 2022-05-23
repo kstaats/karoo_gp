@@ -3,10 +3,8 @@ import numpy as np
 import sklearn.model_selection as skcv
 
 def hasher(msg):
-    if type(msg) != bytes:
-        if type(msg) != str:
-            msg = str(msg)
-        msg = bytes(msg, 'utf-8')
+    if not isinstance(msg, bytes):
+        msg = str(msg).encode('utf-8')
     hasher = hashlib.md5()
     hasher.update(msg)
     return hasher.hexdigest()
@@ -39,7 +37,7 @@ def load_data(kernel, save_dir=''):
         'p': karoo_dir + '/files/operators_PLAY.csv',
     }
     functions = np.loadtxt(func_dict[kernel], delimiter=',',
-                                skiprows=1, dtype=str)
+                           skiprows=1, dtype=str)
     class_labels = len(np.unique(data_y))
     if len(data_x) < 11:
         data_train = np.c_[data_x, data_y]
@@ -65,9 +63,8 @@ def load_data(kernel, save_dir=''):
 
     savefile = {}  # a dictionary to hold .csv filenames
     for k in ['a', 'b', 'f', 's']:
-        savefile.update({k: f'{path}population_{k}.csv'})
-        target = open(savefile[k], 'w')
-        target.close()
+        savefile[k] = f'{path}population_{k}.csv'}
+        open(savefile[k], 'w').close()
 
     return dict(data_train=data_train,
                 class_labels=class_labels,

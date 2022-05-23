@@ -103,9 +103,7 @@ def test_population_class(default_kwargs, default_evaluate_params,
     assert population.fittest().fitness() == expected[kernel]['fit']
 
     # Evolve
-    evolve_params = dict(default_evolve_params)
-    for k, v in eval_params.items():
-        evolve_params[k] = v
+    evolve_params = {**default_evolve_params, **eval_params}
     evolve_params['functions'] = dataset_params['functions']
     evolve_params['fitness_type'] = dataset_params['fitness_type']
     evolve_params['tree_depth_max'] = kwargs['tree_depth_max']

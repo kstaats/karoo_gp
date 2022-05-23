@@ -30,7 +30,9 @@ def test_tree_generate(default_args, tree_type, tree_depth_base):
     tree = Tree.generate(**kwargs)
     expected = {
         ('f', 3): '(a)*(b)*(b)/(a)+(a)-(a)/(a)+(a)',
-        ('f', 5): '(a)/(a)+(a)+(b)*(b)*(b)*(b)+(a)*(b)/(a)*(b)/(b)/(a)/(b)-(b)*(b)+(a)+(a)+(a)/(b)-(a)+(b)-(a)*(b)/(a)/(a)-(b)+(a)+(b)*(a)-(a)+(a)',
+        ('f', 5): ('(a)/(a)+(a)+(b)*(b)*(b)*(b)+(a)*(b)/(a)*(b)/(b)/(a)/(b)-'
+                   '(b)*(b)+(a)+(a)+(a)/(b)-(a)+(b)-(a)*(b)/(a)/(a)-(b)+(a)+'
+                   '(b)*(a)-(a)+(a)'),
         ('g', 3): '(b)+(b)',
         ('g', 5): '(b)+(b)',
     }

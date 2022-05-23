@@ -180,37 +180,29 @@ class Base_GP(object):
         self.fx_fitness_labels_map = fx_fitness_labels_map_maker(self.class_labels)
 
         # initialise population_a to host the first generation
-        self.population = Population.generate(log=self.log,
-                                              pause=self.pause,
-                                              error=self.error,
-                                              tree_type=self.tree_type,
-                                              tree_depth_base=self.tree_depth_base,
-                                              tree_depth_max=tree_depth_max,
-                                              tree_pop_max=tree_pop_max,
-                                              functions=self.functions,
-                                              terminals=self.terminals,
-                                              rng=self.rng,
-                                              fitness_type=self.fitness_type)
+        self.population = Population.generate(
+            log=self.log, pause=self.pause, error=self.error,
+            tree_type=self.tree_type, tree_depth_base=self.tree_depth_base,
+            tree_depth_max=tree_depth_max, tree_pop_max=tree_pop_max,
+            functions=self.functions, terminals=self.terminals, rng=self.rng,
+            fitness_type=self.fitness_type
+        )
 
         # MAY REDESIGN - moved from init
         self.log(f'\n\t\033[32m Press \033[36m\033[1m?\033[0;0m\033[32m at any '
                  f'\033[36m\033[1m(pause)\033[0;0m\033[32m, or '
                  f'\033[36m\033[1mENTER\033[0;0m \033[32mto continue the run\033[0;0m',
-             display=['i'])
+                 display=['i'])
         self.pause(display=['i'])
-        self.population.evaluate(log=self.log,
-                                 pause=self.pause,
-                                 error=self.error,
-                                 data_train=self.data_train,
-                                 kernel=self.kernel,
-                                 data_train_rows=self.data_train_rows,
-                                 tf_device_log=self.tf_device_log,
-                                 class_labels=self.class_labels,
-                                 tf_device=self.tf_device,
-                                 terminals=self.terminals,
-                                 precision=self.precision,
-                                 savefile=self.savefile,
-                                 fx_data_tree_write=self.fx_data_tree_write)
+        self.population.evaluate(
+            log=self.log, pause=self.pause, error=self.error,
+            data_train=self.data_train, kernel=self.kernel,
+            data_train_rows=self.data_train_rows,
+            tf_device_log=self.tf_device_log, class_labels=self.class_labels,
+            tf_device=self.tf_device, terminals=self.terminals,
+            precision=self.precision, savefile=self.savefile,
+            fx_data_tree_write=self.fx_data_tree_write
+        )
         return
 
 
@@ -219,7 +211,7 @@ class Base_GP(object):
             print(msg)
 
     def pause(self, display={'i', 'g', 'm', 'db'}):
-        if not self.pause_callback or not callable(self.pause_callback):
+        if not self.pause_callback:
             self.log('No pause callback function provided')
             return
         if self.display in display or display == None:
@@ -260,7 +252,8 @@ class Base_GP(object):
                     self.tree_depth_max, self.data_train, self.kernel,
                     self.data_train_rows, self.tf_device_log, self.class_labels,
                     self.tf_device, self.savefile, self.rng, self.log,
-                    self.pause, self.error, self.fx_data_tree_write)
+                    self.pause, self.error, self.fx_data_tree_write,
+                )
 
             if self.mode == 's':
                 # (s)erver mode - termination with completiont of prescribed run
@@ -621,7 +614,8 @@ class Base_GP(object):
             self.fx_eval_poly(self.population_b[int(fittest_tree)])
             # get simplified expression and process it by TF - tested 2017 02/02
             expr = str(self.algo_sym)
-            result = fx_fitness_eval(expr, self.data_test, fx_fitness_labels_map=self.fx_fitness_labels_map, get_pred_labels=True)
+            result = fx_fitness_eval(expr, self.data_test,
+                                     self.fx_fitness_labels_map, get_pred_labels=True)
 
             file.write('\n\n Tree ' + str(fittest_tree) +
                        ' is the most fit, with expression:')
@@ -686,7 +680,7 @@ class Population:
     def generate(cls, log, pause, error, gen_id=1, tree_type='r',
                  tree_depth_base=3, tree_depth_max=3, tree_pop_max=100,
                  functions=None, terminals=None, rng=None, fitness_type='max'):
-        '''Return a new Population of a type/amount trees'''
+        """Return a new Population of a type/amount trees"""
         trees = []
         if tree_type == 'r':
             n_cycles = int(tree_pop_max/2/tree_depth_max)
@@ -713,10 +707,10 @@ class Population:
         '''Return the fittest tree of the population.
 
         TODO: cache'''
-        if self.fitness_type == 'max':
-            reducer = lambda a, b: a if a.fitness() > b.fitness() else b
-        elif self.fitness_type == 'min':
-            reducer = lambda a, b: a if a.fitness() < b.fitness() else b
+        reducer = dict(
+            max=lambda a, b: a if a.fitness() > b.fitness() else b,
+            min=lambda a, b: a if a.fitness() < b.fitness() else b,
+        )[self.fitness_type]
         return functools.reduce(reducer, self.trees)
 
     def evaluate(self, log=None, pause=None, error=None, data_train=[],
@@ -728,10 +722,12 @@ class Population:
         fx_fitness_labels_map = fx_fitness_labels_map_maker(class_labels)
 
         # Evaluate trees, log the results to each tree, and return them.
-        new_trees, fittest_dict = fx_eval_generation(self.trees, data_train,
-            kernel, data_train_rows, tf_device_log, class_labels, tf_device,
-            terminals, precision, savefile, self.gen_id, log, pause, error,
-            self.evaluate_tree, fx_data_tree_write, fx_fitness_labels_map)
+        new_trees, fittest_dict = fx_eval_generation(
+            self.trees, data_train, kernel, data_train_rows, tf_device_log,
+            class_labels, tf_device, terminals, precision, savefile,
+            self.gen_id, log, pause, error, self.evaluate_tree,
+            fx_data_tree_write, fx_fitness_labels_map
+        )
 
         # Replace current trees with evaluated trees
         self.trees = new_trees
@@ -776,31 +772,34 @@ class Population:
             self.population_b.append(tree)
 
         # Create a list of evolved trees from the eligible pool
-        fx_nextgen_reproduce(gene_pool, add_to_pop_b, evolve_repro,
-                             tree_pop_max, tourn_size, precision,
-                             fitness_type, rng, log, pause, error)
-        fx_nextgen_point_mutate(gene_pool, add_to_pop_b, evolve_point,
-                                tree_pop_max, tourn_size, precision,
-                                fitness_type, functions, terminals, rng,
-                                log, pause, error)
-        fx_nextgen_branch_mutate(gene_pool, add_to_pop_b, evolve_branch,
-                                 tree_pop_max, tourn_size, precision,
-                                 fitness_type, functions, terminals,
-                                 tree_depth_max, kernel, rng, log,
-                                 pause, error)
-        fx_nextgen_crossover(gene_pool, add_to_pop_b, evolve_cross,
-                             tree_pop_max, tourn_size, precision,
-                             fitness_type, functions, terminals,
-                             tree_depth_max, rng, log, pause, error)
+        fx_nextgen_reproduce(
+            gene_pool, add_to_pop_b, evolve_repro, tree_pop_max, tourn_size,
+            precision, fitness_type, rng, log, pause, error
+        )
+        fx_nextgen_point_mutate(
+            gene_pool, add_to_pop_b, evolve_point, tree_pop_max, tourn_size,
+            precision, fitness_type, functions, terminals, rng, log, pause, error
+        )
+        fx_nextgen_branch_mutate(
+            gene_pool, add_to_pop_b, evolve_branch, tree_pop_max, tourn_size,
+            precision, fitness_type, functions, terminals, tree_depth_max,
+            kernel, rng, log, pause, error
+        )
+        fx_nextgen_crossover(
+            gene_pool, add_to_pop_b, evolve_cross, tree_pop_max, tourn_size,
+            precision, fitness_type, functions, terminals, tree_depth_max,
+            rng, log, pause, error
+        )
 
         # Return a Population with new trees and fitness
-        new_population = Population(trees=self.population_b, gen_id=self.gen_id,
-                                    fitness_type=self.fitness_type,
-                                    history=self.history, reset_id=True)
-        new_population.evaluate(log, pause, error, data_train, kernel,
-                                data_train_rows, tf_device_log, class_labels,
-                                tf_device, terminals, precision, savefile,
-                                fx_data_tree_write)
+        new_population = Population(
+            trees=self.population_b, gen_id=self.gen_id,
+            fitness_type=self.fitness_type, history=self.history, reset_id=True
+        )
+        new_population.evaluate(
+            log, pause, error, data_train, kernel, data_train_rows, tf_device_log,
+            class_labels, tf_device, terminals, precision, savefile, fx_data_tree_write
+        )
         return new_population
 
 
@@ -847,7 +846,7 @@ class Tree:
 
     def copy(self, id=None):
         '''Return a duplicate, all attributes/state'''
-        id = id or self.id
+        id = id if id is not None else self.id
         params = dict(pop_tree_type=self.pop_tree_type,
                       tree_depth_max=self.tree_depth_max,
                       result=self.result)
@@ -954,7 +953,7 @@ def fx_karoo_pause(model):
         model.log(f'\n\t\033[36mTree {input_b} yields (raw): '
                   f'{tree.parse()}\033[0;0m')  # print the raw expression
         model.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
-                    f'{str(tree.sym())} \033[0;0m')  # print the sympified expression
+                  f'{tree.sym()} \033[0;0m')  # print the sympified expression
         # might change to algo_raw evaluation
         # MAY REDESIGN: The code block below, along with updates to
         # fx_fitness_store, replace the old fx_fitness_test_... methods,
@@ -971,29 +970,27 @@ def fx_karoo_pause(model):
                                               model.fx_fitness_labels_map)
 
         if model.kernel == 'c':
-            for i, (pred, soln, res, lab) in enumerate(zip(
-                tree.result['pred_labels'][0],
-                tree.result['solution'],
-                tree.result['result'],
-                tree.result['pred_labels'][1])):
+            zipped = zip(tree.result['pred_labels'][0], tree.result['solution'],
+                         tree.result['result'], tree.result['pred_labels'][1])
+            for i, (pred, soln, res, lab) in enumerate(zipped):
                 pred, soln = int(pred), int(soln)
                 model.log(f'\t\033[36m Data row {i} predicts class:\033[1m {pred} '
                           f'({soln} True)\033[0;0m\033[36m as {res}{lab}\033[0;0m')
-            model.log(f'\n Fitness score: {tree.fitness()}')
-            model.log(f'\n Precision-Recall report:\n{tree.result["precision_recall"]}')
-            model.log(f' Confusion matrix:\n{tree.result["confusion_matrix"]}')
+            model.log(f'\n Fitness score: {tree.fitness()}'
+                      f'\n\n Precision-Recall report:\n{tree.result["precision_recall"]}'
+                      f'\n Confusion matrix:\n{tree.result["confusion_matrix"]}')
 
         elif model.kernel == 'r':
-            for i, (res, soln) in enumerate(zip(tree.result['result'],
-                                                tree.result['solution'])):
+            zipped = zip(tree.result['result'], tree.result['solution'])
+            for i, (res, soln) in enumerate(zipped):
                 model.log(f'\t\033[36m Data row {i} predicts value: '
                           f'\033[1m {res:.2f} ({soln:.2f} True)\033[0;0m')
-            model.log(f'\n\t Regression fitness score: {tree.fitness()}')
-            model.log(f'\t Mean Squared Error: {tree.result["mean_squared_error"]}')
+            model.log(f'\n\t Regression fitness score: {tree.fitness()}'
+                      f'\n\t Mean Squared Error: {tree.result["mean_squared_error"]}')
 
         elif model.kernel == 'm':
-            for i, (res, soln) in enumerate(zip(tree.result['result'],
-                                                tree.result['solution'])):
+            zipped = zip(tree.result['result'], result['solution'])
+            for i, (res, soln) in enumerate(zipped):
                 model.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res:.2f} '
                           f'({soln:.2f} True)\033[0;0m')
             model.log(f'\n\tMatching fitness score: {tree.fitness()}')
@@ -1022,8 +1019,8 @@ def fx_karoo_pause(model):
 
     elif input_a == 'write':  # write the evolving population_b to disk
         model.fx_data_tree_write(model.population.population_b, 'b')
-        model.log('\n\t All current members of the evolving population_b '
-                    f'saved to {model.savefile["b"]}')
+        model.log(f'\n\t All current members of the evolving population_b '
+                  f'saved to {model.savefile["b"]}')
 
     elif input_a == 'add':
         # check for added generations, then exit fx_karoo_pause
@@ -1272,7 +1269,8 @@ def fx_init_function_build(tree, params, rng):
                     params['pop_node_parent'] = int(tree.root[3][j])
                     tree, params, prior_sibling_arity = fx_init_function_gen(
                         tree, params, parent_arity_sum, prior_sibling_arity,
-                        prior_siblings, rng)  # ... generate a Function ndoe
+                        prior_siblings, rng
+                    )  # ... generate a Function node
                     # sum sibling nodes (current depth) who will spawn
                     # their own children (cousins? :)
                     prior_siblings = prior_siblings + 1
@@ -1787,10 +1785,9 @@ def fx_fitness_eval(expr, data, tf_device_log, kernel, class_labels,
 
             # 1 - Load data into TF vectors
             tensors = {}
-            for i in range(len(terminals)):
-                var = terminals[i]
+            for i, term in enumerate(terminals):
                 # converts data into vectors
-                tensors[var] = tf.constant(data[:, i], dtype=tf.float32)
+                tensors[term] = tf.constant(data[:, i], dtype=tf.float32)
 
             # 2- Transform string expression into TF operation graph
             result = fx_fitness_expr_parse(expr, tensors)
@@ -1887,22 +1884,22 @@ def fx_fitness_eval(expr, data, tf_device_log, kernel, class_labels,
                 RTOL, ATOL = 1e-05, 1e-08
                 pairwise_fitness = tf.cast(
                     tf.less_equal(tf.abs(solution - result),
-                                    ATOL + RTOL * tf.abs(result)),
+                                  ATOL + RTOL * tf.abs(result)),
                     tf.int32
                 )
 
             # elif self.kernel == '[other]':  # use others as a template
 
             else:
-                raise Exception('Kernel type is wrong or missing. '
-                                'You entered {}'.format(kernel))
+                raise ValueError(f'Kernel type is wrong or missing. '
+                                 f'You entered {kernel}')
 
             fitness = tf.reduce_sum(pairwise_fitness)
 
             # Process TF graph and collect the results
             result, pred_labels, solution, fitness, pairwise_fitness = (
                 sess.run([result, pred_labels, solution,
-                            fitness, pairwise_fitness]))
+                          fitness, pairwise_fitness]))
 
     return {'result': result, 'pred_labels': pred_labels,
             'solution': solution, 'fitness': float(fitness),
@@ -1969,7 +1966,7 @@ def fx_fitness_node_parse(node, tensors):
     Recursively transforms parsed expression tree into TensorFlow (TF) graph.
 
     Called by: fx_fitness_expr_parse, fx_fitness_chain_bool,
-                fx_fitness_chain_compare
+               fx_fitness_chain_compare
 
     Arguments required: node, tensors
     '''
@@ -2056,7 +2053,7 @@ def fx_fitness_labels_map_maker(class_labels):
             label_rules[class_label] = tf.cond(
                 cond,
                 lambda: (tf.constant(class_label),
-                            tf.constant(' <= {}'.format(class_label - skew))),
+                          tf.constant(' <= {}'.format(class_label - skew))),
                 lambda: label_rules[class_label + 1]
             )
 
@@ -2358,10 +2355,9 @@ def fx_fitness_test_classify(self, result):
     Arguments required: result
     '''
 
-    for i in range(len(result['result'])):
+    for i, res in enumerate(result['result']):
         pred = int(result['pred_labels'][0][i])
         soln = int(result['solution'][i])
-        res = result['result'][i]
         lab = result['pred_labels'][1][i]
         self.log(f'\t\033[36m Data row {i} predicts class:\033[1m {pred} '
                     f'({soln} True)\033[0;0m\033[36m as {res}{lab}\033[0;0m')
@@ -2371,7 +2367,7 @@ def fx_fitness_test_classify(self, result):
                                     result['pred_labels'][0])
     self.log(f'\n Precision-Recall report:\n{rep}')
     mat = skm.confusion_matrix(result['solution'],
-                                result['pred_labels'][0])
+                               result['pred_labels'][0])
     self.log(f' Confusion matrix:\n{mat}')
 
     return
@@ -2389,9 +2385,7 @@ def fx_fitness_test_regress(self, result):
 
     '''
 
-    for i in range(len(result['result'])):
-        res = result['result'][i]
-        soln = result['solution'][i]
+    for i, (res, soln) in enumerate(zip(result['result'], result['solution'])):
         self.log(f'\t\033[36m Data row {i} predicts value: '
                     f'\033[1m {res:.2f} ({soln:.2f} True)\033[0;0m')
     MSE = skm.mean_squared_error(result['result'], result['solution'])
@@ -2412,11 +2406,9 @@ def fx_fitness_test_match(self, result):
     Arguments required: result
     '''
 
-    for i in range(len(result['result'])):
-        res = result['result'][i]
-        soln = result['solution'][i]
+    for i, (res, soln) in enumerate(zip(result['result'], result['solution'])):
         self.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res:.2f} '
-                    f'({soln:.2f} True)\033[0;0m')
+                 f'({soln:.2f} True)\033[0;0m')
 
     self.log(f'\n\tMatching fitness score: {result["fitness"]}')
 
@@ -2656,12 +2648,12 @@ def fx_evolve_point_mutate(tree, functions, terminals, rng, log, pause, error):
 
     if tree.root[5][node] == 'root':
         # call the previously loaded .csv which contains all operators
-        rnd = rng.integers(0, len(functions[:,0]))
+        rnd = rng.integers(len(functions[:,0]))
         tree.root[6][node] = functions[rnd][0]  # replace function (operator)
 
     elif tree.root[5][node] == 'func':
         # call the previously loaded .csv which contains all operators
-        rnd = rng.integers(0, len(functions[:,0]))
+        rnd = rng.integers(len(functions[:,0]))
         tree.root[6][node] = functions[rnd][0]  # replace function (operator)
 
     elif tree.root[5][node] == 'term':
@@ -2719,7 +2711,7 @@ def fx_evolve_full_mutate(tree, branch, functions, terminals, rng, log, pause,
                 display=['i'])
 
             # call the previously loaded .csv which contains all operators
-            rnd = rng.integers(0, len(functions[:,0]))
+            rnd = rng.integers(len(functions[:,0]))
             # replace function (operator)
             tree.root[6][branch.root[n]] = functions[rnd][0]
 
@@ -2799,7 +2791,7 @@ def fx_evolve_grow_mutate(tree, branch, functions, terminals, tree_depth_max,
             f'tourn_winner:\033[0;0m\n {tree.root}', display=['db'])
 
         # call the previously loaded .csv which contains all terminals
-        rnd = rng.integers(0, len(terminals) - 1)
+        rnd = rng.integers(len(terminals) - 1)
         tree.root[6][branch_top] = terminals[rnd]  # replace terminal (variable)
 
         log(f'\n\033[36m This is tourn_winner after terminal\033[1m '
@@ -2834,7 +2826,7 @@ def fx_evolve_grow_mutate(tree, branch, functions, terminals, tree_depth_max,
                 display=['db'])
 
             # call the previously loaded .csv which contains all terminals
-            rnd = rng.integers(0, len(terminals) - 1)
+            rnd = rng.integers(len(terminals) - 1)
             # replace type ('func' to 'term' or 'term' to 'term')
             tree.root[5][branch_top] = 'term'
             tree.root[6][branch_top] = terminals[rnd]  # replace label
@@ -3134,9 +3126,7 @@ def fx_evolve_branch_copy(tree, branch, error):
     ])
 
     # tested 2015 06/08
-    for n in range(len(branch.root)):
-
-        node = branch.root[n]
+    for node in branch.root:
         branch_top = int(branch.root[0])
 
         TREE_ID = 'copy'
@@ -3545,33 +3535,31 @@ def fx_display_tree(tree):
     print('\n\033[1m\033[36m Tree ID', int(tree.root[0][1]), '\033[0;0m')
 
     # increment through all possible Tree depths - tested 2016 07/09
-    for depth in range(0, tree.tree_depth_max + 1):
+    for depth in range(tree.tree_depth_max + 1):
         print('\n', ind, '\033[36m Tree Depth:', depth, 'of',
-                tree.root[2][1], '\033[0;0m')
+              tree.root[2][1], '\033[0;0m')
 
         # increment through all nodes (redundant, I know)
         for node in range(1, len(tree.root[3])):
             if int(tree.root[4][node]) == depth:
-                print('')
+                print()
                 print(ind, '\033[1m\033[36m NODE:', tree.root[3][node],
-                        '\033[0;0m')
+                      '\033[0;0m')
                 print(ind, '  type:', tree.root[5][node])
                 print(ind, '  label:', tree.root[6][node], '\tparent node:',
-                        tree.root[7][node])
+                      tree.root[7][node])
                 print(ind, '  arity:', tree.root[8][node], '\tchild node(s):',
-                        tree.root[9][node], tree.root[10][node], tree.root[11][node])
+                      tree.root[9][node], tree.root[10][node], tree.root[11][node])
 
         ind = ind + '\t'
 
-    print('')
+    print()
     # generate the raw and sympified expression for the entire Tree
     algo_raw, algo_sym = fx_eval_poly(tree)
     print('\t\033[36mTree', tree.root[0][1], 'yields (raw):',
-            algo_raw, '\033[0;0m')
+          algo_raw, '\033[0;0m')
     print('\t\033[36mTree', tree.root[0][1], 'yields (sym):\033[1m',
-            algo_sym, '\033[0;0m')
-
-    return
+          algo_sym, '\033[0;0m')
 
 # used by: None (see docstring)
 def fx_display_branch(self, tree, start):
@@ -3602,29 +3590,26 @@ def fx_display_branch(self, tree, start):
     # increment through all Tree depths - tested 2016 07/09
     for depth in range(int(tree[4][start]), self.tree_depth_max + 1):
         print('\n', ind, '\033[36m Tree Depth:', depth, 'of',
-                tree[2][1], '\033[0;0m')
+              tree[2][1], '\033[0;0m')
 
         # increment through all nodes listed in the branch
-        for n in range(0, len(branch)):
-            node = branch[n]
+        for node in branch:
 
             if int(tree[4][node]) == depth:
-                print('')
+                print()
                 print(ind, '\033[1m\033[36m NODE:', node, '\033[0;0m')
                 print(ind, '  type:', tree[5][node])
                 print(ind, '  label:', tree[6][node], '\tparent node:',
-                        tree[7][node])
+                      tree[7][node])
                 print(ind, '  arity:', tree[8][node], '\tchild node(s):',
-                        tree[9][node], tree[10][node], tree[11][node])
+                      tree[9][node], tree[10][node], tree[11][node])
 
         ind = ind + '\t'
 
-    print('')
+    print()
     # generate the raw and sympified expression for the entire Tree
     self.fx_eval_poly(tree)
     print('\t\033[36mTree', tree[0][1], 'yields (raw):',
-            self.algo_raw, '\033[0;0m')
+          self.algo_raw, '\033[0;0m')
     print('\t\033[36mTree', tree[0][1], 'yields (sym):\033[1m',
-            self.algo_sym, '\033[0;0m')
-
-    return
+          self.algo_sym, '\033[0;0m')
