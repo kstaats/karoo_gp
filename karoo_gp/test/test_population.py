@@ -82,7 +82,6 @@ def test_population_class(default_kwargs, default_evaluate_params,
     kwargs['tree_pop_max'] = 10
     kwargs['terminals'] = dataset_params['terminals']
     kwargs['fitness_type'] = dataset_params['fitness_type']
-    kwargs['rng'] = rng
     population = Population.generate(**kwargs)
 
     # Evaluate
