@@ -2787,11 +2787,7 @@ def fx_evolve_grow_mutate(tree, branch, functions, terminals, tree_depth_max,
 
         # TEST & DEBUG: force to 'func' or 'term' and comment the next 3 lines
         # type_mod = '[func or term]'
-        rnd = rng.integers(2)
-        if rnd == 0:
-            type_mod = 'func'  # randomly selected as Function
-        elif rnd == 1:
-            type_mod = 'term'  # randomly selected as Terminal
+        type_mod = rng.choice(['term', 'func'])
 
         # mutate 'branch_top' to a terminal and delete all nodes beneath
         # (no subsequent nodes are added to this branch)
