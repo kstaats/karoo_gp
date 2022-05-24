@@ -63,7 +63,7 @@ def load_data(kernel, save_dir=''):
 
     savefile = {}  # a dictionary to hold .csv filenames
     for k in ['a', 'b', 'f', 's']:
-        savefile[k] = f'{path}population_{k}.csv'}
+        savefile[k] = f'{path}population_{k}.csv'
         open(savefile[k], 'w').close()
 
     return dict(data_train=data_train,
