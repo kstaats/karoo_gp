@@ -169,9 +169,12 @@ class Base_GP(object):
         self.precision = precision  # the number of floating points for the round function in 'fx_fitness_eval'
         self.swim = swim  # pass along the gene_pool restriction methodology
         self.mode = mode  # mode is engaged in fit()
-        # initialize RNG with the given seed
+
+        # initialize RNG(s) with the given seed
         self.seed = seed
-        self.rng = np.random.default_rng(seed)
+        self.rng = np.random.default_rng(seed)  # this is used by Karoo
+        np.random.seed(seed)  # this is used by sklearn while classifying
+        tf.set_random_seed(seed)  # this is not used, but set it just in case
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)

@@ -311,6 +311,8 @@ if len(sys.argv) < 3:
     # pause at the (d)esktop when complete, awaiting further
     # user interaction; or terminate in (s)erver mode
     mode = 'd'
+    # TODO: allow the user to enter a seed
+    seed = None
 
 
 #++++++++++++++++++++++++++++++++++++++++++
