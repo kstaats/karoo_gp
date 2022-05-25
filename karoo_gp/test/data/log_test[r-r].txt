@@ -1,0 +1,12 @@
+Karoo GP
+ launched: 2022-05-25_04-57-54-360868
+ dataset: karoo_gp/files/data_REGRESS.csv
+
+
+ Tree 2 is the most fit, with expression:
+
+ 0
+
+ Regression fitness score: 8.989999771118164
+ Mean Squared Error: 0.9978554844856262
+
