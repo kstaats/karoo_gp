@@ -170,10 +170,13 @@ class Base_GP(object):
         self.precision = precision  # the number of floating points for the round function in 'fx_fitness_eval'
         self.swim = swim  # pass along the gene_pool restriction methodology
         self.mode = mode  # mode is engaged in fit()
-        # initialize RNG with the given seed
-        self.seed = seed
-        self.rng = np.random.default_rng(seed)
         self.pause_callback = pause_callback
+
+        # initialize RNG(s) with the given seed
+        self.seed = seed
+        self.rng = np.random.default_rng(seed)  # this is used by Karoo
+        np.random.seed(seed)  # this is used by sklearn while classifying
+        tf.set_random_seed(seed)  # this is not used, but set it just in case
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
@@ -565,7 +568,8 @@ class Base_GP(object):
 
             # revised method, re-evaluating all Trees from stored fitness score
             population_b = self.population.population_b
-            for tree in population_b:
+            population = population_b if len(population_b) > 0 else self.population.trees
+            for tree in population:
 
                 fitness = float(tree.root[12][1])
 
@@ -596,14 +600,22 @@ class Base_GP(object):
 
                 # print('fitness_best:', fitness_best, 'fittest_tree:', fittest_tree)
 
-            # get simplified expression and process it by TF - tested 2017 02/02
-            expr = tree.sympify()
-            result = fx_fitness_eval(expr, self.data_test,
-                                     self.fx_fitness_labels_map, get_pred_labels=True)
+            # Check if tree has been evaluated
 
-            file.write('\n\n Tree ' + str(fittest_tree) +
+            # get simplified expression and process it by TF - tested 2017 02/02
+            expr = fittest_tree.sympify()
+            if len(fittest_tree.result) > 0:
+                result = fittest_tree.result
+            else:
+                result = fx_fitness_eval(
+                    expr, self.data_train, self.tf_device_log, self.kernel,
+                    self.class_labels, self.tf_device, self.terminals,
+                    self.fx_fitness_labels_map, get_pred_labels=True
+                )
+
+            file.write('\n\n Tree ' + str(fittest_tree.id) +
                        ' is the most fit, with expression:')
-            file.write('\n\n ' + str(tree.sympify()))
+            file.write('\n\n ' + str(expr))
 
             if self.kernel == 'c':
                 file.write('\n\n Classification fitness score: {}'.format(result['fitness']))
@@ -616,12 +628,12 @@ class Base_GP(object):
 
             elif self.kernel == 'r':
                 MSE = skm.mean_squared_error(result['result'], result['solution'])
-                fitness = result['fitness']
+                fitness = fittest_tree.fitness()
                 file.write('\n\n Regression fitness score: {}'.format(fitness))
                 file.write('\n Mean Squared Error: {}'.format(MSE))
 
             elif self.kernel == 'm':
-                file.write('\n\n Matching fitness score: {}'.format(result['fitness']))
+                file.write('\n\n Matching fitness score: {}'.format(tree.result['fitness']))
 
             # elif self.kernel == '[other]':  # use others as a template
 
@@ -2082,6 +2094,7 @@ def fx_fitness_store(tree, result, kernel, precision):
     # if len(tree[3]) > 4:  # if the Tree array is wide enough -- SEE SCRATCHPAD
 
     # relocated from fx_fitness_test_classify/regress/match
+    tree.result['fitness'] = fitness
     tree.result['result'] = list(result['result'])
     tree.result['solution'] = list(result['solution'])
     if kernel == 'c':

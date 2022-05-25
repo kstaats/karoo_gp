@@ -51,7 +51,7 @@ def test_tree_class(capsys, default_args, tree):
 
     # Display Methods
     assert tree.parse() == '(a)*(b)*(b)/(a)+(a)-(a)/(a)+(a)'
-    assert str(tree.sym()) == '2*a + b**2 - 1'
+    assert str(tree.sympify()) == '2*a + b**2 - 1'
     assert tree.fitness() == -1
     tree.display()
     captured = capsys.readouterr()

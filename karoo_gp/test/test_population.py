@@ -98,7 +98,7 @@ def test_population_class(default_kwargs, default_evaluate_params,
         'r': dict(exp='2*r', fit=205.509979),
         'm': dict(exp='-2*a - b + 2*c', fit=1.0),
     }
-    assert str(population.fittest().sym()) == expected[kernel]['exp']
+    assert str(population.fittest().sympify()) == expected[kernel]['exp']
     assert population.fittest().fitness() == expected[kernel]['fit']
 
     # Evolve
