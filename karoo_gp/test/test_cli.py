@@ -5,45 +5,38 @@ import pytest
 import numpy as np
 
 
-@pytest.fixture
-def root_dir():
-    return pathlib.Path(__file__).resolve().parents[2]
+def parse_log(log_path, root_dir):
+    """Extract dataset file and the results from log_test.txt."""
+    text = log_path.read_text()
+    # ignore the head and the date, get the dataset path and the rest
+    head, date, dataset, rest = text.split('\n', 3)
+    dataset = pathlib.Path(dataset.strip().split(': ', 1)[-1])
+    if dataset.is_absolute():
+        # the test data files use relative paths, make this relative too
+        dataset = dataset.relative_to(root_dir)
+    return dataset, rest
 
-@pytest.fixture
-def karoo(root_dir):
-    return root_dir / 'karoo-gp.py'
 
-@pytest.fixture
-def data_classify(root_dir):
-    return root_dir / 'karoo_gp' / 'files' / 'data_CLASSIFY.csv'
-
-
-@pytest.mark.parametrize('ker', ['c', 'r', 'm'])
 @pytest.mark.parametrize('typ', ['f', 'g', 'r'])
-def test_cli(tmp_path, karoo, data_classify, ker, typ):
-    cmd = ['python3', karoo, '-ker', ker, '-typ', typ, '-bas', '3',
-           '-pop', '10', '-fil', data_classify]
-    cp = subprocess.run(cmd, cwd=tmp_path)
-    assert cp.returncode == 0
+@pytest.mark.parametrize('ker', ['c', 'r'])
+def test_cli(tmp_path, paths, ker, typ):
+    """Test that the CLI yields consistent results with different kernels/trees."""
+    data_file = paths.data_files[ker]  # get the right data file for the kernel
+    cmd = ['python3', paths.karoo, '-ker', ker, '-typ', typ, '-bas', '3',
+           '-pop', '10', '-rsd', '1000', '-fil', data_file]
+    print(' '.join(map(str, cmd)))
+    cp = subprocess.run(cmd, cwd=tmp_path)  # run Karoo in a tmp dir
+    assert cp.returncode == 0  # check that the run was successful
 
     runs_dir = tmp_path / 'runs'  # runs are in the 'runs' dir
     runs = list(runs_dir.iterdir())
     assert len(runs) == 1  # there should be only one run
 
-    # read the content of the log of the only run available
-    log = (runs_dir / runs[0] / 'log_test.txt').read_text()
+    log_test_rd = runs_dir / runs[0] / 'log_test.txt'
+    log_test_td = paths.test_data / f'log_test[{ker}-{typ}].txt'
+    actual_dataset, actual_log = parse_log(log_test_rd, paths.root)
+    expected_dataset, expected_log = parse_log(log_test_td, paths.root)
 
-    # check that content of log matches what we expect
-    extinct = 'your species has gone extinct!'
-    expected = {
-        ('f', 'c'): 'pl**2 - pl*sw + pw - sl - sw',
-        ('f', 'r'): '2*pl - pw - sl + sw/pl - 1/pl',
-        ('f', 'm'): extinct,
-        ('g', 'c'): 'pl + pw - sl',
-        ('g', 'r'): 'Tree 2 is the most fit, with expression:\n\n 1',
-        ('g', 'm'): extinct,
-        ('r', 'c'): 'pw*sw - sw',
-        ('r', 'r'): 'Tree 10 is the most fit, with expression:\n\n 0',
-        ('r', 'm'): extinct,
-    }
-    assert expected[(typ, ker)] in log
+    # check that both datasets match the input dataset
+    assert actual_dataset == expected_dataset == data_file.relative_to(paths.root)
+    assert actual_log == expected_log  # compare the content of the log_test

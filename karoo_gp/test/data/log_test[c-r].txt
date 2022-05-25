@@ -1,0 +1,27 @@
+Karoo GP
+ launched: 2022-05-25_04-58-52-667486
+ dataset: karoo_gp/files/data_CLASSIFY.csv
+
+
+ Tree 3 is the most fit, with expression:
+
+ pl + pw - sl
+
+ Classification fitness score: 18.0
+
+ Precision-Recall report:
+               precision    recall  f1-score   support
+
+         0.0       0.56      1.00      0.72         9
+         1.0       0.50      0.25      0.33        12
+         2.0       0.75      0.67      0.71         9
+
+    accuracy                           0.60        30
+   macro avg       0.60      0.64      0.59        30
+weighted avg       0.59      0.60      0.56        30
+
+ Confusion matrix:
+ [[9 0 0]
+ [7 3 2]
+ [0 3 6]]
+
