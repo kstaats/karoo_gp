@@ -558,22 +558,23 @@ class Base_GP(object):
         file.write('\n dataset: ' + str(self.dataset))
         file.write('\n')
 
-        if len(self.fittest_dict) > 0:
+        if len(self.population.fittest_dict) > 0:
 
             fitness_best = 0
             fittest_tree = 0
 
             # revised method, re-evaluating all Trees from stored fitness score
-            for tree_id in range(1, len(self.population_b)):
+            population_b = self.population.population_b
+            for tree in population_b:
 
-                fitness = float(self.population_b[tree_id][12][1])
+                fitness = float(tree.root[12][1])
 
                 if self.kernel == 'c':  # display best fit Trees for the CLASSIFY kernel
                     # find the Tree with Maximum fitness score
                     if fitness >= fitness_best:
                         # set best fitness Tree
                         fitness_best = fitness
-                        fittest_tree = tree_id
+                        fittest_tree = tree
 
                 elif self.kernel == 'r':  # display best fit Trees for the REGRESSION kernel
                     if fitness_best == 0:
@@ -582,31 +583,27 @@ class Base_GP(object):
                     if fitness <= fitness_best:
                         # set best fitness Tree
                         fitness_best = fitness
-                        fittest_tree = tree_id
+                        fittest_tree = tree
 
                 elif self.kernel == 'm':  # display best fit Trees for the MATCH kernel
                     # find the Tree with a perfect match for all data rows
                     if fitness == self.data_train_rows:
                         # set best fitness Tree
                         fitness_best = fitness
-                        fittest_tree = tree_id
+                        fittest_tree = tree
 
                 # elif self.kernel == '[other]':  # use others as a template
 
                 # print('fitness_best:', fitness_best, 'fittest_tree:', fittest_tree)
 
-
-            # test the most fit Tree and write to the .txt log
-            # generate the raw and sympified expression for the given Tree using SymPy
-            self.fx_eval_poly(self.population_b[int(fittest_tree)])
             # get simplified expression and process it by TF - tested 2017 02/02
-            expr = str(self.algo_sym)
+            expr = tree.sympify()
             result = fx_fitness_eval(expr, self.data_test,
                                      self.fx_fitness_labels_map, get_pred_labels=True)
 
             file.write('\n\n Tree ' + str(fittest_tree) +
                        ' is the most fit, with expression:')
-            file.write('\n\n ' + str(self.algo_sym))
+            file.write('\n\n ' + str(tree.sympify()))
 
             if self.kernel == 'c':
                 file.write('\n\n Classification fitness score: {}'.format(result['fitness']))
@@ -681,21 +678,21 @@ class Population:
                 for d in range(tree_depth_max):
                     for _type in ['f', 'g']:
                         trees.append(Tree.generate(log, pause, error,
-                                                   len(trees)+1, _type, d+1,
+                                                   len(trees), _type, d+1,
                                                    tree_depth_max, functions,
                                                    terminals, rng))
 
             # ..and add ramped trees for the remainder.
             extras = tree_pop_max - len(trees)
             for i in range(extras):
-                trees.append(Tree.generate(log, pause, error, len(trees)+1,
+                trees.append(Tree.generate(log, pause, error, len(trees),
                                            'g', tree_depth_base, tree_depth_max,
                                            functions, terminals, rng))
         else:
             # (f)ull: Fill-in all nodes to the maximum depth
             # (g)row: Add nodes or terminals at random up to max depth
             for i in range(tree_pop_max):
-                trees.append(Tree.generate(log, pause, error, i+1, tree_type,
+                trees.append(Tree.generate(log, pause, error, i, tree_type,
                                            tree_depth_base, tree_depth_max,
                                            functions, terminals, rng))
         return cls(trees, gen_id, fitness_type)
@@ -738,7 +735,7 @@ class Population:
                       class_labels, tf_device, terminals, precision,
                       log, fx_fitness_labels_map):
         '''Test a single tree against training data, log results'''
-        expr = tree.sym()
+        expr = tree.sympify()
         result = fx_fitness_eval(expr, data_train, tf_device_log, kernel,
                                  class_labels, tf_device, terminals,
                                  fx_fitness_labels_map, get_pred_labels=True)
@@ -836,7 +833,7 @@ class Tree:
         algo_raw, algo_sym = fx_eval_poly(self)
         return algo_raw
 
-    def sym(self, return_sympy=False):
+    def sympify(self, return_sympy=False):
         '''Return the sympified expression'''
         algo_raw, algo_sym = fx_eval_poly(self)
         return algo_sym if return_sympy else str(algo_sym)
@@ -916,7 +913,7 @@ def fx_karoo_pause(model):
         'evolve_point': model.evolve_point,
         'evolve_branch': model.evolve_branch,
         'evolve_cross': model.evolve_cross,
-        'fittest_dict': model.fittest_dict,
+        'fittest_dict': model.population.fittest_dict,
         'pop_a_len': len(model.population.trees),
         'pop_b_len': len(model.population.population_b),
         'path': model.path,
@@ -949,7 +946,7 @@ def fx_karoo_pause(model):
         model.log(f'\n\t\033[36mTree {input_b} yields (raw): '
                   f'{tree.parse()}\033[0;0m')  # print the raw expression
         model.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
-                  f'{tree.sym()} \033[0;0m')  # print the sympified expression
+                  f'{tree.sympify()} \033[0;0m')  # print the sympified expression
         # might change to algo_raw evaluation
         # MAY REDESIGN: The code block below, along with updates to
         # fx_fitness_store, replace the old fx_fitness_test_... methods,
@@ -1002,12 +999,12 @@ def fx_karoo_pause(model):
     elif input_a == 'pop_a':  # list all Trees in population_a
         for tree in model.population.trees:
             model.log(f'\t\033[36m Tree {tree.id} '
-                        f'yields (sym):\033[1m {tree.sym()} \033[0;0m')
+                        f'yields (sym):\033[1m {tree.sympify()} \033[0;0m')
 
     elif input_a == 'pop_b':  # list all Trees in population_b
         for i, tree in enumerate(model.population.population_b):
             model.log(f'\t\033[36m Tree {i} '
-                      f'yields (sym):\033[1m {tree.sym()} \033[0;0m')
+                      f'yields (sym):\033[1m {tree.sympify()} \033[0;0m')
 
     elif input_a == 'load':  # load population_s to replace population_a
         # NEED TO replace 's' with a user defined filename
@@ -1608,7 +1605,7 @@ def fx_eval_generation(trees, train_data, kernel, data_train_rows,
 
     # renumber all Trees in given population - merged fx_evolve_tree_renum 2018 04/12
     for i, tree in enumerate(trees):
-        tree.id = tree.root[0][1] = i+1
+        tree.id = tree.root[0][1] = i
 
     # run fx_eval(), fx_fitness(), fx_fitness_store(), and fitness record
     trees, fittest_dict = fx_fitness_gym(trees, train_data, kernel,
@@ -1668,7 +1665,7 @@ def fx_fitness_gym(trees, data_train, kernel, data_train_rows,
     for tree in trees:
 
         ### PART 1 - GENERATE MULTIVARIATE EXPRESSION FOR EACH TREE ###
-        algo_sym = tree.sym()  # extract the expression
+        algo_sym = tree.sympify()  # extract the expression
         log(f'\t\033[36mTree {tree.root[0][1]} '
             f'yields (sym):\033[1m {str(algo_sym)} \033[0;0m')
 
@@ -1689,7 +1686,7 @@ def fx_fitness_gym(trees, data_train, kernel, data_train_rows,
             if fitness >= fitness_best:
                 fitness_best = fitness  # set best fitness score
                 # add to dictionary if fitness >= prior
-                fittest_dict.update({tree.id: algo_sym})
+                fittest_dict[tree.id] = algo_sym
 
         # display best fit Trees for the REGRESSION kernel
         elif kernel == 'r':
@@ -1699,7 +1696,7 @@ def fx_fitness_gym(trees, data_train, kernel, data_train_rows,
             if fitness <= fitness_best:
                 fitness_best = fitness  # set best fitness score
                 # add to dictionary if fitness <= prior
-                fittest_dict.update({tree.id: algo_sym})
+                fittest_dict[tree.id] = algo_sym
 
         # display best fit Trees for the MATCH kernel
         elif kernel == 'm':
@@ -1707,7 +1704,7 @@ def fx_fitness_gym(trees, data_train, kernel, data_train_rows,
             if fitness == data_train_rows:
                 fitness_best = fitness  # set best fitness score
                 # add to dictionary if all rows match
-                fittest_dict.update({tree.id: algo_sym})
+                fittest_dict[tree.id] = algo_sym
 
         # elif kernel == '[other]':  # use others as a template
 
@@ -2282,7 +2279,7 @@ def fx_fitness_gene_pool(population, swim, tree_depth_min, terminals,
 
     for tree in population.trees:
         # extract the expression
-        algo_sym = tree.sym()
+        algo_sym = tree.sympify()
 
         # each tree must have the min number of nodes defined by the user
         if swim == 'p':

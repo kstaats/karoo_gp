@@ -41,7 +41,7 @@ def test_base_init(kwargs, model):
 def test_base_fit(model):
     model.fit()
     # Hash of expected output.csv in /runs/
-    hashes = {'a': '7e01d00c00c58abe90adfae393acaad3',
+    hashes = {'a': '6fe376172ef1c6282f36cd8cc41fa494',
               'b': 'd41d8cd98f00b204e9800998ecf8427e',
               'f': 'd41d8cd98f00b204e9800998ecf8427e',
               's': 'd41d8cd98f00b204e9800998ecf8427e'}
