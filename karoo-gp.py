@@ -54,28 +54,27 @@ import sys
 import argparse
 from karoo_gp import base_class, __version__
 
-os.system('clear')
-print('\n\033[36m\033[1m')
-print('\t **   **   ******    *****    ******    ******       ******    ******')
-print('\t **  **   **    **  **   **  **    **  **    **     **        **    **')
-print('\t ** **    **    **  **   **  **    **  **    **     **        **    **')
-print('\t ****     ********  ******   **    **  **    **     **   ***  *******')
-print('\t ** **    **    **  ** **    **    **  **    **     **    **  **')
-print('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
-print('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
-print('\t **    ** **    **  **    **  ******    ******       ******   **')
-print('\033[0;0m')
-print('\t\033[36m Genetic Programming in Python with TensorFlow - '
-      'by Kai Staats, version {}\033[0;0m'.format(__version__))
-print('')
-
-
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Interface for Configuation       |
 #++++++++++++++++++++++++++++++++++++++++++
 
 # either no command line argument, or only a filename is provided
 if len(sys.argv) < 3:
+
+    os.system('clear')
+    print('\n\033[36m\033[1m')
+    print('\t **   **   ******    *****    ******    ******       ******    ******')
+    print('\t **  **   **    **  **   **  **    **  **    **     **        **    **')
+    print('\t ** **    **    **  **   **  **    **  **    **     **        **    **')
+    print('\t ****     ********  ******   **    **  **    **     **   ***  *******')
+    print('\t ** **    **    **  ** **    **    **  **    **     **    **  **')
+    print('\t **  **   **    **  **  **   **    **  **    **     **    **  **')
+    print('\t **   **  **    **  **   **  **    **  **    **     **    **  **')
+    print('\t **    ** **    **  **    **  ******    ******       ******   **')
+    print('\033[0;0m')
+    print('\t\033[36m Genetic Programming in Python with TensorFlow - '
+          'by Kai Staats, version {}\033[0;0m'.format(__version__))
+    print()
 
     while True:
         try:
