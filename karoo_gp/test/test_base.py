@@ -43,9 +43,9 @@ def test_base_fit(default_kwargs, ker):
 
     def compare_expected(model, expected):
         """Test models fields against expected dict"""
-        fitlist = ''.join([str(f) for f in model.fittest_dict.keys()])
+        fitlist = ''.join(map(str, model.fittest_dict))
         assert expected['fitlist'] == fitlist
-        fittest = max(model.fittest_dict.keys())
+        fittest = max(model.fittest_dict)
         assert expected['sym'] == str(model.fittest_dict[fittest])
         assert expected['fit'] == model.population_a[fittest][12][1]
 
