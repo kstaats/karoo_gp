@@ -1,5 +1,7 @@
 import pytest
 import numpy as np
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()  # from https://www.tensorflow.org/guide/migrate
 
 from karoo_gp import Population
 from .util import hasher, load_data
@@ -75,6 +77,8 @@ def default_evolve_params():
 def test_population_class(default_kwargs, default_evaluate_params,
                           default_evolve_params, rng, kernel):
     # Load the dataset for kernel
+    np.random.seed(1000)
+    tf.set_random_seed(1000)
     dataset_params = load_data(kernel, save_dir='test')
 
     # Initialize population using dataset terminals
@@ -94,7 +98,7 @@ def test_population_class(default_kwargs, default_evaluate_params,
     eval_params['savefile'] = dataset_params['savefile']
     population.evaluate(**eval_params)
     expected = {
-        'c': dict(exp='pl - pl*sw/pw', fit=41.0), # Failing (41?)
+        'c': dict(exp='pl - pl*sw/pw', fit=41.0),
         'r': dict(exp='2*r', fit=205.509979),
         'm': dict(exp='-2*a - b + 2*c', fit=1.0),
     }
@@ -110,9 +114,9 @@ def test_population_class(default_kwargs, default_evaluate_params,
     evolve_params['rng'] = kwargs['rng']
     new_population = population.evolve(**evolve_params)
     expected = {
-        'c': 'b62b0fe78283b553a69ed2479f3007ff',  # was failing / b6aa7e4058ffc8ea23bed3e7f8c5a199
-        'r': '249b74e4efdd57a3b81513559edfc780',  # was failing / 68d5f8da8c7059f587ccfe3115f41401
-        'm': 'e6fba7f67ad7b3ef41f7c5807c86c441',  # was failing / d88cfd97628c821525612b221bc3713c
+        'c': '62a9c0d51ab173caa999e4ecf5c99d1a',
+        'r': '68d5f8da8c7059f587ccfe3115f41401',
+        'm': 'd88cfd97628c821525612b221bc3713c',
     }
     trees = [t.root for t in new_population.trees]
     assert hasher(trees) == expected[kernel]
