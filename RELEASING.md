@@ -9,7 +9,7 @@ publish it on PyPI.
 - [ ] Bump the version number in `karoo_gp/__init__.py` and commit.
 - [ ] Tag the commit with e.g. `git tag -a v2.4.1 -m 'Karoo GP 2.4.1' 8d0b4c7`.
 
-Note: the tag should use the `vX.Y.Z` format.  If it is an *alfa*/*beta*/*rc*
+Note: the tag should use the `vX.Y.Z` format.  If it is an *alpha*/*beta*/*rc*
 you can use e.g. `v2.4.1a0`
 
 
