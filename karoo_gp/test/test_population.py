@@ -82,10 +82,12 @@ def test_population_class(default_kwargs, default_evaluate_params,
     dataset_params = load_data(kernel, save_dir='test')
 
     # Initialize population using dataset terminals
-    kwargs = dict(default_kwargs)
-    kwargs['tree_pop_max'] = 10
-    kwargs['terminals'] = dataset_params['terminals']
-    kwargs['fitness_type'] = dataset_params['fitness_type']
+    kwargs = {
+        **default_kwargs,
+        'tree_pop_max': 10,
+        'terminals': dataset_params['terminals'],
+        'fitness_type': dataset_params['fitness_type']
+    }
     population = Population.generate(**kwargs)
 
     # Evaluate
@@ -102,7 +104,7 @@ def test_population_class(default_kwargs, default_evaluate_params,
         'r': dict(exp='2*r', fit=205.509979),
         'm': dict(exp='-2*a - b + 2*c', fit=1.0),
     }
-    assert str(population.fittest().sympify()) == expected[kernel]['exp']
+    assert population.fittest().expression == expected[kernel]['exp']
     assert population.fittest().fitness() == expected[kernel]['fit']
 
     # Evolve

@@ -1,3 +1,4 @@
+import pathlib
 from collections import namedtuple
 
 import pytest
@@ -45,4 +46,3 @@ def mock_func():
     def handler(*args, **kwargs):
         pass
     return handler
-import pathlib

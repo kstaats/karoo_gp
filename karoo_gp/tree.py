@@ -32,15 +32,15 @@ class Tree:
         '''Print the full-detail, formatted tree to the console'''
         fx_display_tree(self)
 
-    def parse(self):
+    @property
+    def raw_expression(self):
         '''Return the raw (un-sympified) expression'''
-        algo_raw, algo_sym = fx_eval_poly(self)
-        return algo_raw
+        return fx_eval_label(self, 1)
 
-    def sympify(self, return_sympy=False):
+    @property
+    def expression(self):
         '''Return the sympified expression'''
-        algo_raw, algo_sym = fx_eval_poly(self)
-        return algo_sym if return_sympy else str(algo_sym)
+        return str(sympify(self.raw_expression))
 
     def copy(self, id=None):
         '''Return a duplicate, all attributes/state'''
@@ -53,7 +53,7 @@ class Tree:
     def fitness(self):
         '''Return fitness or -1 if not yet evaluated'''
         if len(self.root) < 12 or len(self.root[12]) < 2 or self.root[12][1] == '':
-            return -1
+            raise ValueError(f'Tree {self.id} fitness has not been evaluated')
         else:
             return float(self.root[12][1])
 
@@ -420,30 +420,6 @@ def fx_init_node_commit(tree, params):
 #+++++++++++++++++++++++++++++++++++++++++++++
 #   Methods to Evaluate a Tree               |
 #+++++++++++++++++++++++++++++++++++++++++++++
-# used by: Tree
-def fx_eval_poly(tree):
-
-    '''
-    Evaluate a Tree and generate its multivariate expression (both raw and Sympified).
-
-    We need to extract the variables from the expression. However, these
-    variables are no longer correlated to the original variables listed
-    across the top of each column of data.csv. Therefore, we must re-assign
-    the respective values for each subsequent row in the data .csv,
-    for each Tree's unique expression.
-
-    Called by: fx_karoo_pause, fx_data_params_write, fx_eval_label,
-                fx_fitness_gym, fx_fitness_gene_pool, fx_display_tree
-
-    Arguments required: tree
-    '''
-
-    # pass the root 'node_id', then flatten the Tree to a string
-    algo_raw = fx_eval_label(tree, 1)
-    # convert string to a functional expression (the coolest line in Karoo! :)
-    algo_sym = sympify(algo_raw)
-
-    return algo_raw, algo_sym
 
 # used by: Tree
 def fx_eval_label(tree, node_id):
@@ -529,8 +505,5 @@ def fx_display_tree(tree):
 
     print()
     # generate the raw and sympified expression for the entire Tree
-    algo_raw, algo_sym = fx_eval_poly(tree)
-    print('\t\033[36mTree', tree.root[0][1], 'yields (raw):',
-          algo_raw, '\033[0;0m')
-    print('\t\033[36mTree', tree.root[0][1], 'yields (sym):\033[1m',
-          algo_sym, '\033[0;0m')
+    print(f'\t\033[36mTree {tree.id} yields (raw): {tree.raw_expression} \033[0;0m\n'
+          f'\t\033[36mTree {tree.id} yields (sym):\033[1m {tree.expression} \033[0;0m')

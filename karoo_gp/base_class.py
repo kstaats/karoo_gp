@@ -178,7 +178,7 @@ class Base_GP(object):
         if not self.pause_callback:
             self.log('No pause callback function provided')
             return
-        if self.display in display or display == None:
+        if self.display in display or display is None:
             self.pause_callback(self)
 
     def error(self, msg, display={'i', 'g', 'm', 'db'}):
@@ -533,10 +533,10 @@ class Base_GP(object):
         else:
             fittest = self.population.fittest()
             file.write(f'\n\n Tree {fittest.id} is the most fit, with '
-                       f'expression:\n\n {fittest.sympify()}')
+                       f'expression:\n\n {fittest.expression}')
 
             result = fx_fitness_eval(
-                fittest.sympify(), self.data_test, self.tf_device_log, self.kernel,
+                fittest.expression, self.data_test, self.tf_device_log, self.kernel,
                 self.class_labels, self.tf_device, self.terminals,
                 self.fx_fitness_labels_map, get_pred_labels=True
             )

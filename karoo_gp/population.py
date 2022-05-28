@@ -148,7 +148,7 @@ class Population:
                 fitter = op.eq(float(tree_fitness), data_train_rows)
             if fitter:
                 max_fitness = tree_fitness
-                self.fittest_dict[tree.id] = tree.sympify(return_sympy=True)
+                self.fittest_dict[tree.id] = tree.expression
         log(f'\n\033[36m {len(self.fittest_dict)} '
             f'trees\033[1m {np.sort(list(self.fittest_dict.keys()))} '
             f'\033[0;0m\033[36moffer the highest fitness scores.\033[0;0m')
@@ -163,7 +163,7 @@ class Population:
                       class_labels, tf_device, terminals, precision,
                       log, fx_fitness_labels_map):
         '''Test a single tree against training data, log results'''
-        expr = tree.sympify()
+        expr = tree.expression
         result = fx_fitness_eval(expr, data_train, tf_device_log, kernel,
                                  class_labels, tf_device, terminals,
                                  fx_fitness_labels_map, get_pred_labels=True)
@@ -360,9 +360,8 @@ def fx_fitness_gym(trees, data_train, kernel, data_train_rows,
     for tree in trees:
 
         ### PART 1 - GENERATE MULTIVARIATE EXPRESSION FOR EACH TREE ###
-        algo_sym = tree.sympify()  # extract the expression
-        log(f'\t\033[36mTree {tree.root[0][1]} '
-            f'yields (sym):\033[1m {str(algo_sym)} \033[0;0m')
+        log(f'\t\033[36mTree {tree.id} '
+            f'yields (sym):\033[1m {tree.expression} \033[0;0m')
 
         # get sympified expression and process it with TF - tested 2017 02/02
         new_trees.append(evaluate_tree(
@@ -736,7 +735,7 @@ def fx_fitness_store(tree, result, kernel, precision):
     tree.result['fitness'] = fitness
     tree.root[12][1] = fitness  # store the fitness with each tree
     # store the length of the raw algo for parsimony
-    tree.root[12][2] = len(str(tree.parse()))
+    tree.root[12][2] = len(tree.raw_expression)
     # if len(tree[3]) > 4:  # if the Tree array is wide enough -- SEE SCRATCHPAD
 
     # relocated from fx_fitness_test_classify/regress/match
@@ -937,7 +936,7 @@ def fx_fitness_gene_pool(population, swim, tree_depth_min, terminals,
 
     for tree in population.trees:
         # extract the expression
-        algo_sym = tree.sympify()
+        algo_sym = tree.expression
 
         # each tree must have the min number of nodes defined by the user
         if swim == 'p':
@@ -1550,7 +1549,7 @@ def fx_evolve_branch_select(tree, rng, log):
     branch_top = rng.integers(2, len(tree.root[3]))
     # generate tuple of 'branch_top' and subseqent nodes
     branch_eval = fx_eval_id(tree, branch_top)
-    branch_symp = sympify(branch_eval)  # convert string into something useful
+    branch_symp = sympify(branch_eval)
     branch = np.append(branch, branch_symp)  # append list to array
 
     branch = np.sort(branch)  # sort nodes in branch for Crossover.

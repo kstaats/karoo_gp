@@ -227,7 +227,7 @@ def pause(menu_dict):
             print('\t ', n, ':', menu_dict['fittest_dict'][n])
 
     elif menu == 'pop':  # list Trees in the current population
-        if menu_dict['gen_id'] == 1:
+        if menu_dict['pop_b_len'] == 0:
             menu_dict['input_a'] = 'pop_a'
         else:
             menu_dict['input_a'] = 'pop_b'
@@ -243,15 +243,15 @@ def pause(menu_dict):
                     query = input('\n\t Select a Tree to evaluate: ')
                     if query == '':
                         break
-                    elif int(query) in range(menu_dict['pop_b_len']):
+                    elif int(query) in range(1, menu_dict['pop_b_len']+1):
                         menu_dict['input_a'] = 'eval'
                         menu_dict['input_b'] = int(query)
                         break
                     else:
                         raise ValueError()
                 except ValueError:
-                    print('\n\t\033[32m Enter a number from 0 including %s. '
-                          'Try again ...\033[0;0m' % str(menu_dict['pop_b_len'] - 1))
+                    print('\n\t\033[32m Enter a number from 1 including %s. '
+                          'Try again ...\033[0;0m' % str(menu_dict['pop_b_len']))
                 except KeyboardInterrupt:
                     print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
@@ -272,7 +272,7 @@ def pause(menu_dict):
                         raise ValueError()
                 except ValueError:
                     print('\n\t\033[32m Enter a number from 1 including %s. '
-                          'Try again ...\033[0;0m' % str(menu_dict['pop_a_len'] - 1))
+                          'Try again ...\033[0;0m' % str(menu_dict['pop_a_len']))
                 except KeyboardInterrupt:
                     print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
@@ -290,7 +290,7 @@ def pause(menu_dict):
                         raise ValueError()
                 except ValueError:
                     print('\n\t\033[32m Enter a number from 1 including %s. '
-                          'Try again ...\033[0;0m' % str(menu_dict['pop_b_len'] - 1))
+                          'Try again ...\033[0;0m' % str(menu_dict['pop_b_len']))
                 except KeyboardInterrupt:
                     print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 

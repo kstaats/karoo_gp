@@ -36,7 +36,7 @@ def test_tree_generate(default_args, tree_type, tree_depth_base):
         ('g', 3): '(b)+(b)',
         ('g', 5): '(b)+(b)',
     }
-    assert tree.parse() == expected[(tree_type, tree_depth_base)]
+    assert tree.raw_expression == expected[(tree_type, tree_depth_base)]
 
 @pytest.fixture
 def tree(default_args):
@@ -50,9 +50,8 @@ def test_tree_class(capsys, default_args, tree):
     assert hasher(str(tree.root)) == '258917d2dacbc5aed1f7d7e20b2f63a7'
 
     # Display Methods
-    assert tree.parse() == '(a)*(b)*(b)/(a)+(a)-(a)/(a)+(a)'
-    assert str(tree.sympify()) == '2*a + b**2 - 1'
-    assert tree.fitness() == -1
+    assert tree.raw_expression == '(a)*(b)*(b)/(a)+(a)-(a)/(a)+(a)'
+    assert tree.expression == '2*a + b**2 - 1'
     tree.display()
     captured = capsys.readouterr()
     output = captured.out

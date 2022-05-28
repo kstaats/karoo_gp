@@ -471,11 +471,11 @@ def fx_karoo_pause(model):
     elif input_a == 'eval':  # evaluate a Tree against the TEST data
         # generate the raw and sympified expression for the given Tree using SymPy
         # self.fx_eval_poly(self.population_b[input_b])
-        tree = model.population.population_b[input_b]
+        tree = model.population.population_b[input_b - 1]
         model.log(f'\n\t\033[36mTree {input_b} yields (raw): '
-                  f'{tree.parse()}\033[0;0m')  # print the raw expression
+                  f'{tree.raw_expression}\033[0;0m')  # print the raw expression
         model.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
-                  f'{tree.sympify()} \033[0;0m')  # print the sympified expression
+                  f'{tree.expression} \033[0;0m')  # print the sympified expression
         # might change to algo_raw evaluation
         # MAY REDESIGN: The code block below, along with updates to
         # fx_fitness_store, replace the old fx_fitness_test_... methods,
@@ -511,7 +511,7 @@ def fx_karoo_pause(model):
                       f'\n\t Mean Squared Error: {tree.result["mean_squared_error"]}')
 
         elif model.kernel == 'm':
-            zipped = zip(tree.result['result'], result['solution'])
+            zipped = zip(tree.result['result'], tree.result['solution'])
             for i, (res, soln) in enumerate(zipped):
                 model.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res:.2f} '
                           f'({soln:.2f} True)\033[0;0m')
@@ -528,12 +528,12 @@ def fx_karoo_pause(model):
     elif input_a == 'pop_a':  # list all Trees in population_a
         for tree in model.population.trees:
             model.log(f'\t\033[36m Tree {tree.id} '
-                        f'yields (sym):\033[1m {tree.sympify()} \033[0;0m')
+                      f'yields (sym):\033[1m {tree.expression} \033[0;0m')
 
     elif input_a == 'pop_b':  # list all Trees in population_b
         for i, tree in enumerate(model.population.population_b):
-            model.log(f'\t\033[36m Tree {i} '
-                      f'yields (sym):\033[1m {tree.sympify()} \033[0;0m')
+            model.log(f'\t\033[36m Tree {i + 1} '
+                      f'yields (sym):\033[1m {tree.expression} \033[0;0m')
 
     elif input_a == 'load':  # load population_s to replace population_a
         # NEED TO replace 's' with a user defined filename
