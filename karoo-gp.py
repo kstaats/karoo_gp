@@ -75,8 +75,8 @@ if len(sys.argv) < 3:
     print('\t **    ** **    **  **    **  ******    ******       ******   **')
     print('\033[0;0m')
     print('\t\033[36m Genetic Programming in Python with TensorFlow - '
-        'by Kai Staats, version {}\033[0;0m'.format(__version__))
-    print('')
+          'by Kai Staats, version {}\033[0;0m'.format(__version__))
+    print()
 
     while True:
         try:

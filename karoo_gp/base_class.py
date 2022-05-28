@@ -175,8 +175,9 @@ class Base_GP(object):
         # initialize RNG(s) with the given seed
         self.seed = seed
         self.rng = np.random.default_rng(seed)  # this is used by Karoo
-        np.random.seed(seed)  # this is used by sklearn while classifying
-        tf.set_random_seed(seed)  # this is not used, but set it just in case
+        # the following two are not used, set them just in case
+        np.random.seed(seed)  # this was used by sklearn while classifying
+        tf.set_random_seed(seed)
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
@@ -372,7 +373,7 @@ class Base_GP(object):
             # if larger than 10, we run the data through the
             # SciKit Learn's 'random split' function
             x_train, x_test, y_train, y_test = skcv.train_test_split(
-                data_x, data_y, test_size=0.2
+                data_x, data_y, test_size=0.2, random_state=self.seed
             )  # 80/20 TRAIN/TEST split
             data_x, data_y = [], []  # clear from memory
 
