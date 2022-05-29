@@ -1,0 +1,11 @@
+Karoo GP
+ launched: 2022-05-29_11-56-15-803524
+ dataset: karoo_gp/files/data_MATCH.csv
+
+
+ Tree 4 is the most fit, with expression:
+
+ a + b + c
+
+ Matching fitness score: 10.0
+

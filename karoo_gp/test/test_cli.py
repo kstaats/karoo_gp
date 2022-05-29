@@ -17,13 +17,17 @@ def parse_log(log_path, root_dir):
     return dataset, rest
 
 
+@pytest.mark.parametrize('seed', ['1000'])
+@pytest.mark.parametrize('bas', ['3'])
 @pytest.mark.parametrize('typ', ['f', 'g', 'r'])
-@pytest.mark.parametrize('ker', ['c', 'r'])
-def test_cli(tmp_path, paths, ker, typ):
+@pytest.mark.parametrize('ker', ['c', 'r', 'm'])
+def test_cli(tmp_path, paths, ker, typ, bas, seed):
     """Test that the CLI yields consistent results with different kernels/trees."""
+    # default pop is 10, except for m-g and m-f that need higher pop to pass
+    pop = str({('m', 'g'): 35, ('m', 'f'): 50}.get((ker, typ), 10))
     data_file = paths.data_files[ker]  # get the right data file for the kernel
-    cmd = ['python3', paths.karoo, '-ker', ker, '-typ', typ, '-bas', '3',
-           '-pop', '10', '-rsd', '1000', '-fil', data_file]
+    cmd = ['python3', paths.karoo, '-ker', ker, '-typ', typ, '-bas', bas,
+           '-pop', pop, '-rsd', seed, '-fil', data_file]
     print(' '.join(map(str, cmd)))
     cp = subprocess.run(cmd, cwd=tmp_path)  # run Karoo in a tmp dir
     assert cp.returncode == 0  # check that the run was successful

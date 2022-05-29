@@ -1,0 +1,11 @@
+Karoo GP
+ launched: 2022-05-29_11-56-44-303521
+ dataset: karoo_gp/files/data_MATCH.csv
+
+
+ Tree 50 is the most fit, with expression:
+
+ -a**2 + a*c - a + b + c
+
+ Matching fitness score: 10.0
+
