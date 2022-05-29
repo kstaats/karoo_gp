@@ -24,22 +24,28 @@ def default_kwargs(rng, mock_func):
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g', 'r'])
-@pytest.mark.parametrize('tree_pop_max', [10, 20])
-def test_population_generate(default_kwargs, tree_type, tree_pop_max):
+def test_population_generate(default_kwargs, tree_type):
     kwargs = dict(default_kwargs)
     kwargs['tree_type'] = tree_type
-    kwargs['tree_pop_max'] = tree_pop_max
+    kwargs['tree_pop_max'] = 10
     population = Population.generate(**kwargs)
-    expected = {
-        ('f', 10): 'b20c6bba22a114b16a455c4215df3676',
-        ('f', 20): 'c80581a0c85b8b8c0d574a8f6f414d46',
-        ('g', 10): '98c9b9cf6ecb61716b0b76fc72603094',
-        ('g', 20): '253c685daad312ab7c7692df495289ee',
-        ('r', 10): '186c8dc7114d5dd1eecfc530128b86fe',
-        ('r', 20): 'f261514f6bc74a5897b64e5a44145958',
+
+    # This will CHANGE with branch-api update
+    expected_root = {
+        'f': 'b20c6bba22a114b16a455c4215df3676',
+        'g': '98c9b9cf6ecb61716b0b76fc72603094',
+        'r': '186c8dc7114d5dd1eecfc530128b86fe',
     }
     trees = [t.root for t in population.trees]
-    assert hasher(trees) == expected[(tree_type, tree_pop_max)]
+    assert hasher(trees) == expected_root[tree_type]
+
+    # This will NOT change with branch-api update
+    expected_raw_expression = {
+        'f': '(a)*(a)/(a)-(a)-(b)-(a)-(b)*(a)',
+        'g': '(b)+(b)',
+        'r': '(b)-(a)/(b)*(b)',
+    }
+    assert population.trees[-1].raw_expression == expected_raw_expression[tree_type]
 
 # EVALUATE
 
