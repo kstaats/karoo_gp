@@ -29,7 +29,14 @@ from . import pause as menu
 
 
 ### TensorFlow Imports and Definitions ###
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+if os.environ.get("TF_CPP_MIN_LOG_LEVEL") is None:
+    # Set the log level, unless it's already set in the env.
+    # This allows users to override this value with an env var.
+    # 0 = all messages are logged (default behavior)
+    # 1 = INFO messages are not printed
+    # 2 = INFO and WARNING messages are not printed
+    # 3 = INFO, WARNING, and ERROR messages are not printed
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # only print ERRORs
 
 # import tensorflow as tf
 import tensorflow.compat.v1 as tf
