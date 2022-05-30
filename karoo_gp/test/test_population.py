@@ -122,10 +122,9 @@ def test_population_class(default_kwargs, default_evaluate_params,
     evolve_params['rng'] = kwargs['rng']
     new_population = population.evolve(**evolve_params)
     expected = {
-        'c': '62a9c0d51ab173caa999e4ecf5c99d1a',
-        'r': '68d5f8da8c7059f587ccfe3115f41401',
-        'm': 'd88cfd97628c821525612b221bc3713c',
+        'c': dict(exp='pl + pw - sl', fit=98.0),
+        'r': dict(exp='2*r', fit=205.509979),
+        'm': dict(exp='b**2', fit=1.0),
     }
-    trees = [t.root for t in new_population.trees]
-    assert hasher(trees) == expected[kernel]
-
+    assert new_population.fittest().expression == expected[kernel]['exp']
+    assert new_population.fittest().fitness() == expected[kernel]['fit']
