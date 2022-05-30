@@ -731,7 +731,7 @@ def fx_fitness_store(tree, result, kernel, precision):
     '''
 
     fitness = float(result['fitness'])
-    fitness = round(fitness, precision)
+    fitness = round(fitness, precision)  # TODO: Best to only round for display
     tree.result['fitness'] = fitness
     tree.root[12][1] = fitness  # store the fitness with each tree
     # store the length of the raw algo for parsimony
