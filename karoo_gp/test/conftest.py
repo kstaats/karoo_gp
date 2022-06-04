@@ -4,6 +4,8 @@ from collections import namedtuple
 import pytest
 import numpy as np
 
+from karoo_gp import Functions, Terminals
+
 @pytest.fixture
 def paths():
     """Fixture that return an object with different paths as attributes."""
@@ -46,3 +48,11 @@ def mock_func():
     def handler(*args, **kwargs):
         pass
     return handler
+
+@pytest.fixture()
+def functions():
+    return Functions(['+', '-', '*', '/'])
+
+@pytest.fixture()
+def terminals():
+    return Terminals(['a', 'b', 'c'], constants=[1, 2, 3])

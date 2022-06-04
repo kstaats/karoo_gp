@@ -1,4 +1,5 @@
-import functools, ast
+import ast
+from functools import reduce
 import operator as op
 
 import numpy as np
@@ -86,33 +87,37 @@ class Population:
                     for _type in ['f', 'g']:
                         trees.append(Tree.generate(log, pause, error,
                                                    len(trees)+1, _type, d+1,
-                                                   tree_depth_max, functions,
-                                                   terminals, rng))
+                                                   functions, terminals, rng))
 
             # ..and add ramped trees for the remainder.
             extras = tree_pop_max - len(trees)
             for i in range(extras):
                 trees.append(Tree.generate(log, pause, error, len(trees)+1,
-                                           'g', tree_depth_base, tree_depth_max,
+                                           'g', tree_depth_base,
                                            functions, terminals, rng))
         else:
             # (f)ull: Fill-in all nodes to the maximum depth
             # (g)row: Add nodes or terminals at random up to max depth
             for i in range(tree_pop_max):
                 trees.append(Tree.generate(log, pause, error, i+1, tree_type,
-                                           tree_depth_base, tree_depth_max,
+                                           tree_depth_base,
                                            functions, terminals, rng))
-        return cls(trees, gen_id, fitness_type)
+        return cls(trees, gen_id, fitness_type, tree_type=tree_type)
+
+    def fitness_compare(self, a, b, precision=6):
+        """Return b if fitness of b is equal or better than a"""
+        _fit = lambda t: round(float(t.fitness), precision)
+        compare_func = dict(
+            max=lambda a, b: a if _fit(a) > _fit(b) else b,
+            min=lambda a, b: a if _fit(a) < _fit(b) else b,
+        )[self.fitness_type]
+        return compare_func(a, b)
 
     def fittest(self):
         '''Return the fittest tree of the population.
 
         TODO: cache'''
-        reducer = dict(
-            max=lambda a, b: a if a.fitness() > b.fitness() else b,
-            min=lambda a, b: a if a.fitness() < b.fitness() else b,
-        )[self.fitness_type]
-        return functools.reduce(reducer, self.trees)
+        return reduce(self.fitness_compare, self.trees)
 
     def evaluate(self, log=None, pause=None, error=None, data_train=[],
                  kernel='m', data_train_rows=0, tf_device_log=None,
@@ -164,6 +169,8 @@ class Population:
                       log, fx_fitness_labels_map):
         '''Test a single tree against training data, log results'''
         expr = tree.expression
+        log(f'\t\033[36mTree {tree.id} yields (sym):\033[1m {tree.expression}'
+            f' \033[0;0m')
         result = fx_fitness_eval(expr, data_train, tf_device_log, kernel,
                                  class_labels, tf_device, terminals,
                                  fx_fitness_labels_map, get_pred_labels=True)
@@ -433,7 +440,9 @@ def fx_fitness_eval(expr, data, tf_device_log, kernel, class_labels,
 
             # 1 - Load data into TF vectors
             tensors = {}
-            for i, term in enumerate(terminals):
+            terminal_symbols = [t.symbol for t in terminals.get()]
+            terminal_symbols.append('s')  # Add column for solution
+            for i, term in enumerate(terminal_symbols):
                 # converts data into vectors
                 tensors[term] = tf.constant(data[:, i], dtype=tf.float32)
 
@@ -1408,8 +1417,8 @@ def fx_evolve_grow_mutate(tree, branch, functions, terminals, tree_depth_max,
 
             # build new Tree ('gp.tree') with a maximum depth which matches 'branch'
             new_branch = Tree.generate(log, pause, error, 'mutant',
-                                       tree.pop_tree_type, branch_depth,
-                                       tree_depth_max, functions, terminals,
+                                       tree.tree_type, branch_depth,
+                                       functions, terminals,
                                        rng)
 
             log(f'\n\033[36m This is the new Tree to be inserted at '

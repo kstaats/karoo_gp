@@ -55,7 +55,7 @@ def test_base_fit(default_kwargs, ker):
 
         fittest_id = max(model.population.fittest_dict)
         fittest = model.population.trees[fittest_id - 1]
-        assert expected['fit'] == fittest.fitness()
+        assert expected['fit'] == fittest.fitness
         assert expected['sym'] == fittest.expression == model.population.fittest_dict[fittest_id]
 
     initial_expected = {
