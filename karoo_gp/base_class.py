@@ -489,10 +489,11 @@ class Base_GP(object):
                                str(self.population.gen_id)]])
 
             for tree in trees:
-                target.writerows([''])  # empty row before each Tree
-                for row in range(0, 13):
-                    # increment through each row in the array Tree
-                    target.writerows([tree.root[row]])
+                target.writerows([tree.save()])
+                # target.writerows([''])  # empty row before each Tree
+                # for row in range(0, 13):
+                #     # increment through each row in the array Tree
+                #     target.writerows([tree.root[row]])
 
 
     # tested 2017 02/13; argument 'app' removed to simplify termination 2019 06/08

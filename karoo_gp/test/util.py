@@ -1,4 +1,4 @@
-import hashlib, os, sys
+import hashlib, os, json
 import numpy as np
 import sklearn.model_selection as skcv
 
@@ -73,3 +73,7 @@ def load_data(kernel, save_dir=''):
                 terminals=terminals,
                 functions=functions,
                 fitness_type=fitness_type)
+
+def dump_json(dictionary, path):
+    with open(path, 'w') as f:
+        json.dump(dictionary, f)
