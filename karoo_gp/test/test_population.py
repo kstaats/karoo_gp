@@ -74,11 +74,11 @@ def default_evolve_params():
 
 @pytest.mark.parametrize('kernel', ['c', 'r', 'm'])
 def test_population_class(default_kwargs, default_evaluate_params,
-                          default_evolve_params, kernel):
+                          default_evolve_params, tmp_path, paths, kernel):
     # Load the dataset for kernel
     np.random.seed(1000)
     tf.set_random_seed(1000)
-    dataset_params = load_data(kernel, save_dir='test')
+    dataset_params = load_data(tmp_path, paths, kernel)
     terminals = Terminals(dataset_params['terminals'][:-1])
     functions = Functions([f[0] for f in dataset_params['functions']])
 
