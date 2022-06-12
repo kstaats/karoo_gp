@@ -1,0 +1,30 @@
+{
+    "package": "Karoo GP",
+    "launched": "2022-06-12_06-18-39-427568",
+    "dataset": "karoo_gp/files/data_MATCH.csv",
+    "config": {
+        "kernel": "m",
+        "precision": 6,
+        "tree_type": "r",
+        "tree_depth_base": 3,
+        "tree_depth_max": 4,
+        "min_node_count": 3,
+        "genetic_operators": {
+            "reproduction": 0.1,
+            "point_mutation": 0.1,
+            "branch_mutation": 0.2,
+            "crossover": 0.6
+        },
+        "tournament_size": 7,
+        "population": 10,
+        "number_of_generations": 10
+    },
+    "outcome": "SUCCESS",
+    "fittest_tree": {
+        "id": 4,
+        "expression": "a + b + c"
+    },
+    "score": {
+        "fitness": 10.0
+    }
+}
