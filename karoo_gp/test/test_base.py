@@ -2,7 +2,7 @@ import hashlib
 
 import pytest
 
-from karoo_gp import Base_GP
+from karoo_gp.base_class import Base_GP
 
 @pytest.fixture
 def default_kwargs(tmp_path):
