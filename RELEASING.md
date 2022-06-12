@@ -6,6 +6,12 @@ publish it on PyPI.
 
 ## Preparing for a release
 
+- [ ] (Optional) For new major/minor releases, create a new branch:
+   ```sh
+   git switch master
+   git pull origin master  # pull remote changes from the main repo
+   git switch -c 2.5  # create a new branch for 2.5
+   ```
 - [ ] Bump the version number in `karoo_gp/__init__.py` and commit.
 - [ ] Tag the commit with e.g. `git tag -a v2.4.1 -m 'Karoo GP 2.4.1' 8d0b4c7`.
 
