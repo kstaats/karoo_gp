@@ -1,20 +1,10 @@
+import json
 import pathlib
+import platform
 import subprocess
 
 import pytest
 import numpy as np
-
-
-def parse_log(log_path, root_dir):
-    """Extract dataset file and the results from log_test.txt."""
-    text = log_path.read_text()
-    # ignore the head and the date, get the dataset path and the rest
-    head, date, dataset, rest = text.split('\n', 3)
-    dataset = pathlib.Path(dataset.strip().split(': ', 1)[-1])
-    if dataset.is_absolute():
-        # the test data files use relative paths, make this relative too
-        dataset = dataset.relative_to(root_dir)
-    return dataset, rest
 
 
 @pytest.mark.parametrize('seed', ['1000'])
@@ -36,11 +26,32 @@ def test_cli(tmp_path, paths, ker, typ, bas, seed):
     runs = list(runs_dir.iterdir())
     assert len(runs) == 1  # there should be only one run
 
-    log_test_rd = runs_dir / runs[0] / 'log_test.txt'
-    log_test_td = paths.test_data / f'log_test[{ker}-{typ}].txt'
-    actual_dataset, actual_log = parse_log(log_test_rd, paths.root)
-    expected_dataset, expected_log = parse_log(log_test_td, paths.root)
+    # load the actual and expected jsons
+    actual_res_path = runs_dir / runs[0] / 'results.json'
+    expected_res_path = paths.test_data / f'results[{ker}-{typ}].json'
+    with actual_res_path.open() as actual_res_file:
+        actual_json = json.load(actual_res_file)
+    with expected_res_path.open() as expected_res_file:
+        expected_json = json.load(expected_res_file)
+
+    # remove the date since it's different
+    actual_json.pop('launched')
+    expected_json.pop('launched')
+    # extract the dataset path since it's different
+    actual_dataset = pathlib.Path(actual_json.pop('dataset'))
+    expected_dataset = pathlib.Path(expected_json.pop('dataset'))
 
     # check that both datasets match the input dataset
-    assert actual_dataset == expected_dataset == data_file.relative_to(paths.root)
-    assert actual_log == expected_log  # compare the content of the log_test
+    assert (data_file.relative_to(paths.root) ==
+            actual_dataset.relative_to(paths.root) ==
+            expected_dataset)
+
+    if ker == 'r' and typ == 'f' and platform.mac_ver()[-1] == 'arm64':
+        # the Apple M1 seems to have some accuracy problem that leads
+        # this test to fail, so extract the score and approximate it
+        actual_score = actual_json.pop('score')
+        expected_score = expected_json.pop('score')
+        assert pytest.approx(actual_score) == expected_score
+
+    # compare the content of the two jsons
+    assert actual_json == expected_json
