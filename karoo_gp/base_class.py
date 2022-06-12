@@ -863,34 +863,39 @@ class Base_GP(object):
             number_of_generations=self.gen_id,
         )
 
+        final_dict = dict(**generic, config=config)
 
-        if len(self.fittest_dict) <= 0:
-            results = dict(outcome='FAILURE')
+        if len(self.fittest_dict) == 0:
+            final_dict['outcome'] = 'FAILURE'
         else:
-            fittest_tree, result = self.fx_eval_fittest()
-
-            results = dict(
-                outcome='SUCCESS',
-                fittest_tree_id=fittest_tree,
+            fittest_tree_id, result = self.fx_eval_fittest()
+            fittest_tree = dict(
+                id=fittest_tree_id,
                 expression=str(self.algo_sym),
-                fitness_score=result['fitness'],
             )
-
+            score = dict(fitness=result['fitness'])
             if self.kernel == 'c':
-                results['classification_report'] = skm.classification_report(
+                score['classification_report'] = skm.classification_report(
                     result['solution'], result['pred_labels'][0],
                     output_dict=True,
                 )
-                results['confusion_matrix'] = skm.confusion_matrix(
+                score['confusion_matrix'] = skm.confusion_matrix(
                     result['solution'], result['pred_labels'][0]
                 ).tolist()
 
             elif self.kernel == 'r':
                 MSE = skm.mean_squared_error(result['result'], result['solution'])
-                results['mean_squared_error'] = float(MSE)
+                score['mean_squared_error'] = float(MSE)
+
+            final_dict = dict(
+                **final_dict,
+                outcome='SUCCESS',
+                fittest_tree=fittest_tree,
+                score=score,
+            )
 
         with open(self.path + 'results.json', 'w') as f:
-            json.dump(dict(**generic, **config, **results), f, indent=4)
+            json.dump(final_dict, f, indent=4)
 
 
     #+++++++++++++++++++++++++++++++++++++++++++++
