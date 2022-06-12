@@ -1,5 +1,6 @@
 import json
 import pathlib
+import platform
 import subprocess
 
 import pytest
@@ -44,6 +45,14 @@ def test_cli(tmp_path, paths, ker, typ, bas, seed):
     assert (data_file.relative_to(paths.root) ==
             actual_dataset.relative_to(paths.root) ==
             expected_dataset)
+
+    if ker == 'r' and typ == 'f' and platform.mac_ver()[-1] == 'arm64':
+        # the Apple M1 seems to have some accuracy problem
+        # that leads this test to fail, so extract the
+        # score and approximate it
+        actual_score = actual_json.pop('score')
+        expected_score = expected_json.pop('score')
+        assert pytest.approx(actual_score) == expected_score
 
     # compare the content of the two jsons
     assert actual_json == expected_json
