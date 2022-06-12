@@ -1,0 +1,80 @@
+{
+    "package": "Karoo GP",
+    "launched": "2022-06-12_06-16-20-639880",
+    "dataset": "karoo_gp/files/data_CLASSIFY.csv",
+    "config": {
+        "kernel": "c",
+        "precision": 6,
+        "tree_type": "g",
+        "tree_depth_base": 3,
+        "tree_depth_max": 4,
+        "min_node_count": 3,
+        "genetic_operators": {
+            "reproduction": 0.1,
+            "point_mutation": 0.1,
+            "branch_mutation": 0.2,
+            "crossover": 0.6
+        },
+        "tournament_size": 7,
+        "population": 10,
+        "number_of_generations": 10
+    },
+    "outcome": "SUCCESS",
+    "fittest_tree": {
+        "id": 9,
+        "expression": "pl*pw**2 + pw*sw - sl"
+    },
+    "score": {
+        "fitness": 19.0,
+        "classification_report": {
+            "0.0": {
+                "precision": 1.0,
+                "recall": 1.0,
+                "f1-score": 1.0,
+                "support": 9
+            },
+            "1.0": {
+                "precision": 1.0,
+                "recall": 0.08333333333333333,
+                "f1-score": 0.15384615384615385,
+                "support": 12
+            },
+            "2.0": {
+                "precision": 0.45,
+                "recall": 1.0,
+                "f1-score": 0.6206896551724138,
+                "support": 9
+            },
+            "accuracy": 0.6333333333333333,
+            "macro avg": {
+                "precision": 0.8166666666666668,
+                "recall": 0.6944444444444443,
+                "f1-score": 0.5915119363395225,
+                "support": 30
+            },
+            "weighted avg": {
+                "precision": 0.8350000000000001,
+                "recall": 0.6333333333333333,
+                "f1-score": 0.5477453580901857,
+                "support": 30
+            }
+        },
+        "confusion_matrix": [
+            [
+                9,
+                0,
+                0
+            ],
+            [
+                0,
+                1,
+                11
+            ],
+            [
+                0,
+                0,
+                9
+            ]
+        ]
+    }
+}
