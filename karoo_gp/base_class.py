@@ -831,7 +831,6 @@ class Base_GP(object):
 
 
     def fx_data_params_write_json(self):
-
         '''
         Save run-time configuration parameters to disk as json.
 
