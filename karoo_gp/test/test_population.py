@@ -124,5 +124,5 @@ def test_population_class(default_kwargs, default_evaluate_params,
         'm': dict(exp='b**2', fit=1.0),
     }
     assert new_population.fittest().expression == expected[kernel]['exp']
-    assert pytest.approx(new_population.fittest().fitness()) == \
+    assert pytest.approx(new_population.fittest().fitness) == \
            pytest.approx(expected[kernel]['fit'])
