@@ -188,7 +188,10 @@ class Population:
                              branch=evolve_branch, cross=evolve_cross)
         if sum(evolve_ratios.values()) != 1.0:
             raise ValueError(f'Evolution parameters must sum to 1')
-        evolve_amounts = {k: math.ceil(v * tree_pop_max)
+        # TODO: int(3.5) rounds down to 3. For test 'test_cli[m-g-3-1000]',
+        # with `tree_pop_max=35`, this results in a population of 33 trees
+        # instead of 35. This should be fixed but will change test result.
+        evolve_amounts = {k: int(v * tree_pop_max)
                           for k, v in evolve_ratios.items()}
 
         # Create the list of eligible trees
@@ -229,9 +232,10 @@ class Population:
                     # the order of calls to rng, so would need to update tests.
                     parent_a = parent  # Renamed for clarity
                     offspring_a = offspring
+                    offspring_a.id += 1
                     i_mutate_a = rng.integers(1, parent_a.n_children + 1)
                     parent_b = self.tournament(rng, tourn_size, log)
-                    offspring_b = parent_b.copy(id=len(self.population_b) + 2)
+                    offspring_b = parent_b.copy(id=len(self.population_b) + 1)
                     i_mutate_b = rng.integers(1, parent_b.n_children + 1)
 
                     for from_id, to_id, to_i in [

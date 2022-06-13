@@ -11,9 +11,11 @@ likely find more enjoyment of this particular flavour of GP with
 a little understanding of its intent and design.
 '''
 
-import sys
 import os
+import sys
 import csv
+import time
+import json
 
 import numpy as np
 import sklearn.metrics as skm
@@ -28,7 +30,14 @@ from . import Population, Functions, Terminals, \
 
 
 ### TensorFlow Imports and Definitions ###
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+if os.environ.get("TF_CPP_MIN_LOG_LEVEL") is None:
+    # Set the log level, unless it's already set in the env.
+    # This allows users to override this value with an env var.
+    # 0 = all messages are logged (default behavior)
+    # 1 = INFO messages are not printed
+    # 2 = INFO and WARNING messages are not printed
+    # 3 = INFO, WARNING, and ERROR messages are not printed
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # only print ERRORs
 
 
 # set the terminal to print 320 characters before
@@ -255,6 +264,7 @@ class Base_GP(object):
         '''
 
         self.fx_data_params_write()
+        self.fx_data_params_write_json()
         # initialize the .csv file for the final population
         target = open(self.savefile['f'], 'w')
         target.close()
@@ -496,13 +506,61 @@ class Base_GP(object):
                 #     target.writerows([tree.root[row]])
 
 
+    def fx_eval_fittest(self):
+        '''
+        Re-evaluate all Trees to find the fittest.
+        '''
+        fitness_best = 0
+        fittest_tree = None
+
+        # revised method, re-evaluating all Trees from stored fitness score
+        for i, tree in enumerate(self.population.trees):
+
+            fitness = tree.fitness
+
+            if self.kernel == 'c':  # display best fit Trees for the CLASSIFY kernel
+                # find the Tree with Maximum fitness score
+                if fitness >= fitness_best:
+                    # set best fitness Tree
+                    fitness_best = fitness
+                    fittest_tree = tree
+
+            elif self.kernel == 'r':  # display best fit Trees for the REGRESSION kernel
+                if fitness_best == 0:
+                    fitness_best = fitness  # set the baseline first time through
+                # find the Tree with Minimum fitness score
+                if fitness <= fitness_best:
+                    # set best fitness Tree
+                    fitness_best = fitness
+                    fittest_tree = tree
+
+            elif self.kernel == 'm':  # display best fit Trees for the MATCH kernel
+                # find the Tree with a perfect match for all data rows
+                if fitness == self.data_train_rows:
+                    # set best fitness Tree
+                    fitness_best = fitness
+                    fittest_tree = tree
+
+            # elif self.kernel == '[other]':  # use others as a template
+
+            # print('fitness_best:', fitness_best, 'fittest_tree:', fittest_tree)
+
+        # get simplified expression and process it by TF - tested 2017 02/02
+        fittest_tree.result = fx_fitness_eval(
+            fittest_tree.expression, self.data_test, self.tf_device_log, self.kernel,
+            self.class_labels, self.tf_device, self.terminals,
+            self.fx_fitness_labels_map, get_pred_labels=True
+        )
+        return fittest_tree
+
+
     # tested 2017 02/13; argument 'app' removed to simplify termination 2019 06/08
     def fx_data_params_write(self):
 
         '''
         Save run-time configuration parameters to disk.
 
-        Called by: fx_karoo_gp, fx_karoo_pause
+        Called by: fx_karoo_terminate
 
         Arguments required: app
         '''
@@ -576,3 +634,74 @@ class Base_GP(object):
 
         file.write('\n\n')
         file.close()
+
+        return
+
+
+    def fx_data_params_write_json(self):
+        '''
+        Save run-time configuration parameters to disk as json.
+
+        Called by: fx_karoo_terminate
+        '''
+        from IPython import embed; embed()
+        generic = dict(
+            package='Karoo GP',
+            launched=self.datetime,
+            dataset=self.dataset,
+        )
+        config = dict(
+            kernel=self.kernel,
+            precision=self.precision,
+
+            tree_type=self.tree_type,
+            tree_depth_base=self.tree_depth_base,
+            tree_depth_max=self.tree_depth_max,
+            min_node_count=self.tree_depth_min,
+
+            genetic_operators=dict(
+                reproduction=self.evolve_repro,
+                point_mutation=self.evolve_point,
+                branch_mutation=self.evolve_branch,
+                crossover=self.evolve_cross,
+            ),
+
+            tournament_size=self.tourn_size,
+            population=self.tree_pop_max,
+            number_of_generations=self.population.gen_id,
+        )
+
+        final_dict = dict(**generic, config=config)
+
+        if len(self.population.fittest_dict) == 0:
+            final_dict['outcome'] = 'FAILURE'
+        else:
+            tree = self.fx_eval_fittest()
+            fittest_tree = dict(
+                id=tree.id,
+                expression=tree.expression,
+            )
+            result = tree.result
+            score = dict(fitness=result['fitness'])
+            if self.kernel == 'c':
+                score['classification_report'] = skm.classification_report(
+                    result['solution'], result['pred_labels'][0],
+                    output_dict=True,
+                )
+                score['confusion_matrix'] = skm.confusion_matrix(
+                    result['solution'], result['pred_labels'][0]
+                ).tolist()
+
+            elif self.kernel == 'r':
+                MSE = skm.mean_squared_error(result['result'], result['solution'])
+                score['mean_squared_error'] = float(MSE)
+
+            final_dict = dict(
+                **final_dict,
+                outcome='SUCCESS',
+                fittest_tree=fittest_tree,
+                score=score,
+            )
+
+        with open(self.path + 'results.json', 'w') as f:
+            json.dump(final_dict, f, indent=4)
