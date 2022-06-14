@@ -52,6 +52,7 @@ An example is given, as follows:
 import os
 import sys
 import argparse
+from karoo_gp import pause as menu
 from karoo_gp import base_class, __version__
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -310,7 +311,7 @@ if len(sys.argv) < 3:
     # pause at the (d)esktop when complete, awaiting further
     # user interaction; or terminate in (s)erver mode
     mode = 'd'
-    # TODO: allow the user to enter a seed
+    # random seed for reproducibility
     seed = None
 
 
@@ -389,6 +390,172 @@ else:  # 2 or more command line arguments are provided
 
 
 #++++++++++++++++++++++++++++++++++++++++++
+#   Define pause callback                 |
+#++++++++++++++++++++++++++++++++++++++++++
+
+# used by: karoo-gp interactive
+def fx_karoo_pause_refer(model):
+
+    '''
+    Enables (g)eneration, (i)nteractive, and (d)e(b)ug display modes
+    to offer the (pause) menu at each prompt.
+
+    See fx_karoo_pause() for an explanation of the value being passed.
+
+    Called by: the functions called by PART 4 of fx_karoo_gp()
+
+    Arguments required: none
+    '''
+
+    menu = 1
+    while menu == 1:
+        menu = fx_karoo_pause(model)
+
+# used by: karoo-gp interactive
+def fx_karoo_pause(model):
+
+    '''
+    Pause the program execution and engage the user, providing a number of options.
+
+    Called by: fx_karoo_pause_refer
+
+    Arguments required: [0,1,2] where (0) refers to an end-of-run;
+    (1) refers to any use of the (pause) menu from within the run,
+    and anticipates ENTER as an escape from the menu to continue the run;
+    and (2) refers to an 'ERROR!' for which the user may want to archive
+    data before terminating. At this point in time, (2) is associated
+    with each error but does not provide any special options).
+    '''
+
+    ### PART 1 - reset and pack values to send to menu.pause ###
+    menu_dict = {
+        'input_a': '',
+        'input_b': 0,
+        'display': model.display,
+        'tree_depth_max': model.tree_depth_max,
+        'tree_depth_min': model.tree_depth_min,
+        'tree_pop_max': model.tree_pop_max,
+        'gen_id': model.population.gen_id,
+        'gen_max': model.gen_max,
+        'tourn_size': model.tourn_size,
+        'evolve_repro': model.evolve_repro,
+        'evolve_point': model.evolve_point,
+        'evolve_branch': model.evolve_branch,
+        'evolve_cross': model.evolve_cross,
+        'fittest_dict': model.population.fittest_dict,
+        'pop_a_len': len(model.population.trees),
+        'pop_b_len': len(model.population.population_b),
+        'path': model.path,
+    }
+
+    # call the external function menu.pause
+    menu_dict = menu(menu_dict)
+
+    ### PART 2 - unpack values returned from menu.pause ###
+    input_a = menu_dict['input_a']
+    input_b = menu_dict['input_b']
+    model.display = menu_dict['display']
+    model.tree_depth_min = menu_dict['tree_depth_min']
+    model.gen_max = menu_dict['gen_max']
+    model.tourn_size = menu_dict['tourn_size']
+    model.evolve_repro = menu_dict['evolve_repro']
+    model.evolve_point = menu_dict['evolve_point']
+    model.evolve_branch = menu_dict['evolve_branch']
+    model.evolve_cross = menu_dict['evolve_cross']
+
+    ### PART 3 - execute the user queries returned from menu.pause ###
+    if input_a == 'esc':
+        # breaks out of the fx_karoo_gp() or fx_karoo_pause_refer() loop
+        return 2
+
+    elif input_a == 'eval':  # evaluate a Tree against the TEST data
+        # generate the raw and sympified expression for the given Tree using SymPy
+        # self.fx_eval_poly(self.population_b[input_b])
+        tree = model.population.population_b[input_b - 1]
+        model.log(f'\n\t\033[36mTree {input_b} yields (raw): '
+                  f'{tree.raw_expression}\033[0;0m')  # print the raw expression
+        model.log(f'\n\t\033[36mTree {input_b} yields (sym):\033[1m '
+                  f'{tree.expression} \033[0;0m')  # print the sympified expression
+        # might change to algo_raw evaluation
+        # MAY REDESIGN: The code block below, along with updates to
+        # fx_fitness_store, replace the old fx_fitness_test_... methods,
+        # which were redundant.
+        tree = model.population.evaluate_tree(tree,
+                                              model.data_test,
+                                              model.tf_device_log,
+                                              model.kernel,
+                                              model.class_labels,
+                                              model.tf_device,
+                                              model.terminals,
+                                              model.precision,
+                                              model.log,
+                                              model.fx_fitness_labels_map)
+
+        if model.kernel == 'c':
+            zipped = zip(tree.result['pred_labels'][0], tree.result['solution'],
+                         tree.result['result'], tree.result['pred_labels'][1])
+            for i, (pred, soln, res, lab) in enumerate(zipped):
+                pred, soln = int(pred), int(soln)
+                model.log(f'\t\033[36m Data row {i} predicts class:\033[1m {pred} '
+                          f'({soln} True)\033[0;0m\033[36m as {res}{lab}\033[0;0m')
+            model.log(f'\n Fitness score: {tree.fitness()}'
+                      f'\n\n Precision-Recall report:\n{tree.result["precision_recall"]}'
+                      f'\n Confusion matrix:\n{tree.result["confusion_matrix"]}')
+
+        elif model.kernel == 'r':
+            zipped = zip(tree.result['result'], tree.result['solution'])
+            for i, (res, soln) in enumerate(zipped):
+                model.log(f'\t\033[36m Data row {i} predicts value: '
+                          f'\033[1m {res:.2f} ({soln:.2f} True)\033[0;0m')
+            model.log(f'\n\t Regression fitness score: {tree.fitness()}'
+                      f'\n\t Mean Squared Error: {tree.result["mean_squared_error"]}')
+
+        elif model.kernel == 'm':
+            zipped = zip(tree.result['result'], tree.result['solution'])
+            for i, (res, soln) in enumerate(zipped):
+                model.log(f'\t\033[36m Data row {i} predicts match:\033[1m {res:.2f} '
+                          f'({soln:.2f} True)\033[0;0m')
+            model.log(f'\n\tMatching fitness score: {tree.fitness()}')
+
+        # elif self.kernel == '[other]':  # use others as a template
+
+    elif input_a == 'print_a':  # print a Tree from population_a
+        model.population.trees[input_b].display()
+
+    elif input_a == 'print_b':  # print a Tree from population_b
+        model.population.population_b[input_b].display()
+
+    elif input_a == 'pop_a':  # list all Trees in population_a
+        for tree in model.population.trees:
+            model.log(f'\t\033[36m Tree {tree.id} '
+                      f'yields (sym):\033[1m {tree.expression} \033[0;0m')
+
+    elif input_a == 'pop_b':  # list all Trees in population_b
+        for i, tree in enumerate(model.population.population_b):
+            model.log(f'\t\033[36m Tree {i + 1} '
+                      f'yields (sym):\033[1m {tree.expression} \033[0;0m')
+
+    elif input_a == 'load':  # load population_s to replace population_a
+        # NEED TO replace 's' with a user defined filename
+        model.fx_data_recover(model.savefile['s'])
+
+    elif input_a == 'write':  # write the evolving population_b to disk
+        model.fx_data_tree_write(model.population.population_b, 'b')
+        model.log(f'\n\t All current members of the evolving population_b '
+                  f'saved to {model.savefile["b"]}')
+
+    elif input_a == 'add':
+        # check for added generations, then exit fx_karoo_pause
+        # and continue the run
+        # if input_b > 0: self.gen_max = self.gen_max + input_b - REMOVED 2019 06/05
+        model.gen_max = model.gen_max + input_b
+
+    elif input_a == 'quit':
+        model.fx_karoo_terminate()  # archive populations and exit
+
+    return 1
+
+#++++++++++++++++++++++++++++++++++++++++++
 #   Conduct the GP run                    |
 #++++++++++++++++++++++++++++++++++++++++++
 
@@ -412,6 +579,7 @@ gp = base_class.Base_GP(
     swim=swim,
     mode=mode,
     seed=seed,
+    pause_callback=fx_karoo_pause_refer,
 )
 gp.fit()
 gp.fx_karoo_terminate()

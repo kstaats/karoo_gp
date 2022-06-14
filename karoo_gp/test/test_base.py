@@ -1,6 +1,7 @@
 import hashlib
 
 import pytest
+import numpy as np
 
 from karoo_gp.base_class import Base_GP
 
@@ -33,6 +34,12 @@ def test_base_init(default_kwargs):
     for k, v in default_kwargs.items():
         assert getattr(model, k) == v
 
+def test_base_rng(default_kwargs):
+    model = Base_GP(**default_kwargs)
+    assert model.rng.integers(1000) == 585
+    assert np.random.randint(1000) == 435
+    # Don't test tf for now because v slow
+
 @pytest.mark.parametrize('ker', ['c', 'r', 'm'])
 def test_base_fit(default_kwargs, ker):
     # Initialize, check most fit
@@ -43,25 +50,27 @@ def test_base_fit(default_kwargs, ker):
 
     def compare_expected(model, expected):
         """Test models fields against expected dict"""
-        fitlist = ''.join(map(str, model.fittest_dict))
+        fitlist = ''.join(map(str, model.population.fittest_dict))
         assert expected['fitlist'] == fitlist
-        fittest = max(model.fittest_dict)
-        assert expected['sym'] == str(model.fittest_dict[fittest])
-        assert expected['fit'] == model.population_a[fittest][12][1]
+
+        fittest_id = max(model.population.fittest_dict)
+        fittest = model.population.trees[fittest_id - 1]
+        assert expected['fit'] == fittest.fitness()
+        assert expected['sym'] == fittest.expression == model.population.fittest_dict[fittest_id]
 
     initial_expected = {
-        'c': dict(sym='pl + pw - 2*sw', fit='109.0',
+        'c': dict(sym='pl + pw - 2*sw', fit=109.0,
                   fitlist='1235689101112131415161718192022232426272829313375'),
-        'r': dict(sym='1', fit='0.05', fitlist='17101525314580'),
-        'm': dict(sym='3*b', fit='10.0', fitlist='52'),
+        'r': dict(sym='1', fit=0.05, fitlist='17101525314580'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='52'),
     }
     compare_expected(model, initial_expected[ker])
 
     model.fit()
     fit_expected = {
-        'c': dict(sym='-pl/(pw*sw) + pw', fit='110.0', fitlist='121023'),
-        'r': dict(sym='1', fit='0.05',
+        'c': dict(sym='-pl/(pw*sw) + pw', fit=110.0, fitlist='121023'),
+        'r': dict(sym='1', fit=0.05,
                   fitlist='12101214182432364355608183919294'),
-        'm': dict(sym='3*b', fit='10.0', fitlist='104269100'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='104269100'),
     }
     compare_expected(model, fit_expected[ker])
