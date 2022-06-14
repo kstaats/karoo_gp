@@ -6,11 +6,21 @@ publish it on PyPI.
 
 ## Preparing for a release
 
+- [ ] Ensure you are on `master` and that your clone is up to date:
+   ```sh
+   git switch master  # switch to the master branch
+   git pull origin master  # pull remote changes from the main repo
+   ```
 - [ ] Bump the version number in `karoo_gp/__init__.py` and commit.
-- [ ] Tag the commit with e.g. `git tag -a v2.4.1 -m 'Karoo GP 2.4.1' 8d0b4c7`.
+- [ ] Tag the commit with e.g. `git tag -a v2.5.0 -m 'Karoo GP 2.5.0' feb5c01`,
+      using the commit id of the version bump.
+- [ ] (Optional) For new major/minor releases, create a new branch:
+   ```sh
+   git switch -c 2.5  # create a new branch for 2.5
+   ```
 
 Note: the tag should use the `vX.Y.Z` format.  If it is an *alpha*/*beta*/*rc*
-you can use e.g. `v2.4.1a0`
+you can use e.g. `v2.5.0a0`.  Branches should only include `X.Y`.
 
 
 ## Setup a venv for the release
@@ -26,7 +36,8 @@ already have one.
 
 - [ ] Install dependencies in the venv:
   ```sh
-  python3 -m pip install --upgrade pip build twine
+  python3 -m pip install --upgrade pip
+  python3 -m pip install --upgrade build twine
   ```
 
 ## Build the package
@@ -38,7 +49,7 @@ already have one.
 - [ ] Check the content of the `dist/` dir:
   ```sh
   $ ls dist
-  karoo_gp-2.4.1-py3-none-any.whl  karoo_gp-2.4.1.tar.gz
+  karoo_gp-2.5.0-py3-none-any.whl  karoo_gp-2.5.0.tar.gz
   ```
 
 Note: if there are old releases in the `dist/` dir, you might want to
@@ -52,7 +63,7 @@ Before publishing on PyPI, it is recommended to publish on test.pypi.org.
 Keep in mind that once a release has been uploaded, it can not be
 replaced with a different release with the same version number.
 You might want to publish one or more release candidate (e.g.
-`v2.4.1rc0`) before publishing the final release.
+`v2.5.0rc0`) before publishing the final release.
 
 - [ ] Upload/publish the package(s) with `twine`:
   ```sh
@@ -137,7 +148,7 @@ possibly delete the venv(s).
 - [ ] Push the changes to GitHub:
   ```sh
   git push origin master  # push the version bump commit (or a branch)
-  git push origin v2.4.1  # push the release tag
+  git push origin v2.5.0  # push the release tag
   ```
 - [ ] Delete the venv(s) if you don't need them anymore:
   ```sh
