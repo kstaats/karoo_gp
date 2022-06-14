@@ -644,7 +644,6 @@ class Base_GP(object):
 
         Called by: fx_karoo_terminate
         '''
-        from IPython import embed; embed()
         generic = dict(
             package='Karoo GP',
             launched=self.datetime,
