@@ -5,7 +5,7 @@ def test_operator():
     assert func.symbol == '+'
     assert func.func_type == 'arithmetic'
     assert func.arity == 2
-    assert func.__repr__() == '<Function: +(arithmetic)>'
+    assert repr(func) == '<Function: +(arithmetic)>'
 
 def test_operators():
     funcs = Functions(['+', '-'])

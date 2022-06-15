@@ -1,36 +1,38 @@
 import numpy as np
 
-function_dict = {'+': dict(func_type='arithmetic', arity=2),
-                 '-': dict(func_type='arithmetic', arity=2),
-                 '*': dict(func_type='arithmetic', arity=2),
-                 '/': dict(func_type='arithmetic', arity=2),
-                 '**': dict(func_type='arithmetic', arity=2),
-                 'neg': dict(func_type='logic', arity=1),
-                 'and': dict(func_type='logic', arity=2),
-                 'or': dict(func_type='logic', arity=2),
-                 'not': dict(func_type='logic', arity=1),
-                 '==': dict(func_type='logic', arity=2),
-                 '!=': dict(func_type='logic', arity=2),
-                 '<': dict(func_type='logic', arity=2),
-                 '<=': dict(func_type='logic', arity=2),
-                 '>': dict(func_type='logic', arity=2),
-                 '>=': dict(func_type='logic', arity=2),
-                 'abs': dict(func_type='math', arity=1),
-                 'sign': dict(func_type='math', arity=1),
-                 'square': dict(func_type='math', arity=1),
-                 'sqrt': dict(func_type='math', arity=1),
-                 'pow': dict(func_type='math', arity=1),
-                 'log': dict(func_type='math', arity=1),
-                 'log1p': dict(func_type='math', arity=1),
-                 'cos': dict(func_type='math', arity=1),
-                 'sin': dict(func_type='math', arity=1),
-                 'tan': dict(func_type='math', arity=1),
-                 'acos': dict(func_type='math', arity=1),
-                 'asin': dict(func_type='math', arity=1),
-                 'atan': dict(func_type='math', arity=1)}
+function_dict = {
+    '+': dict(func_type='arithmetic', arity=2),
+    '-': dict(func_type='arithmetic', arity=2),
+    '*': dict(func_type='arithmetic', arity=2),
+    '/': dict(func_type='arithmetic', arity=2),
+    '**': dict(func_type='arithmetic', arity=2),
+    'neg': dict(func_type='logic', arity=1),
+    'and': dict(func_type='logic', arity=2),
+    'or': dict(func_type='logic', arity=2),
+    'not': dict(func_type='logic', arity=1),
+    '==': dict(func_type='logic', arity=2),
+    '!=': dict(func_type='logic', arity=2),
+    '<': dict(func_type='logic', arity=2),
+    '<=': dict(func_type='logic', arity=2),
+    '>': dict(func_type='logic', arity=2),
+    '>=': dict(func_type='logic', arity=2),
+    'abs': dict(func_type='math', arity=1),
+    'sign': dict(func_type='math', arity=1),
+    'square': dict(func_type='math', arity=1),
+    'sqrt': dict(func_type='math', arity=1),
+    'pow': dict(func_type='math', arity=1),
+    'log': dict(func_type='math', arity=1),
+    'log1p': dict(func_type='math', arity=1),
+    'cos': dict(func_type='math', arity=1),
+    'sin': dict(func_type='math', arity=1),
+    'tan': dict(func_type='math', arity=1),
+    'acos': dict(func_type='math', arity=1),
+    'asin': dict(func_type='math', arity=1),
+    'atan': dict(func_type='math', arity=1),
+}
 
 class Function:
-    """A branch node containing an function"""
+    """A branch node containing a function"""
     def __init__(self, symbol):
         if symbol not in function_dict:
             raise ValueError("Unrecognized function key:", symbol)
@@ -41,7 +43,7 @@ class Function:
     def __repr__(self):
         return f"<Function: {self.symbol}({self.func_type})>"
 
-class Functions():
+class Functions:
     def __init__(self, function_list):
         self.functions = [Function(f) for f in function_list]
 

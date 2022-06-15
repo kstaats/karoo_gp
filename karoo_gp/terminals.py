@@ -10,7 +10,7 @@ class Terminal:
     def __repr__(self):
         return f"<Terminal: {self.symbol}({str(self.t_type)})>"
 
-class Terminals():
+class Terminals:
     def __init__(self, variables, types=None, constants=[], default_type=float):
         self.variables = {}
         types = types or []
@@ -23,7 +23,7 @@ class Terminals():
         # TODO: Add class mappings
 
     def __repr__(self):
-        v_string = "".join([v for v in self.variables])
+        v_string = "".join(self.variables)
         c_string = "".join([str(c.symbol) for c in self.constants])
         t_string = f"{v_string}, {c_string}"
         return f"<Terminals: {len(self.get())}({t_string[:10]})>"

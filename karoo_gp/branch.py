@@ -1,14 +1,17 @@
-import ast, math
+import ast
+import math
 from collections import defaultdict
 from karoo_gp import Function, Terminal
 
 # Used by load, i.e. recreate branch from symbol strings
-operators_ref = {ast.Add: '+',
-                 ast.Sub: '-',
-                 ast.Mult: '*',
-                 ast.Div: '/',
-                 ast.Pow: '**',
-                 ast.USub: '-'}
+operators_ref = {
+    ast.Add: '+',
+    ast.Sub: '-',
+    ast.Mult: '*',
+    ast.Div: '/',
+    ast.Pow: '**',
+    ast.USub: '-',
+}
 
 class Branch:
     """An recursive tree element with a node, parent and children"""
@@ -43,7 +46,7 @@ class Branch:
         elif self.bfs_ref is None:
             n_children = self.n_children
             if n > n_children:
-                raise ValueError(f'Index "{n}" out of range ({n_children}')
+                raise ValueError(f'Index {n!r} out of range ({n_children})')
             # Generate a 2d list of nodes by depth
             nodes_by_depth = defaultdict(list)
             for i in range(n_children + 1):
@@ -75,7 +78,7 @@ class Branch:
 
     @classmethod
     def load(cls, expr, tree_type, parent=None):
-        """Load from an string expression, e.g. 'g((a)+(1))' (recursive)
+        """Load from a string expression, e.g. 'g((a)+(1))' (recursive)
 
         Accepts a string (when called from Tree or from breadth_wise_generate)
         or ast.Expression (recursive calls)
@@ -140,7 +143,7 @@ class Branch:
             root_node = fn()
         nodes_by_depth[0].append(root_node)
         for i in range(1, tree_depth + 1):
-            sum_parent_arity = sum([p[1] for p in nodes_by_depth[i-1]])
+            sum_parent_arity = sum(p[1] for p in nodes_by_depth[i-1])
             if not sum_parent_arity:
                 break  # Grow trees can be less than tree_depth
             for _ in range(sum_parent_arity):
@@ -149,7 +152,7 @@ class Branch:
                 elif tree_type == 'f':
                     node = fn()  # For 'full', others are functions
                 elif tree_type == 'g':  # For 'grow', others are coin-flips
-                    node = tm() if rng.choice([False, True]) else fn()
+                    node = rng.choice([fn, tm])()
                 else:
                     raise ValueError('Only (f)ull and (g)row trees supported')
                 nodes_by_depth[i].append(node)
@@ -205,7 +208,7 @@ class Branch:
     #++++++++++++++++++++++++++++
 
     def __repr__(self):
-        return f"<Branch: {self.node.__repr__()}>"
+        return f"<Branch: {self.node!r}>"
 
     def parse(self):
         """Return full list of symbols (recursive)"""
@@ -226,7 +229,7 @@ class Branch:
             return f"({self.children[0].save()}{self.node.symbol}{self.children[1].save()})"
 
     def display(self, width=60, symbol_max_len=3):
-        """Print a heirarchical tree representation of all nodes
+        """Print a hierarchical tree representation of all nodes
 
         Cycle through depths starting with the root (centered). At each depth,
         for every node at that depth, portion the horizontal space among its
