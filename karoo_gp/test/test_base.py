@@ -71,6 +71,6 @@ def test_base_fit(default_kwargs, ker):
         'c': dict(sym='-pl/(pw*sw) + pw', fit=110.0, fitlist='121023'),
         'r': dict(sym='1', fit=0.05,
                   fitlist='12101214182432364355608183919294'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='104269100'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='109798'),
     }
     compare_expected(model, fit_expected[ker])

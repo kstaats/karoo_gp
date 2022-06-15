@@ -72,19 +72,6 @@ def default_evolve_params():
         tourn_size=7,
     )
 
-def sigfig_round(x, sigfig):
-    """Round to significant figures
-
-        sigfig_round(1111.0, 3) -> 1110
-        sigfig_round(0.1111, 3) -> 0.111
-
-    Karoo's expression parser (numpy or tensorflow) uses float32s by default,
-    which are accurate to 7 significant figures. The other digits are artifacts
-    of how python stores floats, i.e. as fractions. The model should only
-    return the significant figures of a calculation. This will be udpated in
-    future version, but this is a workaround so the tests don't fail on GitHub.
-    """
-    return round(x, sigfig -int(np.floor(np.log10(abs(x)))) - 1)
 
 @pytest.mark.parametrize('kernel', ['c', 'r', 'm'])
 def test_population_class(default_kwargs, default_evaluate_params,
@@ -117,12 +104,12 @@ def test_population_class(default_kwargs, default_evaluate_params,
     population.evaluate(**eval_params)
     expected = {
         'c': dict(exp='pl - pl*sw/pw', fit=41.0),
-        'r': dict(exp='2*r', fit=205.509979),
+        'r': dict(exp='2*r', fit=205.51),
         'm': dict(exp='-2*a - b + 2*c', fit=1.0),
     }
     assert population.fittest().expression == expected[kernel]['exp']
-    actual_fitness = sigfig_round(population.fittest().fitness, 7)
-    expected_fitness = sigfig_round(expected[kernel]['fit'], 7)
+    actual_fitness = population.fittest().fitness
+    expected_fitness = expected[kernel]['fit']
     assert actual_fitness == expected_fitness
 
     # Evolve
@@ -136,10 +123,10 @@ def test_population_class(default_kwargs, default_evaluate_params,
     new_population = population.evolve(**evolve_params)
     expected = {
         'c': dict(exp='pl + pw - sl', fit=98.0),
-        'r': dict(exp='2*r', fit=205.509979),
+        'r': dict(exp='2*r', fit=205.51),
         'm': dict(exp='b**2', fit=1.0),
     }
     assert new_population.fittest().expression == expected[kernel]['exp']
-    actual_fitness = sigfig_round(new_population.fittest().fitness, 7)
-    expected_fitness = sigfig_round(expected[kernel]['fit'], 7)
+    actual_fitness = new_population.fittest().fitness
+    expected_fitness = expected[kernel]['fit']
     assert actual_fitness == expected_fitness

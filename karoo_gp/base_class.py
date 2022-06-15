@@ -211,6 +211,10 @@ class Base_GP(object):
     #   Methods to Run Karoo GP                  |
     #+++++++++++++++++++++++++++++++++++++++++++++
 
+    def sigfig_round(self, x, sigfigs=None):
+        sigfigs = sigfigs or self.precision
+        return round(x, sigfigs - int(np.floor(np.log10(abs(x)))) - 1)
+
     def fit(self, X=None, y=None):
 
         '''
@@ -681,7 +685,7 @@ class Base_GP(object):
                 expression=tree.expression,
             )
             result = tree.result
-            score = dict(fitness=result['fitness'])
+            score = dict(fitness=self.sigfig_round(result['fitness']))
             if self.kernel == 'c':
                 score['classification_report'] = skm.classification_report(
                     result['solution'], result['pred_labels'][0],
@@ -692,8 +696,8 @@ class Base_GP(object):
                 ).tolist()
 
             elif self.kernel == 'r':
-                MSE = skm.mean_squared_error(result['result'], result['solution'])
-                score['mean_squared_error'] = float(MSE)
+                MSE = float(skm.mean_squared_error(result['result'], result['solution']))
+                score['mean_squared_error'] = self.sigfig_round(MSE)
 
             final_dict = dict(
                 **final_dict,

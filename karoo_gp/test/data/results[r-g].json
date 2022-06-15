@@ -25,7 +25,7 @@
         "expression": "1"
     },
     "score": {
-        "fitness": 0.04999995231628418,
-        "mean_squared_error": 7.777762948535383e-05
+        "fitness": 0.05,
+        "mean_squared_error": 7.77778e-5
     }
 }

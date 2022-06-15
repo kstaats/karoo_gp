@@ -14,7 +14,7 @@ operators = {
     ast.Add: tf.add,  # e.g., a + b
     ast.Sub: tf.subtract,  # e.g., a - b
     ast.Mult: tf.multiply,  # e.g., a * b
-    ast.Div: tf.divide,  # e.g., a / b
+    ast.Div: tf.math.divide_no_nan,  # e.g., a / b
     ast.Pow: tf.pow,  # e.g., a ** 2
     ast.USub: tf.negative,  # e.g., -a
     ast.And: tf.logical_and,  # e.g., a and b
@@ -519,7 +519,7 @@ def fx_fitness_eval(expr, data, tf_device_log, kernel, class_labels,
             terminal_symbols.append('s')  # Add column for solution
             for i, term in enumerate(terminal_symbols):
                 # converts data into vectors
-                tensors[term] = tf.constant(data[:, i], dtype=tf.float32)
+                tensors[term] = tf.constant(data[:, i], dtype=tf.float64)
 
             # 2- Transform string expression into TF operation graph
             result = fx_fitness_expr_parse(expr, tensors)
@@ -709,7 +709,7 @@ def fx_fitness_node_parse(node, tensors):
     elif isinstance(node, ast.Num):  # <number>
         #shape = tensors[tensors.keys()[0]].get_shape()  # Python 2.7
         shape = tensors[list(tensors.keys())[0]].get_shape()
-        return tf.constant(node.n, shape=shape, dtype=tf.float32)
+        return tf.constant(node.n, shape=shape, dtype=tf.float64)
 
     elif isinstance(node, ast.BinOp):  # <left> <operator> <right>, e.g., x + y
         return operators[type(node.op)](
