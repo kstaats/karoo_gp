@@ -3,12 +3,12 @@ from karoo_gp import Terminal, Terminals
 def test_terminal():
     t = Terminal('a')
     assert t.symbol == 'a'
-    assert t.t_type == float
-    assert t.__repr__() == "<Terminal: a(<class 'float'>)>"
+    assert t.type == float
+    assert t.__repr__() == "<Terminal: symbol='a' type='float')>"
 
     t = Terminal(1, int)
     assert t.symbol == 1
-    assert t.t_type == int
+    assert t.type == int
 
 def test_terminals():
     ts = Terminals(['a', 'b'], constants=[1, 2])

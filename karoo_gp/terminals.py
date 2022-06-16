@@ -1,26 +1,34 @@
 from itertools import zip_longest
 import numpy as np
 
+# TODO: Doesn't need to be a class
 class Terminal:
     """A branch node containing a variable or constant"""
-    def __init__(self, symbol, t_type=float):
+    def __init__(self, symbol, type=float):
         self.symbol = symbol
-        self.t_type = t_type
+        # TODO: Currently the type isn't used, and the engine uses float32 by
+        # default. The type attribute here could theoretically be used to
+        # support boolean or categorical values for terminals. Currently the
+        # user has to remove or convert these to numeric in preprocessing.
+        self.type = type
 
     def __repr__(self):
-        return f"<Terminal: {self.symbol}({str(self.t_type)})>"
+        return (f"<Terminal: symbol={self.symbol!r} "
+                f"type={self.type.__name__!r})>")
 
 class Terminals:
-    def __init__(self, variables, types=None, constants=[], default_type=float):
+    def __init__(self, variables, constants=None, types=None,
+                 default_type=float):
+        """Return a Terminals object to store active terminals"""
         self.variables = {}
-        types = types or []
-        for s, t in zip_longest(variables, types):
+        constants = [] if constants is None else constants
+        types = [] if types is None else types
+        for s, t in zip_longest(variables, types, fillvalue=default_type):
             if s in self.variables:
                 raise ValueError("Terminals must be unique:", s)
-            t_type = t or default_type
-            self.variables[s] = Terminal(s, t_type)
-        self.constants = [Terminal(c, type(c)) for c in constants]
-        # TODO: Add class mappings
+            self.variables[s] = Terminal(s, t)
+        self.constants = None if constants is None else [
+                          Terminal(c, type(c)) for c in constants]
 
     def __repr__(self):
         v_string = "".join(self.variables)

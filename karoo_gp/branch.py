@@ -13,6 +13,7 @@ operators_ref = {
     ast.USub: '-',
 }
 
+# TODO: Rename to 'Node'
 class Branch:
     """An recursive tree element with a node, parent and children"""
 
@@ -27,64 +28,18 @@ class Branch:
         self.children = None
         self.bfs_ref = None
 
-    # MAY REDESIGN: The original 'fx_..' functions use breadth-first ordering,
-    # but the recursive method is depth-first. Changing the order would change
-    # the test results, which would defeat the purpose of the tests. This
-    # version supports both by adding the 'method' argument ('BFS' by default
-    # or 'DFS') to class methods generate, get_child and set_child. The last 2
-    # use a new method, i_bfs, which just returns the dfs index given a bfs
-    # index from a cached dict, which is cleared when the tree is modified.
-    #
-    # TODO: Decide which to use by default. DFS is theoretically faster and
-    # simpler to implement recursively, but recursive fx aren't cheap in
-    # Python.
-
-    def i_bfs(self, n):
-        """Convert breadth-first index to depth-first index"""
-        if n in [0, 1]:
-            return n
-        elif self.bfs_ref is None:
-            n_children = self.n_children
-            if n > n_children:
-                raise ValueError(f'Index {n!r} out of range ({n_children})')
-            # Generate a 2d list of nodes by depth
-            nodes_by_depth = defaultdict(list)
-            for i in range(n_children + 1):
-                c, _ = self.recursive_get_child(i)
-                nodes_by_depth[c.height].append(i)
-            # Make a dict of {i_bfs: i_dfs} pairs
-            self.bfs_ref = {}
-            i_bfs = 0
-            depths = list(nodes_by_depth.keys())
-            for depth in depths:
-                nodes = nodes_by_depth[depth]
-                for node in nodes:
-                    self.bfs_ref[i_bfs] = node
-                    i_bfs += 1
-        return self.bfs_ref[n]
-
-    #++++++++++++++++++++++++++++
-    #   Generate                |
-    #++++++++++++++++++++++++++++
-
-    def copy(self):
-        """Return an unlinked copy of self (recursive)"""
-        copy = Branch(self.node, self.tree_type, self.parent)
-        if self.children:
-            copy.children = [c.copy() for c in self.children]
-            for c in copy.children:
-                c.parent = copy
-        return copy
-
     @classmethod
-    def load(cls, expr, tree_type, parent=None):
+    def load(cls, expr: str, tree_type, parent=None):
         """Load from a string expression, e.g. 'g((a)+(1))' (recursive)
 
         Accepts a string (when called from Tree or from breadth_wise_generate)
         or ast.Expression (recursive calls)
         """
-        if type(expr) == str:
-            expr = ast.parse(expr, mode='eval')
+        expr = ast.parse(expr, mode='eval')
+        return cls.recursive_load(expr, tree_type, parent)
+
+    @classmethod
+    def recursive_load(cls, expr, tree_type, parent=None):
         if type(expr) == ast.Expression:
             expr = expr.body
         if isinstance(expr, ast.Name):
@@ -98,13 +53,17 @@ class Branch:
             node = Function(symbol)
             branch = Branch(node, tree_type, parent)
             if isinstance(expr, ast.UnaryOp):
-                branch.children = [cls.load(expr.left, tree_type, branch)]
+                branch.children = [cls.recursive_load(expr.left, tree_type, branch)]
             elif isinstance(expr, ast.BinOp):
-                branch.children = [cls.load(expr.left, tree_type, branch),
-                                   cls.load(expr.right, tree_type, branch)]
+                branch.children = [cls.recursive_load(expr.left, tree_type, branch),
+                                   cls.recursive_load(expr.right, tree_type, branch)]
             else:
                 raise ValueError("Unrecognized op type in load:", expr.op)
         return branch
+
+    #++++++++++++++++++++++++++++
+    #   Generate Random         |
+    #++++++++++++++++++++++++++++
 
     @classmethod
     def generate(cls, rng, functions, terminals, tree_type, depth, parent=None,
@@ -202,6 +161,42 @@ class Branch:
             args = (rng, functions, terminals, tree_type, depth-1)
             branch.children = [cls.generate(*args, parent=branch) for c in range(node.arity)]
         return branch
+
+    # MAY REDESIGN: The original 'fx_..' functions use breadth-first ordering,
+    # but the recursive method is depth-first. Changing the order would change
+    # the test results, which would defeat the purpose of the tests. This
+    # version supports both by adding the 'method' argument ('BFS' by default
+    # or 'DFS') to class methods generate, get_child and set_child. The last 2
+    # use a new method, i_bfs, which just returns the dfs index given a bfs
+    # index from a cached dict, which is cleared when the tree is modified.
+    #
+    # TODO: Decide which to use by default. DFS is theoretically faster and
+    # simpler to implement recursively, but recursive fx aren't cheap in
+    # Python.
+
+    def i_bfs(self, n):
+        """Convert breadth-first index to depth-first index"""
+        if n in [0, 1]:
+            return n
+        elif self.bfs_ref is None:
+            n_children = self.n_children
+            if n > n_children:
+                raise ValueError(f'Index {n!r} out of range ({n_children})')
+            # Generate a 2d list of nodes by depth
+            nodes_by_depth = defaultdict(list)
+            for i in range(n_children + 1):
+                c, _ = self.recursive_get_child(i)
+                nodes_by_depth[c.height].append(i)
+            # Make a dict of {i_bfs: i_dfs} pairs
+            self.bfs_ref = {}
+            i_bfs = 0
+            depths = list(nodes_by_depth.keys())
+            for depth in depths:
+                nodes = nodes_by_depth[depth]
+                for node in nodes:
+                    self.bfs_ref[i_bfs] = node
+                    i_bfs += 1
+        return self.bfs_ref[n]
 
     #++++++++++++++++++++++++++++
     #   Display                 |
@@ -312,6 +307,15 @@ class Branch:
     #++++++++++++++++++++++++++++
     #   Modify                  |
     #++++++++++++++++++++++++++++
+
+    def copy(self):
+        """Return an unlinked copy of self (recursive)"""
+        copy = Branch(self.node, self.tree_type, self.parent)
+        if self.children:
+            copy.children = [c.copy() for c in self.children]
+            for c in copy.children:
+                c.parent = copy
+        return copy
 
     def get_child(self, n, method='BFS'):
         """Returns the child in the nth position; supports BFS or DFS"""
