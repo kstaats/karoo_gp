@@ -1,20 +1,13 @@
-import sys, hashlib
-
 import pytest
 from unittest.mock import MagicMock
-import numpy as np
 import json
 
-from karoo_gp import Tree, Functions, Terminals, Branch
-from .util import hasher, dump_json
+from karoo_gp import Tree, Branch
 
 @pytest.fixture
 def tree_default_kwargs(rng, functions, terminals):
     return dict(
         rng=rng,
-        log=MagicMock(),
-        pause=MagicMock(),
-        error=MagicMock(),
         id=1,
         functions=functions,
         terminals=terminals,
@@ -33,8 +26,10 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     kwargs = dict(**tree_default_kwargs,
                   tree_type=tree_type,
                   tree_depth_base=tree_depth_base)
+    log = MagicMock()
+    pause = MagicMock()
     tree = Tree.generate(**kwargs)
-    tree.result = dict(fitness=100)  # Add manually to test fitness property
+    tree.score = dict(fitness=100)  # Add manually to test fitness property
 
     # Query attributes/methods
     tree_output = dict(
@@ -60,13 +55,13 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
 
     # Point Mutate (randomly change one function or terminal)
     tree.point_mutate(kwargs['rng'], kwargs['functions'], kwargs['terminals'],
-                      kwargs['log'])
+                      log)
     point_mutated = tree.save()
     tree_output['point_mutate'] = point_mutated
 
     # Branch Mutate (randomly modify an entire subtree)
     tree.branch_mutate(kwargs['rng'], kwargs['functions'], kwargs['terminals'],
-                       tree_depth_max, kwargs['log'])
+                       tree_depth_max, log)
     branch_mutated = tree.save()
     tree_output['branch_mutate'] = branch_mutated
 
@@ -86,7 +81,7 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     crossover_mate = tree.copy()
     branch_to_insert = crossover_mate.get_child(0).save()
     tree.crossover(1, crossover_mate, 0, kwargs['rng'], kwargs['terminals'],
-                   tree_depth_max, kwargs['log'], kwargs['pause'])
+                   tree_depth_max, log, pause)
     assert tree.get_child(1).save() == branch_to_insert
     assert tree.depth - 1 == min(depth_before_crossover + 1, tree_depth_max)
     tree_output['crossover'] = tree.save()
@@ -98,66 +93,3 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
         ref = json.load(f)
     for k, v in ref.items():
         assert v == tree_output[k], f'Non-matching value for "{k}"'
-
-# # ---------------------------------------------------------
-# # LEGACY TESTS (REPLACE AFTER CONFIRMING ABOVE IS ACCURATE)
-
-@pytest.fixture
-def default_args(rng):
-    return dict(
-        log=MagicMock(),
-        pause=MagicMock(),
-        error=MagicMock(),
-        id=1,
-        tree_type='f',
-        tree_depth_base=3,
-        functions=Functions(['+', '-', '*', '/']),
-        terminals=Terminals(['a', 'b']),
-        rng=rng,
-    )
-
-@pytest.mark.parametrize('tree_type', ['f', 'g'])
-@pytest.mark.parametrize('tree_depth_base', [3, 5])
-def test_tree_generate(default_args, tree_type, tree_depth_base):
-    kwargs = dict(default_args)
-    kwargs['tree_type'] = tree_type
-    kwargs['tree_depth_base'] = tree_depth_base
-    tree = Tree.generate(**kwargs)
-    expected = {
-        ('f', 3): '(a)*(b)*(b)/(a)+(a)-(a)/(a)+(a)',
-        ('f', 5): ('(a)/(a)+(a)+(b)*(b)*(b)*(b)+(a)*(b)/(a)*(b)/(b)/(a)/(b)-'
-                   '(b)*(b)+(a)+(a)+(a)/(b)-(a)+(b)-(a)*(b)/(a)/(a)-(b)+(a)+'
-                   '(b)*(a)-(a)+(a)'),
-        ('g', 3): '(b)+(b)',
-        ('g', 5): '(b)+(b)',
-    }
-    assert tree.raw_expression == expected[(tree_type, tree_depth_base)]
-    copy = tree.copy()
-    assert copy.raw_expression == expected[(tree_type, tree_depth_base)]
-    saved = tree.save()
-    loaded = Tree.load(kwargs['id'], saved)
-    assert loaded.raw_expression == expected[(tree_type, tree_depth_base)]
-
-@pytest.fixture
-def tree(default_args):
-    return Tree.generate(**default_args)
-
-def test_tree_class(capsys, default_args, tree):
-    # Attributes
-    assert tree.id == default_args['id']
-    assert tree.tree_type == default_args['tree_type']
-
-    # Display Methods
-    assert tree.raw_expression == '(a)*(b)*(b)/(a)+(a)-(a)/(a)+(a)'
-    assert tree.expression == '2*a + b**2 - 1'
-
-    # Manipulate Methods
-    copied = tree.copy(id=tree.id+1)
-    assert copied.id == tree.id + 1
-    assert copied.tree_type == tree.tree_type
-    assert str(copied.root) == str(tree.root)
-
-    # Save and Load
-    saved = tree.save()
-    loaded = Tree.load(tree.id, saved)
-    assert loaded.expression == tree.expression

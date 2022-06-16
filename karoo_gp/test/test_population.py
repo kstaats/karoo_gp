@@ -1,70 +1,86 @@
 import pytest
 from unittest.mock import MagicMock
 import numpy as np
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()  # from https://www.tensorflow.org/guide/migrate
 
 from karoo_gp import Population, Terminals, Functions
-from .util import hasher, load_data
+from .util import load_data
+
+# Create a dummy model with mock functions to confirm calls
+class MockModel:
+    def __init__(self):
+        self.cache = {}
+        self.log=MagicMock()
+        self.pause=MagicMock()
+        self.error=MagicMock()
+        self.rng=np.random.default_rng(1000)
+        self.build_fittest_dict=MagicMock()
+
+    def predict(self, X, trees, X_hash):
+        """Return an array of 1's of expected shape"""
+        output = np.ones((len(trees), X.shape[0]))
+        return output[0] if len(trees) == 1 else output
+
+    def score(self, y_pred, y_true, tree):
+        """Return expected dict with fitness = 1"""
+        return {'fitness': 1}  # So that evolve works
+
+    def fitness_compare(self, a, b):
+        """Return the latter of two trees compared"""
+        return b  # So that pop.fittest() returns pop.trees[-1]
 
 @pytest.fixture
-def default_kwargs(rng):
+def default_pop_kwargs():
     return dict(
-        log=MagicMock(),
-        pause=MagicMock(),
-        error=MagicMock(),
-        gen_id=1,
+        model=MockModel(),
         tree_type='r',
         tree_depth_base=3,
-        tree_depth_max=3,
-        tree_pop_max=100,
+        tree_pop_max=10,
         functions=Functions(['+', '-', '*', '/']),
         terminals=Terminals(['a', 'b']),
-        rng=rng,
-        fitness_type='max'
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g', 'r'])
-def test_population_generate(default_kwargs, tree_type):
-    kwargs = dict(default_kwargs)
-    kwargs['tree_type'] = tree_type
-    kwargs['tree_pop_max'] = 10
+def test_population_generate(default_pop_kwargs, tree_type):
+    """Confirm that population types are generated correctly"""
+    kwargs = {**default_pop_kwargs, 'tree_type': tree_type}
     population = Population.generate(**kwargs)
+    assert len(population.trees) == kwargs['tree_pop_max']
 
-
-    # This will NOT change with branch-api update
-    expected_raw_expression = {
-        'f': '(a)*(a)/(a)-(a)-(b)-(a)-(b)*(a)',
-        'g': '(b)+(b)',
-        'r': '(b)-(a)/(b)*(b)',
-    }
-    assert population.trees[-1].raw_expression == expected_raw_expression[tree_type]
-
-# EVALUATE
-
-@pytest.fixture
-def default_evaluate_params():
-    return dict(
-        log=MagicMock(),
-        pause=MagicMock(),
-        error=MagicMock(),
-        data_train=[],
-        kernel='m',
-        data_train_rows=0,
-        tf_device_log=None,
-        class_labels=[],
-        tf_device="/gpu:0",
-        terminals=['a', 'b', 'c', 's'],
-        precision=6,
-        savefile={},
-        fx_data_tree_write=MagicMock(),
-    )
+    if tree_type == 'f':
+        for t in population.trees:
+            assert t.tree_type == 'f'
+            assert t.depth == kwargs['tree_depth_base']  # All same depth
+            n_children = sum(
+                [2 ** b for b in range(1, kwargs['tree_depth_base'] + 1)])
+            assert t.n_children == n_children  # All have max nodes for depth
+    elif tree_type == 'g':
+        depths = set()
+        n_childrens = set()
+        for t in population.trees:
+            assert t.tree_type == 'g'
+            depths.add(t.depth)
+            n_childrens.add(t.n_children)
+        assert len(depths) > 1  # There are different depths
+        assert len(n_childrens) > 1  # There are different numbers of children
+    elif tree_type == 'r':
+        count = dict(f=0, g=0)
+        depths = set()
+        for t in population.trees:
+            count[t.tree_type] += 1
+            depths.add(t.depth)
+        _pop, _depth = kwargs['tree_pop_max'], kwargs['tree_depth_base']
+        n_cycles = _pop // (2 * _depth)
+        n_extra = _pop - n_cycles * (2 * _depth)
+        assert count['f'] == n_cycles * _depth  # One 'full' tree at each depth
+        assert count['g'] == count['f'] + n_extra  # That plus extras 'grow'
+        assert len(depths) == kwargs['tree_depth_base']  # Trees at each depth
 
 @pytest.fixture
 def default_evolve_params():
     return dict(
         swim='p',
-        tree_depth_min=1,
+        tree_depth_min=3,
+        tree_depth_max=5,
         evolve_repro=0.1,
         evolve_point=0.1,
         evolve_branch=0.2,
@@ -72,61 +88,35 @@ def default_evolve_params():
         tourn_size=7,
     )
 
+def test_population_class(tmp_path, paths, default_pop_kwargs,
+                          default_evolve_params):
+    dataset_params = load_data(tmp_path, paths, 'r')
+    terminals = Terminals(dataset_params['terminals'])
+    X, y = dataset_params['X'], dataset_params['y']
 
-@pytest.mark.parametrize('kernel', ['c', 'r', 'm'])
-def test_population_class(default_kwargs, default_evaluate_params,
-                          default_evolve_params, tmp_path, paths, kernel):
-    # Load the dataset for kernel
-    np.random.seed(1000)
-    tf.set_random_seed(1000)
-    dataset_params = load_data(tmp_path, paths, kernel)
-    terminals = Terminals(dataset_params['terminals'][:-1])
-    functions = Functions([f[0] for f in dataset_params['functions']])
-
-    # Initialize population using dataset terminals
-    kwargs = {
-        **default_kwargs,
-        'tree_pop_max': 10,
-        'terminals': terminals,
-        'functions': functions,
-        'fitness_type': dataset_params['fitness_type']
-    }
-    population = Population.generate(**kwargs)
+    pop_kwargs = dict(**default_pop_kwargs)
+    pop_kwargs['terminals'] = terminals
+    population = Population.generate(**pop_kwargs)
+    assert population.gen_id == 1
+    assert population.fittest().id == 1  # If not evaluated, return first
 
     # Evaluate
-    eval_params = dict(default_evaluate_params)
-    eval_params['kernel'] = kernel
-    eval_params['terminals'] = terminals
-    eval_params['data_train'] = dataset_params['data_train']
-    eval_params['data_train_rows'] = dataset_params['data_train_rows']
-    eval_params['class_labels'] = dataset_params['class_labels']
-    eval_params['savefile'] = dataset_params['savefile']
-    population.evaluate(**eval_params)
-    expected = {
-        'c': dict(exp='pl - pl*sw/pw', fit=41.0),
-        'r': dict(exp='2*r', fit=205.51),
-        'm': dict(exp='-2*a - b + 2*c', fit=1.0),
-    }
-    assert population.fittest().expression == expected[kernel]['exp']
-    actual_fitness = population.fittest().fitness
-    expected_fitness = expected[kernel]['fit']
-    assert actual_fitness == expected_fitness
+    population.evaluate(X, y)
+    assert population.evaluated == True  # Flag set
+    highest_fitness = population.fittest().fitness
+    for tree in population.trees:
+        assert tree.fitness <= highest_fitness
 
     # Evolve
-    evolve_params = {**default_evolve_params, **eval_params}
-    evolve_params['terminals'] = terminals
-    evolve_params['functions'] = functions
-    evolve_params['fitness_type'] = dataset_params['fitness_type']
-    evolve_params['tree_depth_max'] = kwargs['tree_depth_max']
-    evolve_params['tree_pop_max'] = kwargs['tree_pop_max']
-    evolve_params['rng'] = kwargs['rng']
-    new_population = population.evolve(**evolve_params)
-    expected = {
-        'c': dict(exp='pl + pw - sl', fit=98.0),
-        'r': dict(exp='2*r', fit=205.51),
-        'm': dict(exp='b**2', fit=1.0),
-    }
-    assert new_population.fittest().expression == expected[kernel]['exp']
-    actual_fitness = new_population.fittest().fitness
-    expected_fitness = expected[kernel]['fit']
-    assert actual_fitness == expected_fitness
+    new_population = population.evolve(
+        **default_evolve_params,
+        tree_pop_max=pop_kwargs['tree_pop_max'],
+        functions=pop_kwargs['functions'],
+        terminals=pop_kwargs['terminals'])
+    # Create a new population of same length
+    assert len(new_population.trees) == len(population.trees)
+    for i, tree in enumerate(new_population.trees):
+        assert tree.id == i + 1  # Ids match index order
+        assert tree.fitness is None  # Fitness is not inherited
+    assert new_population.gen_id == 2  # Generation is incremented
+    assert len(new_population.history) == 1  # History is updated
