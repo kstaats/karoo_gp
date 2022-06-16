@@ -25,7 +25,8 @@ import sklearn.model_selection as skcv
 
 from datetime import datetime
 
-from . import Population, fx_fitness_labels_map_maker, fx_fitness_eval
+from . import Population, Functions, Terminals, \
+              fx_fitness_labels_map_maker, fx_fitness_eval
 
 
 ### TensorFlow Imports and Definitions ###
@@ -151,7 +152,16 @@ class Base_GP(object):
 
         ### PART 2 - construct first generation of Trees ###
         self.fx_data_load(filename)
+        self.functions = Functions([f[0] for f in self.functions])  # Symbol only
+        self.terminals = Terminals(self.terminals[:-1])
+
         self.fx_fitness_labels_map = fx_fitness_labels_map_maker(self.class_labels)
+
+        self.log(f'\n\t\033[32m Press \033[36m\033[1m?\033[0;0m\033[32m at any '
+                 f'\033[36m\033[1m(pause)\033[0;0m\033[32m, or '
+                 f'\033[36m\033[1mENTER\033[0;0m \033[32mto continue the run\033[0;0m',
+                 display=['i'])
+        self.pause(display=['i'])
 
         # initialise population_a to host the first generation
         self.population = Population.generate(
@@ -162,12 +172,14 @@ class Base_GP(object):
             fitness_type=self.fitness_type
         )
 
-        # MAY REDESIGN - moved from init
-        self.log(f'\n\t\033[32m Press \033[36m\033[1m?\033[0;0m\033[32m at any '
-                 f'\033[36m\033[1m(pause)\033[0;0m\033[32m, or '
-                 f'\033[36m\033[1mENTER\033[0;0m \033[32mto continue the run\033[0;0m',
-                 display=['i'])
-        self.pause(display=['i'])
+        self.log(f'\n We have constructed the first, stochastic population of'
+                 f'{self.tree_pop_max} Trees'
+                 f'\n Evaluate the first generation of Trees ...')
+
+        if self.kernel == 'p':
+            self.fx_data_tree_write(self.population.trees, 'a')
+            sys.exit()
+
         self.population.evaluate(
             log=self.log, pause=self.pause, error=self.error,
             data_train=self.data_train, kernel=self.kernel,
@@ -487,10 +499,11 @@ class Base_GP(object):
                                str(self.population.gen_id)]])
 
             for tree in trees:
-                target.writerows([''])  # empty row before each Tree
-                for row in range(0, 13):
-                    # increment through each row in the array Tree
-                    target.writerows([tree.root[row]])
+                target.writerows([tree.save()])
+                # target.writerows([''])  # empty row before each Tree
+                # for row in range(0, 13):
+                #     # increment through each row in the array Tree
+                #     target.writerows([tree.root[row]])
 
 
     def fx_eval_fittest(self):
@@ -503,7 +516,7 @@ class Base_GP(object):
         # revised method, re-evaluating all Trees from stored fitness score
         for i, tree in enumerate(self.population.trees):
 
-            fitness = float(tree.root[12][1])
+            fitness = tree.fitness
 
             if self.kernel == 'c':  # display best fit Trees for the CLASSIFY kernel
                 # find the Tree with Maximum fitness score
@@ -531,7 +544,6 @@ class Base_GP(object):
             # elif self.kernel == '[other]':  # use others as a template
 
             # print('fitness_best:', fitness_best, 'fittest_tree:', fittest_tree)
-
 
         # get simplified expression and process it by TF - tested 2017 02/02
         fittest_tree.result = fx_fitness_eval(
