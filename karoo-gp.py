@@ -544,7 +544,7 @@ functions = np.loadtxt(func_path, delimiter=',', skiprows=1, dtype=str)
 functions = [f[0] for f in functions]  # Arity is now hard-coded by symbol
 dataset = pd.read_csv(filename)
 y = dataset.pop('s')
-terminals = dataset.keys()
+terminals = list(dataset.keys())
 X, y = dataset.to_numpy(), y.to_numpy()
 
 #++++++++++++++++++++++++++++++++++++++++++

@@ -126,9 +126,24 @@ class BaseGP(BaseEstimator):
         self.pause_callback = pause_callback # called throughout based on disp
         self.history = {}                    # best score for each field/gen
 
+        # Initialize Terminals and Functions
+        if isinstance(terminals, Terminals):
+            self.terminals = terminals
+        elif isinstance(terminals, list):
+            self.terminals = Terminals(terminals)
+        else:
+            raise ValueError('Unrecognized: must be a list or Terminals')
+        if isinstance(functions, Functions):
+            self.functions = functions
+        elif isinstance(functions, list):
+            self.functions = Functions(functions)
+        elif functions is None:
+            # TODO support function group as args, e.g. 'logic, arithmetic'
+            self.functions = Functions.arithmetic()
+        else:
+            raise ValueError('Unrecognized: must be a list, Functions or None')
+
         # Initialize Population
-        self.functions = Functions(functions) if functions is not None else Functions.arithmetic()
-        self.terminals = terminals if type(terminals) is Terminals else Terminals(terminals)
         self.tree_type = tree_type           # (f)ull, (g)row or (r)amped 50/50
         self.tree_depth_base = tree_depth_base # depth of initial population
         self.tree_pop_max = tree_pop_max     # number of trees per generation
@@ -560,7 +575,7 @@ class MultiClassifierGP(BaseGP):
 
     def fit(self, X, y, *args, **kwargs):
         """Initialize decoder to be used by scorer"""
-        self.decoder.fit(y)
+        self.prediction_transformer.fit(y)
         super().fit(X, y, *args, **kwargs)
 
 
@@ -594,7 +609,7 @@ class ClassDecoder(TransformerMixin):
             self.skew = None
 
     def _set_skew(self):
-        self.skew (self.n_classes / 2) - 0.5
+        self.skew = (self.n_classes / 2) - 0.5
 
     def fit(self, y):
         self.n_classes = len(np.unique(y))
@@ -604,7 +619,7 @@ class ClassDecoder(TransformerMixin):
         """Remove skew, round and clip 0-N"""
         # Recursively transform batches
         if len(x.shape) > 1:
-            return np.array([self.inverse_transform(x_i) for x_i in x])
+            return np.array([self.transform(x_i) for x_i in x])
         # Transform single sample
         else:
             unskewed = x + self.skew

@@ -41,6 +41,7 @@ def test_model_base(default_kwargs, X_shape):
             assert getattr(model, k) == v
     assert isinstance(model.functions, Functions)
     assert isinstance(model.terminals, Terminals)
+    # TODO: test passing a Functions or Terminals class directly
 
     # Initialize data
     X = np.ones(X_shape)
