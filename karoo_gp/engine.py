@@ -28,12 +28,14 @@ class NumpyEngine(Engine):
     def __init__(self, model):
         super().__init__(model, engine_type='numpy')
         self.dtype = np.float64
-        self.operators = {ast.Add: op.add,
-                          ast.Sub: op.sub,
-                          ast.Mult: op.mul,
-                          ast.Div: inf_to_zero_divide,
-                          ast.Pow: op.pow,
-                          ast.USub: op.neg}
+        self.operators = {
+            ast.Add: op.add,
+            ast.Sub: op.sub,
+            ast.Mult: op.mul,
+            ast.Div: inf_to_zero_divide,
+            ast.Pow: op.pow,
+            ast.USub: op.neg,
+        }
 
     def predict(self, trees, X, X_hash=None):
         """Return predicted the output of each sample for a list of trees"""
@@ -44,7 +46,7 @@ class NumpyEngine(Engine):
             raise TypeError(f"trees must be a Tree or list of Trees")
 
         # Sort sample columns by terminal
-        variables = list(self.model.terminals.variables.keys())
+        variables = self.model.terminals.variables.keys()
         X_dict = {name: X[:, i] for i, name in enumerate(variables)}
 
         # Return the output of each tree for sample data
@@ -106,15 +108,17 @@ class TensorflowEngine(Engine):
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
         # Reference for parse_node
-        self.operators = {ast.Add: tf.add,
-                             ast.Sub: tf.subtract,
-                             ast.Mult: tf.multiply,
-                             ast.Div: tf.divide,
-                             ast.Pow: tf.pow,
-                             ast.USub: tf.negative}
+        self.operators = {
+            ast.Add: tf.add,
+            ast.Sub: tf.subtract,
+            ast.Mult: tf.multiply,
+            ast.Div: tf.divide,
+            ast.Pow: tf.pow,
+            ast.USub: tf.negative,
+        }
 
     def predict(self, trees, X, X_hash=None):
-        """Return predicted the output of each sample for a list of trees"""
+        """Return the predicted output of each sample for a list of trees"""
         # Check type
         if type(trees) == Tree:
             trees = [trees]
@@ -134,14 +138,13 @@ class TensorflowEngine(Engine):
                 with sess.graph.device(self.tf_device):
 
                     # Sort sample columns by terminal
-                    variables = list(self.model.terminals.variables.keys())
+                    variables = self.model.terminals.variables.keys()
                     X_dict = {v: tf.constant(X[:, i], dtype=self.dtype)
                             for i, v in enumerate(variables)}
 
                     # Return the output of each tree for sample data
                     pred = self.parse_expr(tree.expression, X_dict)
-                    [pred] = sess.run([pred])
-                    predictions[i] = pred
+                    predictions[i] = sess.run([pred])[0]
         return predictions
 
     def parse_expr(self, expr, X_dict):

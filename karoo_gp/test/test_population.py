@@ -115,8 +115,8 @@ def test_population_class(tmp_path, paths, default_pop_kwargs,
         terminals=pop_kwargs['terminals'])
     # Create a new population of same length
     assert len(new_population.trees) == len(population.trees)
-    for i, tree in enumerate(new_population.trees):
-        assert tree.id == i + 1  # Ids match index order
+    for i, tree in enumerate(new_population.trees, start=1):
+        assert tree.id == i  # Ids match index order
         assert tree.fitness is None  # Fitness is not inherited
     assert new_population.gen_id == 2  # Generation is incremented
     assert len(new_population.history) == 1  # History is updated

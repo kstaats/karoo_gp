@@ -38,6 +38,8 @@ def test_model_base(default_kwargs, X_shape):
     for k, v in kwargs.items():
         if k not in ['terminals', 'functions']:  # term/func converted to cls
             assert getattr(model, k) == v
+    assert isinstance(model.functions, Functions)
+    assert isinstance(model.terminals, Terminals)
 
     # Initialize data
     X = np.ones(X_shape)

@@ -108,7 +108,7 @@ class Base_GP(object):
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, terminals=None, test_size=0.2, scoring=None,
         higher_is_better=False, cache={}):
-        """Initialize a Karoo_GP object with given parameters"""
+        """Initialize a Base_GP object with given parameters"""
 
         # Model parameters
         self.seed = seed
@@ -472,8 +472,7 @@ class Regressor_GP(Base_GP):
         def absolute_error(y_true, y_pred):
             """Karoo's default regression fitness, rounded"""
             output = float(np.sum(np.abs(y_true - y_pred)))
-            output = self.sigfig_round(output)
-            return output
+            return self.sigfig_round(output)
 
         def sigfig_mse(y_true, y_pred):
             """SKLearn's MSE, but non-numpy and rounded"""
@@ -573,6 +572,7 @@ class MultiClassifier_GP(Base_GP):
         self.encoder = self.encoder or LabelEncoder(y)
         super().fit(X, y, *args, **kwargs)
 
+
 class LabelEncoder:
     """
     For classification tasks, classes are encoded in sample data as 0-N
@@ -603,6 +603,5 @@ class LabelEncoder:
             output = x + self.skew
             output = np.where(output % 1 <= 0.5,    # Round to nearest int
                 np.floor(output), np.ceil(output))  # 0.5 always rounds down
-            output = np.maximum(output, 0)
-            output = np.minimum(output, self.n_classes - 1)
+            output = np.minimum(np.maximum(output, 0), self.n_classes-1)
             return output.astype(np.int32)

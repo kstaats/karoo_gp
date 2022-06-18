@@ -494,10 +494,8 @@ def fx_karoo_pause(model):
 
         # Score the predictions and display result for each scoring parameter
         score = model.score(predictions, model.y_test)
-        def snake_case_to_capital(s):
-            return ' '.join(x.capitalize() for x in s.split('_'))
         for k, v in score.items():
-            model.log(f'{snake_case_to_capital(k)}: {v}')
+            model.log(f'{k.replace('_', ' ').title()}: {v}')
 
     elif input_a == 'print_a':  # print a Tree from population_a
         model.population.trees[input_b].display()

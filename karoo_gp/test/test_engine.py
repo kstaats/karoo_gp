@@ -26,7 +26,8 @@ def test_engine(trees, X, engine_type):
     # Initialize
     model = MockModel()
     engine = dict(
-        numpy=NumpyEngine, tensorflow=TensorflowEngine
+        numpy=NumpyEngine,
+        tensorflow=TensorflowEngine
     )[engine_type](model)
     assert engine.engine_type == engine_type
     assert '64' in str(engine.dtype)
@@ -34,7 +35,7 @@ def test_engine(trees, X, engine_type):
 
     # Test predict
     train_pred = engine.predict(trees, X_train)
-    assert type(train_pred) == np.ndarray
+    assert isinstance(train_pred, np.ndarray)
     assert train_pred.dtype == engine.dtype
     assert train_pred.shape == (len(trees), len(X_train))
     assert str([list(p) for p in train_pred]) == '[[7.0, 14.0], [3.0, 8.0]]'
