@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 
-from karoo_gp import Base_GP, Regressor_GP, MultiClassifier_GP, Matching_GP, Tree
+from karoo_gp import BaseGP, RegressorGP, MultiClassifierGP, MatchingGP, Tree, \
+                     Functions, Terminals
 from .util import load_data
 
 @pytest.fixture
@@ -33,7 +34,7 @@ def default_kwargs(tmp_path):
 def test_model_base(default_kwargs, X_shape):
     # Initialize model
     kwargs = dict(default_kwargs)
-    model = Base_GP(**kwargs)
+    model = BaseGP(**kwargs)
     # Check all kwargs loaded correctly
     for k, v in kwargs.items():
         if k not in ['terminals', 'functions']:  # term/func converted to cls
@@ -50,10 +51,10 @@ def test_model_base(default_kwargs, X_shape):
 
     # Test predict and score functions (independent of population/data)
     trees =[Tree.load(1, 'f((a)+(b))'), Tree.load(2, 'f((a)*(a))')]
-    predictions = model.predict(X, trees)
+    predictions = model.batch_predict(X, trees)
     for pred in predictions:
         assert pred.shape == y.shape
-    scores = [model.score(p, y, t) for p, t in zip(predictions, trees)]
+    scores = [model.calculate_score(p, y) for p in predictions]
     expected = {
         (10, 2): [dict(fitness=0.028375204003104337), dict(fitness=0.9979865501818704)],
         (100, 2): [dict(fitness=0.0250126405341231), dict(fitness=0.9986793786245746)],
@@ -89,7 +90,7 @@ def test_model_base(default_kwargs, X_shape):
         assert tree.fitness >= best_fitness
 
 def test_base_rng(default_kwargs):
-    model = Base_GP(**default_kwargs)
+    model = BaseGP(**default_kwargs)
     assert model.rng.integers(1000) == 585
     assert np.random.randint(1000) == 435
 
@@ -98,9 +99,9 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
 
     # Initialize Model for dataset
     cls = dict(
-        m=Matching_GP,
-        r=Regressor_GP,
-        c=MultiClassifier_GP
+        m=MatchingGP,
+        r=RegressorGP,
+        c=MultiClassifierGP
     )[ker]
     data = load_data(tmp_path, paths, ker)
     kwargs = dict(default_kwargs)

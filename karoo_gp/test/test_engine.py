@@ -38,11 +38,7 @@ def test_engine(trees, X, engine_type):
     assert isinstance(train_pred, np.ndarray)
     assert train_pred.dtype == engine.dtype
     assert train_pred.shape == (len(trees), len(X_train))
-    assert str([list(p) for p in train_pred]) == '[[7.0, 14.0], [3.0, 8.0]]'
-
-    # Test single tree
-    pred = engine.predict(trees[0], X_train)
-    assert pred.shape == (1, len(X_train))
+    assert [list(p) for p in train_pred] == [[7.0, 14.0], [3.0, 8.0]]
 
     # Test skip cached expressions
     X_test_hash = hash(X_test.data.tobytes())
@@ -50,4 +46,4 @@ def test_engine(trees, X, engine_type):
     test_pred = engine.predict(trees, X_test, X_test_hash)
     assert sum(test_pred[0]) == 0
     assert sum(test_pred[1]) != 0
-    assert str([list(p) for p in test_pred]) == '[[0.0, 0.0], [15.0, 24.0]]'
+    assert [list(p) for p in test_pred] == [[0.0, 0.0], [15.0, 24.0]]

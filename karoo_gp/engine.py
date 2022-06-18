@@ -1,9 +1,17 @@
-class Engine:
-    """Calculate the output of a batch of data for on a batch of trees.
+import os
+import ast
+import operator as op
 
-    * Takes a list of Tree objects and a numpy array of data
-    * Operates on a *list* of trees, so X_dict is only compiled once
-    """
+import numpy as np
+
+from . import Tree
+from .util import LazyLoader
+# Tensorflow takes ~2 seconds to load, so only load when used
+tf = LazyLoader('tf', globals(), 'tensorflow.compat.v1')
+
+
+class Engine:
+    """Calculate the output of a batch of data for a batch of trees"""
     def __init__(self, model, engine_type='default'):
         self.model = model
         self.engine_type = engine_type
@@ -11,15 +19,25 @@ class Engine:
     def __repr__(self):
         return f"<Engine: {self.engine_type}>"
 
+    def predict(self, trees, X, X_hash=None):
+        """Takes a list of Tree objects and a numpy array of data
+
+        * Operate on a *list* of trees, so X_dict is only compiled once,
+          and return a *list* of predictions
+        * If X_hash is provided and tree.expression is in cache[X_hash],
+          skip the prediction for that tree and return 0; score will be
+          copied from the cache later by the .score() method.
+        """
+        return NotImplementedError(f'Engine.predict() not implemented for type'
+                                   f'{self.engine_type}')
+
+    def _type_check(self, trees):
+        if not all(isinstance(tree, Tree) for tree in trees):
+            raise TypeError(f"trees must be a sequence of Trees")
+
 #++++++++++++++++++++++++++++
 #   Numpy                   |
 #++++++++++++++++++++++++++++
-import ast
-import operator as op
-
-import numpy as np
-
-from karoo_gp import Tree
 
 def inf_to_zero_divide(a, b):
     return np.where(b==0, 0, a / b)
@@ -40,14 +58,12 @@ class NumpyEngine(Engine):
     def predict(self, trees, X, X_hash=None):
         """Return predicted the output of each sample for a list of trees"""
         # Check type
-        if type(trees) == Tree:
-            trees = [trees]
-        elif type(trees) != list or type(trees[0]) != Tree:
-            raise TypeError(f"trees must be a Tree or list of Trees")
+        self._type_check(trees)
 
         # Sort sample columns by terminal
         variables = self.model.terminals.variables.keys()
         X_dict = {name: X[:, i] for i, name in enumerate(variables)}
+        shape = X.shape[0]
 
         # Return the output of each tree for sample data
         predictions = np.zeros((len(trees), X.shape[0]), dtype=self.dtype)
@@ -57,13 +73,12 @@ class NumpyEngine(Engine):
             # Skip tree if cached score for X_hash and expr
             if (X_hash and expr in self.model.cache[X_hash]):
                 continue
-            predictions[i] = self.parse_expr(expr, X_dict)
+            predictions[i] = self.parse_expr(expr, X_dict, shape)
         return predictions
 
-    def parse_expr(self, expr, X_dict):
+    def parse_expr(self, expr, X_dict, shape):
         """Parse an expr into a numpy function and insert sample X_dict"""
         tree = ast.parse(expr, mode='eval').body
-        shape = next(iter(X_dict.values())).shape
         return self.parse_node(tree, X_dict, shape)
 
     def parse_node(self, node, X_dict, shape):
@@ -84,11 +99,16 @@ class NumpyEngine(Engine):
 #   TensorFlow              |
 #++++++++++++++++++++++++++++
 
-import os
 
-# Tensorflow takes a few seconds to load, so only load when used
-from karoo_gp.util import LazyLoader
-tf = LazyLoader('tf', globals(), 'tensorflow.compat.v1')
+### TensorFlow Imports and Definitions ###
+if os.environ.get("TF_CPP_MIN_LOG_LEVEL") is None:
+    # Set the log level, unless it's already set in the env.
+    # This allows users to override this value with an env var.
+    # 0 = all messages are logged (default behavior)
+    # 1 = INFO messages are not printed
+    # 2 = INFO and WARNING messages are not printed
+    # 3 = INFO, WARNING, and ERROR messages are not printed
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # only print ERRORs
 
 class TensorflowEngine(Engine):
 
@@ -105,7 +125,6 @@ class TensorflowEngine(Engine):
             log_device_placement=tf_device_log,
             allow_soft_placement=True)
         self.config.gpu_options.allow_growth = True
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
         # Reference for parse_node
         self.operators = {
@@ -120,11 +139,9 @@ class TensorflowEngine(Engine):
     def predict(self, trees, X, X_hash=None):
         """Return the predicted output of each sample for a list of trees"""
         # Check type
-        if type(trees) == Tree:
-            trees = [trees]
-        elif type(trees) != list or type(trees[0]) != Tree:
-            raise TypeError(f"trees must be a Tree or list of Trees")
+        self._type_check(trees)
 
+        shape = X.shape[0]
         predictions = np.zeros((len(trees), X.shape[0]), dtype=np.float64)
         for i, tree in enumerate(trees):
 
@@ -143,14 +160,13 @@ class TensorflowEngine(Engine):
                             for i, v in enumerate(variables)}
 
                     # Return the output of each tree for sample data
-                    pred = self.parse_expr(tree.expression, X_dict)
+                    pred = self.parse_expr(tree.expression, X_dict, shape)
                     predictions[i] = sess.run([pred])[0]
         return predictions
 
-    def parse_expr(self, expr, X_dict):
+    def parse_expr(self, expr, X_dict, shape):
         """Convert a string expression into a tensorflow graph"""
         tree = ast.parse(expr, mode='eval').body
-        shape = next(iter(X_dict.values())).shape
         return self.parse_node(tree, X_dict, shape)
 
     def parse_node(self, node, X_dict, shape):

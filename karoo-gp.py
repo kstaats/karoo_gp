@@ -57,7 +57,7 @@ import numpy as np
 import pandas as pd
 
 from karoo_gp import pause as menu
-from karoo_gp import __version__, MultiClassifier_GP, Regressor_GP, Matching_GP
+from karoo_gp import __version__, MultiClassifierGP, RegressorGP, MatchingGP
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Interface for Configuation       |
@@ -447,8 +447,8 @@ def fx_karoo_pause(model):
         'evolve_branch': model.evolve_branch,
         'evolve_cross': model.evolve_cross,
         'fittest_dict': {},
-        'pop_a_len': 0,
-        'pop_b_len':0,
+        'population_len': 0,
+        'next_gen_len':0,
         'path': model.path,
     }
     # So it doesn't break if called before population is initialized
@@ -456,8 +456,8 @@ def fx_karoo_pause(model):
         pop_dict = {
             'gen_id': model.population.gen_id,
             'fittest_dict': model.population.fittest_dict,
-            'pop_a_len': len(model.population.trees),
-            'pop_b_len': len(model.population.population_b),
+            'population_len': len(model.population.trees),
+            'next_gen_len': len(model.population.next_generation),
         }
         menu_dict = {**menu_dict, **pop_dict}
 
@@ -483,32 +483,32 @@ def fx_karoo_pause(model):
 
     elif input_a == 'eval':  # evaluate a Tree against the TEST data
         # Display tree info
-        tree = model.population.population_b[input_b - 1]
+        tree = model.population.next_generation[input_b - 1]
         model.log(f'Tree {tree.id} yields (raw): {tree.raw_expression}')
         model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
         # Predict X_test and show predictions vs actual
-        predictions = model.predict(model.X_test, tree)
+        predictions = model.batch_predict(model.X_test, [tree])[0]
         for i, (y_pred, y_true) in enumerate(zip(predictions, model.y_test)):
             model.log(f'Data row {i} predicts: {y_pred}, actual: {y_true}')
 
         # Score the predictions and display result for each scoring parameter
-        score = model.score(predictions, model.y_test)
+        score = model.calculate_score(predictions, model.y_test)
         for k, v in score.items():
-            model.log(f'{k.replace('_', ' ').title()}: {v}')
+            model.log(f'{k.replace("_", " ").title()}: {v}')
 
     elif input_a == 'print_a':  # print a Tree from population_a
         model.population.trees[input_b].display()
 
-    elif input_a == 'print_b':  # print a Tree from population_b
-        model.population.population_b[input_b].display()
+    elif input_a == 'print_b':  # print a Tree from next_generation
+        model.population.next_generation[input_b].display()
 
-    elif input_a == 'pop_a':  # list all Trees in population_a
+    elif input_a == 'population':  # list all Trees in population_a
         for tree in model.population.trees:
             model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
-    elif input_a == 'pop_b':  # list all Trees in population_b
-        for tree in model.population.population_b:
+    elif input_a == 'next_gen':  # list all Trees in next_generation
+        for tree in model.population.next_generation:
             model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
     # TODO: Test and troubleshoot the load/save system
@@ -516,9 +516,9 @@ def fx_karoo_pause(model):
         # NEED TO replace 's' with a user defined filename
         model.fx_data_recover(model.savefile['s'])
 
-    elif input_a == 'write':  # write the evolving population_b to disk
-        model.fx_data_tree_write(model.population.population_b, 'b')
-        model.log(f'\n\t All current members of the evolving population_b '
+    elif input_a == 'write':  # write the evolving next_generation to disk
+        model.fx_data_tree_write(model.population.next_generation, 'b')
+        model.log(f'\n\t All current members of the evolving next_generation '
                   f'saved to {model.savefile["b"]}')
 
     elif input_a == 'add':
@@ -552,7 +552,7 @@ X, y = dataset.to_numpy(), y.to_numpy()
 #++++++++++++++++++++++++++++++++++++++++++
 
 # Select the correct class for kernel
-cls = {'c': MultiClassifier_GP, 'r': Regressor_GP, 'm': Matching_GP}[kernel]
+cls = {'c': MultiClassifierGP, 'r': RegressorGP, 'm': MatchingGP}[kernel]
 
 # Initialize the model
 gp = cls(
@@ -581,6 +581,12 @@ gp = cls(
 
 # Fit to the data
 gp.fit(X, y)
+
+# TODO: Relocated from BaseGP.__init__(). Need to test/debug
+# if self.kernel == 'p':
+#     self.fx_data_tree_write(self.population.trees, 'a')
+#     sys.exit()
+
 
 # Save files and exit
 gp.fx_karoo_terminate()

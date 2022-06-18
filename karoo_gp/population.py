@@ -14,7 +14,7 @@ class Population:
         self.evaluated = False
         self.fittest_dict = {}
         self.history = history or []
-        self.population_b = []
+        self.next_generation = []
         self.gene_pool = []
 
     @classmethod
@@ -61,14 +61,14 @@ class Population:
 
         Uses model methods .predict and .score and manages model cache
         """
-        predictions = self.model.predict(X, self.trees, X_hash)
+        predictions = self.model.batch_predict(X, self.trees, X_hash)
         for tree, y_pred in zip(self.trees, predictions):
             if X_hash is not None:
                 cached_score = self.model.cache[X_hash].get(tree.expression)
                 if cached_score:
                     tree.score = cached_score
                     continue
-            tree.score = self.model.score(y_pred, y, tree)
+            tree.score = self.model.calculate_score(y_pred, y)
             if X_hash is not None:
                 self.model.cache[X_hash][tree.expression] = tree.score
         self.history.append(self.fittest().save())
@@ -104,7 +104,7 @@ class Population:
         pause(display=['i'])
         self.fitness_gene_pool(swim, tree_depth_min, terminals)
         # Initialize new population and begin evolving new trees
-        self.population_b = []
+        self.next_generation = []
         for evolve_type, amount in evolve_amounts.items():
             verb = dict(repro='Reproductions', point='Point Mutations',
                         branch='Branch Mutations', cross='Crossovers')
@@ -117,19 +117,19 @@ class Population:
                 log(f'\n\t\033[36mThe winner of the tournament is '
                     f'Tree:\033[1m{parent.id} \033[0;0m', display=['i'])
 
-                offspring = parent.copy(id=len(self.population_b) + 1)
+                offspring = parent.copy(id=len(self.next_generation) + 1)
                 # Reproduce: add to new population as-is
                 if evolve_type == 'repro':
-                    self.population_b.append(offspring)
+                    self.next_generation.append(offspring)
                 # Point Mutate: replace a single node
                 elif evolve_type == 'point':
                     offspring.point_mutate(rng, functions, terminals, log)
-                    self.population_b.append(offspring)
+                    self.next_generation.append(offspring)
                 # Branch Mutate: replace a random subtree
                 elif evolve_type == 'branch':
                     offspring.branch_mutate(rng, functions, terminals,
                                             tree_depth_max, log)
-                    self.population_b.append(offspring)
+                    self.next_generation.append(offspring)
                 # Crossover: create 2 unique offspring by splicing 2 parents
                 elif evolve_type == 'cross':
                     # Select parent a, clone, select random i_a, repeat with b
@@ -140,7 +140,7 @@ class Population:
                     offspring_a.id += 1  # Swap IDs, offspring_b added first
                     i_mutate_a = rng.integers(1, parent_a.n_children + 1)
                     parent_b = self.tournament(rng, tourn_size)
-                    offspring_b = parent_b.copy(id=len(self.population_b) + 1)
+                    offspring_b = parent_b.copy(id=len(self.next_generation) + 1)
                     i_mutate_b = rng.integers(1, parent_b.n_children + 1)
 
                     for from_id, to_id, to_i in [
@@ -155,14 +155,14 @@ class Population:
                     offspring_b.crossover(i_mutate_b, parent_a, i_mutate_a,
                                           rng, terminals, tree_depth_max,
                                           log, pause)
-                    self.population_b.append(offspring_b)
+                    self.next_generation.append(offspring_b)
                     offspring_a.crossover(i_mutate_a, parent_b, i_mutate_b,
                                           rng, terminals, tree_depth_max,
                                           log, pause)
-                    self.population_b.append(offspring_a)
+                    self.next_generation.append(offspring_a)
 
         # Return next generation as a Population
-        next_gen = Population(model=self.model, trees=self.population_b,
+        next_gen = Population(model=self.model, trees=self.next_generation,
                               gen_id=self.gen_id + 1, history=self.history)
         return next_gen
 

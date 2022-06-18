@@ -15,6 +15,7 @@ import os
 import sys
 import csv
 import json
+import pathlib
 import operator
 
 import numpy as np
@@ -28,7 +29,7 @@ from . import Functions, Terminals, NumpyEngine, TensorflowEngine, \
 
 # TODO: This is used to save the final population and the generated self.path
 # is used by fx_data_params_write/_json. I think this should be moved back to
-# Base_GP. Some of the save/load methods there are still unused/nonfunctioning,
+# BaseGP. Some of the save/load methods there are still unused/nonfunctioning,
 # and they can be combined with the useful parts of this.
 class DataLoader:
     def __init__(self, model):
@@ -53,14 +54,14 @@ class DataLoader:
             writer = csv.writer(f)
             writer.writerows(data)
 
-class Base_GP(object):
+class BaseGP(object):
 
     """
     This Base_BP class al the core attributes, objects and methods of Karoo GP.
     It's composed of a heirarchal structure of classes. Below are some of the
     more import attributes and methods for each class, and their organization:
 
-    Base_GP
+    BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
     ├─ .encoder(y)                      - Initialize with y_train
     │   └─ .decode(pred)                - transforms prediction to match y
@@ -107,14 +108,14 @@ class Base_GP(object):
         swim='p', mode='s', seed=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, terminals=None, test_size=0.2, scoring=None,
-        higher_is_better=False, cache={}):
-        """Initialize a Base_GP object with given parameters"""
+        higher_is_better=False, _cache={}):
+        """Initialize a Karoo_GP object with given parameters"""
 
         # Model parameters
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         np.random.seed(seed)                 # used by skm in train_test_split
-        self.cache = cache                   # scores by hash(data), expression
+        self.cache = _cache                   # scores by hash(data), expression
         self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
         self.filename = filename             # prefix for output files
         self.output_dir = output_dir         # path to output directory
@@ -125,8 +126,8 @@ class Base_GP(object):
         self.history = {}                    # best score for each field/gen
 
         # Initialize Population
-        self.functions = Functions(functions)
-        self.terminals = Terminals(terminals)
+        self.functions = Functions(functions) if functions is not None else Functions.arithmetic()
+        self.terminals = terminals if type(terminals) is Terminals else Terminals(terminals)
         self.tree_type = tree_type           # (f)ull, (g)row or (r)amped 50/50
         self.tree_depth_base = tree_depth_base # depth of initial population
         self.tree_pop_max = tree_pop_max     # number of trees per generation
@@ -139,16 +140,12 @@ class Base_GP(object):
             tree_pop_max=tree_pop_max,
         )
         self.log(f'\n We have constructed the first, stochastic population of'
-                 f'{self.tree_pop_max} Trees. \n Evaluate the first generation'
-                 f' of Trees ...')
-        # if self.kernel == 'p':
-        #     self.fx_data_tree_write(self.population.trees, 'a')
-        #     sys.exit()
+                 f'{self.tree_pop_max} Trees.')
 
         # Engine
-        if engine_type in ['numpy', 'np']:
+        if engine_type == 'numpy':
             self.engine = NumpyEngine(self)
-        elif engine_type in ['tensorflow', 'tf']:
+        elif engine_type == 'tensorflow':
             self.engine = TensorflowEngine(self, tf_device, tf_device_log)
         else:
             raise ValueError(f'Unrecognized engine_type: {engine_type}')
@@ -161,10 +158,10 @@ class Base_GP(object):
         self.tree_depth_max = tree_depth_max # max allowed depth
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
         self.tourn_size = tourn_size         # number of Trees per tournament
-        self.evolve_repro = evolve_repro     # ratio of pop_b reproduced
-        self.evolve_point = evolve_point     # ratio of pop_b point mutated
-        self.evolve_branch = evolve_branch   # ratio of pop_b branch mutated
-        self.evolve_cross = evolve_cross     # ratio of pop_b made by crossover
+        self.evolve_repro = evolve_repro     # ratio of next_gen reproduced
+        self.evolve_point = evolve_point     # ratio of next_gen point mutated
+        self.evolve_branch = evolve_branch   # ratio of next_gen branch mutated
+        self.evolve_cross = evolve_cross     # ratio of next_gen made by crossover
 
         # These fields optionally overwritten by subclass
         self.precision = precision           # max decimal places. pred & score
@@ -213,7 +210,7 @@ class Base_GP(object):
 
     def fit(self, X=None, y=None):
         """Evolve a population of trees based on training data"""
-        self.log('Press ? at any time to pause, or ENTER to continue the run',
+        self.log('Press ? to see options, or ENTER to continue the run',
                  display=['i'])
         self.pause(display=['i'])
 
@@ -239,7 +236,11 @@ class Base_GP(object):
         X_train_hash = hash(X_train.data.tobytes())
         if X_train_hash not in self.cache:
             self.cache[X_train_hash] = {}
-        self.population.evaluate(X_train, y_train, X_train_hash)
+
+        # Evaluate the initial population
+        if not self.population.evaluated:
+            self.log('Evaluate the first generation of trees...')
+            self.population.evaluate(X_train, y_train, X_train_hash)
 
         menu = 1
         while menu != 0:  # Supports adding generations mid-run
@@ -265,7 +266,7 @@ class Base_GP(object):
                 self.population.evaluate(X_train, y_train, X_train_hash)
 
                 # Add best score to history
-                for k, v in self.score().items():
+                for k, v in self.score(self.X_test, self.y_test).items():
                     self.history[k].append(v)
 
             if self.mode == 's':  # (s)erver mode: terminate after run
@@ -274,43 +275,36 @@ class Base_GP(object):
                 self.log('Enter ? to review your options or q to quit')
                 menu = self.pause()
 
-    def predict(self, X, trees=None, X_hash=None):
-        """Return predicted y values for X
+    def predict(self, X):
+        """Return predicted y values for X using the fittest tree
 
-        * Use fittest tree by default (for sklearn `estimator.predict`)
-        * Also accepts a tree or list of trees (for population.evaluate)
-        * Output type (single or a list) matches input type
-        * If X_hash is provided, return zeros for trees with cached scores
-        # Encode and round, if necessary
+        * Pass the fittest tree to batch_predict as a list (of 1)
+        * Return the first result
         """
-        trees = self.population.fittest() if trees is None else trees
-        trees = [trees] if type(trees) != list else trees
-        if type(trees[0]) != Tree:
-            raise ValueError('predict() accepts a Tree or list of Trees')
-        y = self.engine.predict(trees, X, X_hash)  # Works on batches of trees
+        fittest_tree = self.population.fittest()
+        return self.batch_predict(X, [fittest_tree])[0]
+
+    def batch_predict(self, X, trees, X_hash=None):
+        """Return predicted values for y given X for a list of trees
+
+        * If encoder (e.g. MultiClassifier), decode predictions
+        * If precision is specified, round predictions to precision
+        """
+        y = self.engine.predict(trees, X, X_hash)
         if self.encoder is not None:
             y = self.encoder.decode(y)
         if self.precision is not None:
             y = np.round(y, self.precision)
-        return y[0] if len(y) == 1 else y
+        return y
 
-    def score(self, y_pred=None, y_true=None, tree=None):
-        """Return score of y_pred with resepct to y_true
+    def score(self, X, y):
+        """Return score of the fittest tree on X and y"""
+        return self.calculate_score(self.predict(X), y)
 
-        * Use fittest tree by default for sklearn 'model.score()'
-        * Accepts a tree for use in population.evaluate(X)
-        * If y_pred/y_true not provided, calculate y_pred for self.X_test
-          and score against y_test (which was set by .fit(X, y))
-        """
-        if y_pred is None:
-            tree = self.population.fittest() if tree is None else tree
-            y_pred = self.predict(self.X_test, tree)
-            y_true = self.y_test
-        if y_pred.shape != y_true.shape:
-            raise ValueError('y_pred and y_true must have the same shape')
-        output = {label: fx(y_true, y_pred)
-                  for label, fx in self.scoring.items()}
-        return output
+    def calculate_score(self, y_pred, y_true):
+        """Return a dict with hthe results of each scoring function"""
+        return {label: fx(y_true, y_pred)
+                for label, fx in self.scoring.items()}
 
     def fx_karoo_terminate(self):
         '''
@@ -319,7 +313,7 @@ class Base_GP(object):
         the user to karoo_gp.py and the command line.
         '''
         kernel = {
-            Regressor_GP: 'r', MultiClassifier_GP: 'c', Matching_GP: 'm'
+            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm'
         }[type(self)]
         self.fx_data_params_write(kernel)
         self.fx_data_params_write_json(kernel)
@@ -351,62 +345,58 @@ class Base_GP(object):
 
         Arguments required: app
         '''
+        with open(self.loader.path + 'log_config.txt', 'w') as file:
+            file.write('Karoo GP')
+            file.write('\n launched: ' + str(self.datetime))
+            file.write('\n dataset: ' + str(self.filename))
+            file.write('\n')
+            file.write('\n kernel: ' + str(kernel))
+            file.write('\n precision: ' + str(self.precision))
+            file.write('\n')
+            # file.write('tree type: ' + tree_type)
+            # file.write('tree depth base: ' + str(tree_depth_base))
+            file.write('\n tree depth max: ' + str(self.tree_depth_max))
+            file.write('\n min node count: ' + str(self.tree_depth_min))
+            file.write('\n')
+            file.write('\n genetic operator Reproduction: ' + str(self.evolve_repro))
+            file.write('\n genetic operator Point Mutation: ' + str(self.evolve_point))
+            file.write('\n genetic operator Branch Mutation: ' + str(self.evolve_branch))
+            file.write('\n genetic operator Crossover: ' + str(self.evolve_cross))
+            file.write('\n')
+            file.write('\n tournament size: ' + str(self.tourn_size))
+            file.write('\n population: ' + str(self.tree_pop_max))
+            file.write('\n number of generations: ' + str(self.population.gen_id))
+            file.write('\n\n')
 
-        file = open(self.loader.path + 'log_config.txt', 'w')
-        file.write('Karoo GP')
-        file.write('\n launched: ' + str(self.datetime))
-        file.write('\n dataset: ' + str(self.filename))
-        file.write('\n')
-        file.write('\n kernel: ' + str(kernel))
-        file.write('\n precision: ' + str(self.precision))
-        file.write('\n')
-        # file.write('tree type: ' + tree_type)
-        # file.write('tree depth base: ' + str(tree_depth_base))
-        file.write('\n tree depth max: ' + str(self.tree_depth_max))
-        file.write('\n min node count: ' + str(self.tree_depth_min))
-        file.write('\n')
-        file.write('\n genetic operator Reproduction: ' + str(self.evolve_repro))
-        file.write('\n genetic operator Point Mutation: ' + str(self.evolve_point))
-        file.write('\n genetic operator Branch Mutation: ' + str(self.evolve_branch))
-        file.write('\n genetic operator Crossover: ' + str(self.evolve_cross))
-        file.write('\n')
-        file.write('\n tournament size: ' + str(self.tourn_size))
-        file.write('\n population: ' + str(self.tree_pop_max))
-        file.write('\n number of generations: ' + str(self.population.gen_id))
-        file.write('\n\n')
-        file.close()
+        with open(self.loader.path + 'log_test.txt', 'w') as file:
+            file.write('Karoo GP')
+            file.write('\n launched: ' + str(self.datetime))
+            file.write('\n dataset: ' + str(self.filename))
+            file.write('\n')
 
+            # Which population the fittest_dict indexes refer to
+            if len(self.population.fittest_dict) == 0:
+                file.write('\n\n There were no evolved solutions generated in '
+                        'this run... your species has gone extinct!')
 
-        file = open(self.loader.path + 'log_test.txt', 'w')
-        file.write('Karoo GP')
-        file.write('\n launched: ' + str(self.datetime))
-        file.write('\n dataset: ' + str(self.filename))
-        file.write('\n')
+            else:
+                fittest = self.population.fittest()
+                file.write(f'\n\n Tree {fittest.id} is the most fit, with '
+                        f'expression:\n\n {fittest.expression}')
+                result = self.score(self.X_test, self.y_test)
+                if kernel == 'c':
+                    file.write(f'\n\n Classification fitness score: {result["fitness"]}')
+                    file.write(f'\n\n Precision-Recall report:\n {result["classification_report"]}')
+                    file.write(f'\n Confusion matrix:\n {result["confusion_matrix"]}')
 
-        # Which population the fittest_dict indexes refer to
-        if len(self.population.fittest_dict) == 0:
-            file.write('\n\n There were no evolved solutions generated in '
-                       'this run... your species has gone extinct!')
+                elif kernel == 'r':
+                    file.write(f'\n\n Regression fitness score: {result["fitness"]}')
+                    file.write(f'\n Mean Squared Error: {result["mean_squared_error"]}')
 
-        else:
-            fittest = self.population.fittest()
-            file.write(f'\n\n Tree {fittest.id} is the most fit, with '
-                       f'expression:\n\n {fittest.expression}')
-            result = self.score()
-            if kernel == 'c':
-                file.write(f'\n\n Classification fitness score: {result["fitness"]}')
-                file.write(f'\n\n Precision-Recall report:\n {result["classification_report"]}')
-                file.write(f'\n Confusion matrix:\n {result["confusion_matrix"]}')
+                elif kernel == 'm':
+                    file.write(f'\n\n Matching fitness score: {result["fitness"]}')
 
-            elif kernel == 'r':
-                file.write(f'\n\n Regression fitness score: {result["fitness"]}')
-                file.write(f'\n Mean Squared Error: {result["mean_squared_error"]}')
-
-            elif kernel == 'm':
-                file.write(f'\n\n Matching fitness score: {result["fitness"]}')
-
-        file.write('\n\n')
-        file.close()
+            file.write('\n\n')
 
         return
 
@@ -456,16 +446,16 @@ class Base_GP(object):
                 **final_dict,
                 outcome='SUCCESS',
                 fittest_tree=fittest_tree,
-                score=self.score(),
+                score=self.score(self.X_test, self.y_test),
             )
         with open(self.loader.path + 'results.json', 'w') as f:
             json.dump(final_dict, f, indent=4)
 
+
 # _____________________________________________________________________________
 # KERNEL IMPLEMENTATIONS
 
-class Regressor_GP(Base_GP):
-
+class RegressorGP(BaseGP):
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -501,8 +491,8 @@ class Regressor_GP(Base_GP):
         return round(x, sigfigs - int(np.floor(np.log10(abs(x)))) - 1)
 
 
-class Matching_GP(Base_GP):
 
+class MatchingGP(BaseGP):
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -541,8 +531,8 @@ class Matching_GP(Base_GP):
                     fittest_dict[tree.id] = tree.expression
         return fittest_dict
 
-class MultiClassifier_GP(Base_GP):
 
+class MultiClassifierGP(BaseGP):
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -583,6 +573,8 @@ class LabelEncoder:
     This class stores the skew value and implements encode/decode methods:
       encode (y -> output): adds skew to input
       decode (output -> y): subtract skew, round, clip to 0-N
+
+    TODO: Make this an sklearn Transformer, use their naming conventions
     """
     def __init__(self, y=None, n_classes=None):
         self.n_classes = n_classes or len(np.unique(y))
@@ -595,13 +587,10 @@ class LabelEncoder:
     def decode(self, x):
         """Convert zero-centered back to 0-N and crop tails"""
         if len(x.shape) > 1:  # Use recursion for batch processing
-            output = np.zeros(x.shape, dtype=np.int32)
-            for i in range(x.shape[0]):
-                output[i] = self.decode(x[i])
-            return output
-        else:   # Decode 1-dim array
-            output = x + self.skew
-            output = np.where(output % 1 <= 0.5,    # Round to nearest int
-                np.floor(output), np.ceil(output))  # 0.5 always rounds down
-            output = np.minimum(np.maximum(output, 0), self.n_classes-1)
-            return output.astype(np.int32)
+            return np.array([self.decode(x_i) for x_i in x])
+        else:  # Decode 1-dim array
+            unskewed = x + self.skew
+            rounded = np.where(unskewed % 1 <= 0.5,  # Round to nearest int
+                np.floor(unskewed), np.ceil(unskewed))  # 0.5 always rounds down
+            clipped = np.minimum(np.maximum(rounded, 0), self.n_classes-1)
+            return clipped.astype(np.int32)

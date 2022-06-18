@@ -15,14 +15,14 @@ class MockModel:
         self.rng=np.random.default_rng(1000)
         self.build_fittest_dict=MagicMock()
 
-    def predict(self, X, trees, X_hash):
+    def batch_predict(self, X, trees, X_hash):
         """Return an array of 1's of expected shape"""
         output = np.ones((len(trees), X.shape[0]))
         return output[0] if len(trees) == 1 else output
 
-    def score(self, y_pred, y_true, tree):
+    def calculate_score(self, y_pred, y_true):
         """Return expected dict with fitness = 1"""
-        return {'fitness': 1}  # So that evolve works
+        return {'fitness': 1}
 
     def fitness_compare(self, a, b):
         """Return the latter of two trees compared"""
@@ -68,10 +68,10 @@ def test_population_generate(default_pop_kwargs, tree_type):
         for t in population.trees:
             count[t.tree_type] += 1
             depths.add(t.depth)
-        _pop, _depth = kwargs['tree_pop_max'], kwargs['tree_depth_base']
-        n_cycles = _pop // (2 * _depth)
-        n_extra = _pop - n_cycles * (2 * _depth)
-        assert count['f'] == n_cycles * _depth  # One 'full' tree at each depth
+        pop, depth = kwargs['tree_pop_max'], kwargs['tree_depth_base']
+        n_cycles = pop // (2 * depth)
+        n_extra = pop - n_cycles * (2 * depth)
+        assert count['f'] == n_cycles * depth  # One 'full' tree at each depth
         assert count['g'] == count['f'] + n_extra  # That plus extras 'grow'
         assert len(depths) == kwargs['tree_depth_base']  # Trees at each depth
 
@@ -120,3 +120,6 @@ def test_population_class(tmp_path, paths, default_pop_kwargs,
         assert tree.fitness is None  # Fitness is not inherited
     assert new_population.gen_id == 2  # Generation is incremented
     assert len(new_population.history) == 1  # History is updated
+
+    # TODO: Evaluate again to check that everything works and that the
+    # first generation doesn't affect the second.
