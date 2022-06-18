@@ -21,11 +21,12 @@ import operator
 import numpy as np
 import sklearn.metrics as skm
 import sklearn.model_selection as skcv
+from sklearn.base import BaseEstimator, TransformerMixin
 
 from datetime import datetime
 
 from . import Functions, Terminals, NumpyEngine, TensorflowEngine, \
-              Population, Tree
+              Population
 
 # TODO: This is used to save the final population and the generated self.path
 # is used by fx_data_params_write/_json. I think this should be moved back to
@@ -54,7 +55,7 @@ class DataLoader:
             writer = csv.writer(f)
             writer.writerows(data)
 
-class BaseGP(object):
+class BaseGP(BaseEstimator):
 
     """
     This Base_BP class al the core attributes, objects and methods of Karoo GP.
@@ -63,8 +64,8 @@ class BaseGP(object):
 
     BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
-    ├─ .encoder(y)                      - Initialize with y_train
-    │   └─ .decode(pred)                - transforms prediction to match y
+    ├─ .decoder(y)                      - Initialize with y_train
+    │   └─ .transform(pred)             - transforms prediction to match y
     │
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
     │
@@ -108,7 +109,7 @@ class BaseGP(object):
         swim='p', mode='s', seed=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, terminals=None, test_size=0.2, scoring=None,
-        higher_is_better=False, _cache={}):
+        higher_is_better=False, prediction_transformer=None, _cache={}):
         """Initialize a Karoo_GP object with given parameters"""
 
         # Model parameters
@@ -165,7 +166,7 @@ class BaseGP(object):
 
         # These fields optionally overwritten by subclass
         self.precision = precision           # max decimal places. pred & score
-        self.encoder = None
+        self.prediction_transformer = prediction_transformer
         self.scoring = (scoring if scoring is not None else  # TODO: validate
                         dict(fitness=skm.mean_absolute_error))
         self.higher_is_better = higher_is_better
@@ -287,12 +288,12 @@ class BaseGP(object):
     def batch_predict(self, X, trees, X_hash=None):
         """Return predicted values for y given X for a list of trees
 
-        * If encoder (e.g. MultiClassifier), decode predictions
+        * If prediction_transformer (e.g. MultiClassifier), transform predictions
         * If precision is specified, round predictions to precision
         """
         y = self.engine.predict(trees, X, X_hash)
-        if self.encoder is not None:
-            y = self.encoder.decode(y)
+        if self.prediction_transformer is not None:
+            y = self.prediction_transformer.transform(y)
         if self.precision is not None:
             y = np.round(y, self.precision)
         return y
@@ -491,7 +492,6 @@ class RegressorGP(BaseGP):
         return round(x, sigfigs - int(np.floor(np.log10(abs(x)))) - 1)
 
 
-
 class MatchingGP(BaseGP):
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
@@ -534,7 +534,7 @@ class MatchingGP(BaseGP):
 
 class MultiClassifierGP(BaseGP):
     def __init__(self, *args, **kwargs):
-        """Add kernel-specific scoring function(s) and kwargs"""
+        """Add kernel-specific scoring functions, setup decoder"""
 
         def n_correct(y_true, y_pred):
             """Default classification fitness: number of correct predictions"""
@@ -555,42 +555,64 @@ class MultiClassifierGP(BaseGP):
                                  classification_report=cls_report_zero_div,
                                  confusion_matrix=conf_matrix_as_list)
         kwargs['higher_is_better'] = True
+        kwargs['prediction_transformer'] = ClassDecoder(n_classes=kwargs.pop('n_classes', None))
         super().__init__(*args, **kwargs)
 
     def fit(self, X, y, *args, **kwargs):
-        """Initialize encoder to be used by scorer"""
-        self.encoder = self.encoder or LabelEncoder(y)
+        """Initialize decoder to be used by scorer"""
+        self.decoder.fit(y)
         super().fit(X, y, *args, **kwargs)
 
 
-class LabelEncoder:
+class ClassDecoder(TransformerMixin):
     """
-    For classification tasks, classes are encoded in sample data as 0-N
-    integers, where N is the number of classes (e.g. [0, 1, 2, 3], N = 4).
-    When calculating tree output, y values are skewed so that they're centered
-    at 0 (e.g. [-1.5, -0.5, 0.5, 1.5], skew = -1.5).
+    Transforms tree predictions (-2.3, -1, 3.3) into class labels (0, 0, 3).
 
-    This class stores the skew value and implements encode/decode methods:
-      encode (y -> output): adds skew to input
-      decode (output -> y): subtract skew, round, clip to 0-N
+    For a normalized input values (zero-centered, stdev=1), the model should
+    have the greatest precision around zero. Class labels are expected to be
+    integers from 0-N. For this reason, we skew the output range so that the
+    model has the greatest precision around labels range.
 
-    TODO: Make this an sklearn Transformer, use their naming conventions
+    1. Fit the decoder to training labels (y). Determine the number of
+       classes (i.e. unique labels) and calculate skew. Skew is the
+       transformation needed to convert 0-N integers (0, 1, 2, 3) to
+       zero-centered floats (-1.5, -0.5, 0.5, 1.5); in this case -1.5
+       TODO: should be (-1, -0.33, 0.33, 1)
+    2. Transform predictions:
+        a. Engine output: (-2.3, -1, 3.3)
+        b. Skew removed: (-0.8, 0.5, 4.8)
+        c. Round*: (-1, 0, 5)
+        d. Clip between 0 and n: (0, 0, 3)
+
+    * 0.5 always rounds down: 1.5 -> 1, 2.5 -> 2, -0.5 -> -1
     """
-    def __init__(self, y=None, n_classes=None):
-        self.n_classes = n_classes or len(np.unique(y))
-        self.skew = (self.n_classes / 2) - 0.5
+    def __init__(self, n_classes=None):
+        if n_classes is not None:
+            self.n_classes = n_classes
+            self._set_skew()
+        else:
+            self.skew = None
 
-    def encode(self, x):
-        """Convert 0-N encoding to zero-centered integer encoding"""
-        return x - self.skew
+    def _set_skew(self):
+        self.skew (self.n_classes / 2) - 0.5
 
-    def decode(self, x):
-        """Convert zero-centered back to 0-N and crop tails"""
-        if len(x.shape) > 1:  # Use recursion for batch processing
-            return np.array([self.decode(x_i) for x_i in x])
-        else:  # Decode 1-dim array
+    def fit(self, y):
+        self.n_classes = len(np.unique(y))
+        self._set_skew()
+
+    def transform(self, x):
+        """Remove skew, round and clip 0-N"""
+        # Recursively transform batches
+        if len(x.shape) > 1:
+            return np.array([self.inverse_transform(x_i) for x_i in x])
+        # Transform single sample
+        else:
             unskewed = x + self.skew
-            rounded = np.where(unskewed % 1 <= 0.5,  # Round to nearest int
-                np.floor(unskewed), np.ceil(unskewed))  # 0.5 always rounds down
+            rounded = np.where(unskewed % 1 <= 0.5,
+                np.floor(unskewed), np.ceil(unskewed))
             clipped = np.minimum(np.maximum(rounded, 0), self.n_classes-1)
             return clipped.astype(np.int32)
+
+    def inverse_transform(self, y):
+        """Add skew"""
+        return y - self.skew
