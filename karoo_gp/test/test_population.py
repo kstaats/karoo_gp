@@ -98,7 +98,6 @@ def test_population_class(tmp_path, paths, default_pop_kwargs,
     pop_kwargs['terminals'] = terminals
     population = Population.generate(**pop_kwargs)
     assert population.gen_id == 1
-    assert population.fittest().id == 1  # If not evaluated, return first
 
     # Evaluate
     population.evaluate(X, y)

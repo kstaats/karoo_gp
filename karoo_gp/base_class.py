@@ -40,6 +40,10 @@ class DataLoader:
         else:
             basename = os.path.basename(model.filename)  # extract the filename (if any)
             root, _ = os.path.splitext(basename)  # split root from extension
+            # TODO: datetime should be set when run is initialized, i.e. in
+            # model.fit. However, sometimes the model terminates early, and
+            # needs to have made an output dir already. Update this with a
+            # comprehensive new approach to saving/logging data.
             self.path = os.path.join(runs_dir, f'{root}_{model.datetime}/')
         if not os.path.isdir(self.path):    # initialize elog dir
             os.makedirs(self.path)
@@ -108,14 +112,13 @@ class BaseGP(object):
         swim='p', mode='s', seed=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, terminals=None, test_size=0.2, scoring=None,
-        higher_is_better=False, _cache={}):
-        """Initialize a Karoo_GP object with given parameters"""
+        higher_is_better=False):
+        """Initialize a BaseGP object with given parameters"""
 
         # Model parameters
         self.seed = seed
         self.rng = np.random.default_rng(seed)
         np.random.seed(seed)                 # used by skm in train_test_split
-        self.cache = _cache                   # scores by hash(data), expression
         self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
         self.filename = filename             # prefix for output files
         self.output_dir = output_dir         # path to output directory
@@ -123,11 +126,12 @@ class BaseGP(object):
         self.mode = mode                     # determines if pauses after fit
         self.display = display               # determines when pause/log called
         self.pause_callback = pause_callback # called throughout based on disp
+        self.cache = {}                      # scores by hash(data), expression
         self.history = {}                    # best score for each field/gen
 
         # Initialize Population
         self.functions = Functions(functions) if functions is not None else Functions.arithmetic()
-        self.terminals = terminals if type(terminals) is Terminals else Terminals(terminals)
+        self.terminals = terminals if isinstance(terminals, Terminals) else Terminals(terminals)
         self.tree_type = tree_type           # (f)ull, (g)row or (r)amped 50/50
         self.tree_depth_base = tree_depth_base # depth of initial population
         self.tree_pop_max = tree_pop_max     # number of trees per generation
@@ -191,13 +195,23 @@ class BaseGP(object):
     #   Methods to Run Karoo GP                  |
     #+++++++++++++++++++++++++++++++++++++++++++++
 
-    def fitness_compare(self, a, b):
-        """Return the fitter of two Trees, or the latter if equal"""
+    def fitness_compare(self, a: Tree, b: Tree) -> Tree:
+        """Return the fitter of two Trees, or the latter if equal
+
+        TODO: Would make sense for trees to be directly comparable (a > b)
+        but they don't hold a reference to BaseGP, and the user should be
+        able to override this (default) compare_fitness function.
+        """
         op = operator.gt if self.higher_is_better else operator.lt
         return a if op(a.score['fitness'], b.score['fitness']) else b
 
     def build_fittest_dict(self, trees):
-        """Trees with equal or better fitness as prior best, from Tree 1-N"""
+        """Trees with equal or better fitness as prior best, from Tree 1-N
+
+        TODO: This should probably return all the trees with the highest score,
+        rather than accumulating as it goes through the lists, but it will be
+        test-breaking.
+        """
         fittest_dict = {}
         last_fittest = None
         def _fitter(t):
@@ -214,21 +228,25 @@ class BaseGP(object):
                  display=['i'])
         self.pause(display=['i'])
 
-        # Split data into train/test sets, or use saved
+        # Store a fingerprint of the dataset (X_hash) and cache the results
+        # of `train_test_split`. If `fit()` is called muptiple times with the
+        # same X, y, the same split will be used. Otherwise, split new data.
         X_hash = hash(X.data.tobytes())
         if self.X_hash == X_hash:
+            # Load previously-split train/test data
             X_train, y_train = self.X_train, self.y_train
             X_test, y_test = self.X_test, self.y_test
         else:
-            self.X_hash = X_hash
-            # Split train and test sets
+            # For small datasets, it doesn't make sense to split.
             if len(X) < 11 or not self.test_size:
                 X_train = X_test = X.copy()
                 y_train = y_test = y.copy()
+            # Split train and test sets
             else:
                 X_train, X_test, y_train, y_test = skcv.train_test_split(
                     X, y, test_size=self.test_size, random_state=self.seed)
-            # Save train and test sets
+            # Save fingerprint and train/test sets
+            self.X_hash = X_hash
             self.X_train, self.y_train = X_train, y_train
             self.X_test, self.y_test = X_test, y_test
 
@@ -281,13 +299,16 @@ class BaseGP(object):
         * Pass the fittest tree to batch_predict as a list (of 1)
         * Return the first result
         """
-        fittest_tree = self.population.fittest()
-        return self.batch_predict(X, [fittest_tree])[0]
+        if not self.population.evaluated:
+            tree = self.population.trees[0]
+        else:
+            tree = self.population.fittest()
+        return self.batch_predict(X, [tree])[0]
 
     def batch_predict(self, X, trees, X_hash=None):
         """Return predicted values for y given X for a list of trees
 
-        * If encoder (e.g. MultiClassifier), decode predictions
+        * If encoder (e.g. MultiClassifier) is specified, decode predictions
         * If precision is specified, round predictions to precision
         """
         y = self.engine.predict(trees, X, X_hash)
@@ -302,15 +323,18 @@ class BaseGP(object):
         return self.calculate_score(self.predict(X), y)
 
     def calculate_score(self, y_pred, y_true):
-        """Return a dict with hthe results of each scoring function"""
+        """Return a dict with the results of each scoring function"""
         return {label: fx(y_true, y_pred)
                 for label, fx in self.scoring.items()}
 
     def fx_karoo_terminate(self):
         '''
-        Terminates the evolutionary run (if yet in progress),
-        saves parameters and data to disk, and cleanly returns
-        the user to karoo_gp.py and the command line.
+        Terminates the evolutionary run (if yet in progress), saves parameters
+        and data to disk, and cleanly returns the user to karoo_gp.py and the
+        command line.
+
+        TODO: Replace with a save() method, possibly call automatically when
+        used via ContextManager, or manually.
         '''
         kernel = {
             RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm'

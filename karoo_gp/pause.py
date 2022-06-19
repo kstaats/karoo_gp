@@ -53,7 +53,7 @@ def pause(menu_dict):
         print('\t\033[36m\033[1m dir \t\033[0;0m display current working directory')
         # print('\t\033[36m\033[1m load \t\033[0;0m load population_s (seed) '
         #       'to replace population_a (current)')  # NEED TO FIX
-        print('\t\033[36m\033[1m w \t\033[0;0m write the evolving next_generation to disk')
+        print('\t\033[36m\033[1m w \t\033[0;0m write the evolving next_gen_trees to disk')
         print('')
         print('\t\033[36m\033[1m add \t\033[0;0m add generations and continue your run')
         print('\t\033[36m\033[1m q \t\033[0;0m quit Karoo GP')
@@ -315,11 +315,11 @@ def pause(menu_dict):
     #        except KeyboardInterrupt:
     #            print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
-    elif menu == 'w':  # write the evolving next_generation to disk
+    elif menu == 'w':  # write the evolving next_gen_trees to disk
         if menu_dict['gen_id'] > 1:
             menu_dict['input_a'] = 'write'
         else:
-            print('\n\t\033[36m The evolving next_generation does not yet exist\033[0;0m')
+            print('\n\t\033[36m The evolving next_gen_trees does not yet exist\033[0;0m')
 
     elif menu == 'add':  # add generations and continue a GP run
 
