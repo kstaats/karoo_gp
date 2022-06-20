@@ -25,7 +25,7 @@
         "expression": "1 - t/r**2"
     },
     "score": {
-        "fitness": 5.905438423156738,
-        "mean_squared_error": 0.6616800427436829
+        "fitness": 5.90544,
+        "mean_squared_error": 0.66168
     }
 }
