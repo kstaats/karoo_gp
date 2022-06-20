@@ -51,6 +51,7 @@ An example is given, as follows:
 
 import os
 import sys
+import pathlib
 import argparse
 
 import numpy as np
@@ -457,7 +458,7 @@ def fx_karoo_pause(model):
             'gen_id': model.population.gen_id,
             'fittest_dict': model.population.fittest_dict,
             'population_len': len(model.population.trees),
-            'next_gen_len': len(model.population.next_generation),
+            'next_gen_len': len(model.population.next_gen_trees),
         }
         menu_dict = {**menu_dict, **pop_dict}
 
@@ -483,7 +484,7 @@ def fx_karoo_pause(model):
 
     elif input_a == 'eval':  # evaluate a Tree against the TEST data
         # Display tree info
-        tree = model.population.next_generation[input_b - 1]
+        tree = model.population.next_gen_trees[input_b - 1]
         model.log(f'Tree {tree.id} yields (raw): {tree.raw_expression}')
         model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
@@ -500,15 +501,15 @@ def fx_karoo_pause(model):
     elif input_a == 'print_a':  # print a Tree from population_a
         model.population.trees[input_b].display()
 
-    elif input_a == 'print_b':  # print a Tree from next_generation
-        model.population.next_generation[input_b].display()
+    elif input_a == 'print_b':  # print a Tree from next_gen_trees
+        model.population.next_gen_trees[input_b].display()
 
     elif input_a == 'population':  # list all Trees in population_a
         for tree in model.population.trees:
             model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
-    elif input_a == 'next_gen':  # list all Trees in next_generation
-        for tree in model.population.next_generation:
+    elif input_a == 'next_gen':  # list all Trees in next_gen_trees
+        for tree in model.population.next_gen_trees:
             model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
     # TODO: Test and troubleshoot the load/save system
@@ -516,9 +517,9 @@ def fx_karoo_pause(model):
         # NEED TO replace 's' with a user defined filename
         model.fx_data_recover(model.savefile['s'])
 
-    elif input_a == 'write':  # write the evolving next_generation to disk
-        model.fx_data_tree_write(model.population.next_generation, 'b')
-        model.log(f'\n\t All current members of the evolving next_generation '
+    elif input_a == 'write':  # write the evolving next_gen_trees to disk
+        model.fx_data_tree_write(model.population.next_gen_trees, 'b')
+        model.log(f'\n\t All current members of the evolving next_gen_trees '
                   f'saved to {model.savefile["b"]}')
 
     elif input_a == 'add':
@@ -535,10 +536,10 @@ def fx_karoo_pause(model):
 #++++++++++++++++++++++++++++++++++++++++++
 #   Load Data                             |
 #++++++++++++++++++++++++++++++++++++++++++
-karoo_dir = os.path.dirname(os.path.realpath(__file__))
+karoo_dir = pathlib.Path(__file__).resolve().parent
 suffix = dict(r='REGRESS', c='CLASSIFY', m='MATCH', p='PLAY')[kernel]
-func_path = karoo_dir + f'/karoo_gp/files/operators_{suffix}.csv'
-filename = filename or karoo_dir + f'/karoo_gp/files/data_{suffix}.csv'
+func_path = karoo_dir / 'karoo_gp' / 'files' / f'operators_{suffix}.csv'
+filename = filename or karoo_dir / 'karoo_gp' / 'files' / f'data_{suffix}.csv'
 
 functions = np.loadtxt(func_path, delimiter=',', skiprows=1, dtype=str)
 functions = [f[0] for f in functions]  # Arity is now hard-coded by symbol

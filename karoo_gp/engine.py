@@ -28,7 +28,7 @@ class Engine:
           skip the prediction for that tree and return 0; score will be
           copied from the cache later by the .score() method.
         """
-        return NotImplementedError(f'Engine.predict() not implemented for type'
+        return NotImplementedError(f'Engine.predict() not implemented for type '
                                    f'{self.engine_type}')
 
     def _type_check(self, trees):
