@@ -14,7 +14,7 @@ import numpy as np
 def test_cli(tmp_path, paths, ker, typ, bas, seed):
     """Test that the CLI yields consistent results with different kernels/trees."""
     # default pop is 10, except for m-g and m-f that need higher pop to pass
-    pop = str({('m', 'g'): 35, ('m', 'f'): 50}.get((ker, typ), 10))
+    pop = str({('m', 'g'): 35, ('m', 'f'): 50, ('m', 'r'): 15}.get((ker, typ), 10))
     data_file = paths.data_files[ker]  # get the right data file for the kernel
     cmd = ['python3', paths.karoo, '-ker', ker, '-typ', typ, '-bas', bas,
            '-pop', pop, '-rsd', seed, '-fil', data_file]

@@ -21,11 +21,11 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 6,
-        "expression": "1 - t/r**2"
+        "id": 7,
+        "expression": "t/r**2"
     },
     "score": {
-        "fitness": 5.90544,
-        "mean_squared_error": 0.66168
+        "fitness": 4.63621,
+        "mean_squared_error": 0.352051
     }
 }

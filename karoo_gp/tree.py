@@ -115,7 +115,7 @@ class Tree:
 
     def point_mutate(self, rng, functions, terminals, log):
         """Replace a node (including root) with random node of same type"""
-        i_mutate = rng.integers(0, self.n_children + 1)
+        i_mutate = rng.randint(0, self.n_children + 1)
         log(f'\t \033[36mwith node\033[1m {i_mutate} \033[0;0m\033[36mchosen '
             f'for mutation\033[0;0m', display=['i'])
         branch = self.get_child(i_mutate)
@@ -125,7 +125,7 @@ class Tree:
 
     def branch_mutate(self, rng, functions, terminals, tree_depth_max, log):
         """Replace a subtree (excluding root) with random subtree"""
-        i_mutate = rng.integers(1, self.n_children + 1)
+        i_mutate = rng.randint(1, self.n_children + 1)
         branch = self.get_child(i_mutate)
         kids = f'and {branch.n_children} sub-nodes ' if branch.children else ''
         log(f'\t \033[36mwith node \033[1m {i_mutate} {kids}\033[0;0m\033[36m'

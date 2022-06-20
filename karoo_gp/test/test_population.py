@@ -12,7 +12,7 @@ class MockModel:
         self.log=MagicMock()
         self.pause=MagicMock()
         self.error=MagicMock()
-        self.rng=np.random.default_rng(1000)
+        self.rng=np.random.RandomState(1000)
         self.build_fittest_dict=MagicMock()
 
     def batch_predict(self, X, trees, X_hash):

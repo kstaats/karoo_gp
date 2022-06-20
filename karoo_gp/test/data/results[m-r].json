@@ -16,12 +16,12 @@
             "crossover": 0.6
         },
         "tournament_size": 7,
-        "population": 10,
+        "population": 15,
         "number_of_generations": 10
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 4,
+        "id": 13,
         "expression": "a + b + c"
     },
     "score": {

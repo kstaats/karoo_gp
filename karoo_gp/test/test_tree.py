@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import json
 
 from karoo_gp import Tree, Branch
+from .util import dump_json
 
 @pytest.fixture
 def tree_default_kwargs(rng, functions, terminals):

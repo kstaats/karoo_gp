@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-06-12_06-16-20-639880",
+    "launched": "2022-06-20_12-41-23-105632",
     "dataset": "karoo_gp/files/data_CLASSIFY.csv",
     "config": {
         "kernel": "c",
@@ -21,8 +21,8 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 9,
-        "expression": "pl*pw**2 + pw*sw - sl"
+        "id": 6,
+        "expression": "pl + sl - sw**2 + 1"
     },
     "score": {
         "fitness": 19.0,

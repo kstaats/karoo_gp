@@ -31,11 +31,10 @@ def test_branch(branch_default_kwargs, paths, tree_type, tree_depth_base,
                   tree_type=tree_type,
                   depth=tree_depth_base,
                   method=method)
-    # random_seed = abs(hash(f'{tree_type}{tree_depth_base}{method}'))
     branch = Branch.generate(**kwargs)
 
     # Query attributes/methods
-    random_int = int(kwargs['rng'].integers(1000))
+    random_int = int(kwargs['rng'].randint(1000))
     branch_output = dict(
         node_type=str(type(branch.node)),
         tree_type=branch.tree_type,

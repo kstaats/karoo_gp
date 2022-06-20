@@ -25,7 +25,7 @@ def default_kwargs(tmp_path):
         precision=6,
         swim='p',
         mode='s',
-        seed=1000,
+        random_state=1000,
         terminals=['a', 'b'],
         functions=['+', '-', '*', '/'],
     )
@@ -92,7 +92,7 @@ def test_model_base(default_kwargs, X_shape):
 
 def test_base_rng(default_kwargs):
     model = BaseGP(**default_kwargs)
-    assert model.rng.integers(1000) == 585
+    assert model.rng.randint(1000) == 804
     assert np.random.randint(1000) == 435
 
 @pytest.mark.parametrize('ker', ['c', 'r', 'm'])
@@ -126,10 +126,10 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     model.gen_max = 1
     model.fit(X, y)
     initial_expected = {
-        'c': dict(sym='pl + pw - 2*sw', fit=109.0,
-                  fitlist='1235689101112131415161718192022232426272829313375'),
-        'r': dict(sym='1', fit=0.05, fitlist='17101525314580'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='12952'),
+        'c': dict(sym='pl*pw - pl', fit=88.0,
+                  fitlist='1245678910111213141516171920212258'),
+        'r': dict(sym='1', fit=0.05, fitlist='1410273738'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='12345791016202324283642434546'),
     }
     compare_expected(model, initial_expected[ker])
 
@@ -137,9 +137,9 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     model.gen_max = 2
     model.fit(X, y)
     fit_expected = {
-        'c': dict(sym='-pl/(pw*sw) + pw', fit=110.0, fitlist='121023'),
+        'c': dict(sym='pl - sw', fit=83.0, fitlist='12313752'),
         'r': dict(sym='1', fit=0.05,
-                  fitlist='12101214182432364355608183919294'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='109798'),
+                  fitlist='13410133752878889'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='54593'),
     }
     compare_expected(model, fit_expected[ker])

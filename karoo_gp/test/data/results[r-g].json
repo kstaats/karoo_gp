@@ -22,10 +22,10 @@
     "outcome": "SUCCESS",
     "fittest_tree": {
         "id": 10,
-        "expression": "1"
+        "expression": "t/r**2"
     },
     "score": {
-        "fitness": 0.05,
-        "mean_squared_error": 7.77778e-5
+        "fitness": 4.63621,
+        "mean_squared_error": 0.352051
     }
 }

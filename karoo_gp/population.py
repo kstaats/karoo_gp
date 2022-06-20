@@ -136,10 +136,10 @@ class Population:
                     parent_a = parent  # Renamed for clarity
                     offspring_a = offspring
                     offspring_a.id += 1  # Swap IDs, offspring_b added first
-                    i_mutate_a = rng.integers(1, parent_a.n_children + 1)
+                    i_mutate_a = rng.randint(1, parent_a.n_children + 1)
                     parent_b = self.tournament(rng, tourn_size)
                     offspring_b = parent_b.copy(id=len(self.next_gen_trees) + 1)
-                    i_mutate_b = rng.integers(1, parent_b.n_children + 1)
+                    i_mutate_b = rng.randint(1, parent_b.n_children + 1)
 
                     for from_id, to_id, to_i in [
                         (parent_a.id, parent_b.id, i_mutate_b),

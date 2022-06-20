@@ -1,1 +1,16 @@
-{"node_type": "<class 'karoo_gp.functions.Function'>", "tree_type": "f", "parent": null, "children": "[<Branch: <Terminal: symbol=1 type='float')>>, <Branch: <Terminal: symbol=3 type='float')>>]", "repr": "<Branch: <Function: symbol=+, type='arithmetic', arity=2>>", "parse": "(1)+(3)", "save": "((1)+(3))", "display": "                _____________+_______________               \n              1                             3               \n", "depth": 1, "height": 0, "n_children": 2, "n_cols": 2, "set_child": "((1)+((a)+(b)))", "prune": "((1)+(2))"}
+{
+    "node_type": "<class 'karoo_gp.functions.Function'>",
+    "tree_type": "f",
+    "parent": null,
+    "children": "[<Branch: <Terminal: symbol='a' type='float')>>, <Branch: <Terminal: symbol=1 type='float')>>]",
+    "repr": "<Branch: <Function: symbol=/, type='arithmetic', arity=2>>",
+    "parse": "(a)/(1)",
+    "save": "((a)/(1))",
+    "display": "                _____________/_______________               \n              a                             1               \n",
+    "depth": 1,
+    "height": 0,
+    "n_children": 2,
+    "n_cols": 2,
+    "set_child": "((a)/((a)+(b)))",
+    "prune": "((a)/(2))"
+}

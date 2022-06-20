@@ -118,7 +118,9 @@ class TensorflowEngine(Engine):
 
         # Configure tensorflow
         ### TensorFlow Imports and Definitions ###
-        tf.set_random_seed(model.seed)
+        seed = (model.random_state if isinstance(model.random_state, int)
+                else 1000)
+        tf.set_random_seed(seed)
         tf.disable_v2_behavior()
         self.tf_device = tf_device
         self.config = tf.ConfigProto(

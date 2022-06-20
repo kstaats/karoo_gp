@@ -19,6 +19,7 @@ import pathlib
 import operator
 
 import numpy as np
+from sklearn.utils import check_random_state
 import sklearn.metrics as skm
 import sklearn.model_selection as skcv
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -110,16 +111,17 @@ class BaseGP(BaseEstimator):
         tree_depth_min=1, tree_pop_max=100, gen_max=10, tourn_size=7,
         filename='', output_dir='', evolve_repro=0.1, evolve_point=0.1,
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
-        swim='p', mode='s', seed=None, pause_callback=None,
+        swim='p', mode='s', random_state=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, terminals=None, test_size=0.2, scoring=None,
         higher_is_better=False, prediction_transformer=None, _cache={}):
         """Initialize a Karoo_GP object with given parameters"""
 
         # Model parameters
-        self.seed = seed
-        self.rng = np.random.default_rng(seed)
-        np.random.seed(seed)                 # used by skm in train_test_split
+        self.random_state = random_state
+        self.rng = check_random_state(random_state)  # TODO: rename `random_state_` (skl)
+        np.random.seed(random_state)          # TODO: remove?
+        self.cache = _cache                   # scores by hash(data), expression
         self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
         self.filename = filename             # prefix for output files
         self.output_dir = output_dir         # path to output directory
@@ -260,7 +262,7 @@ class BaseGP(BaseEstimator):
             # Split train and test sets
             else:
                 X_train, X_test, y_train, y_test = skcv.train_test_split(
-                    X, y, test_size=self.test_size, random_state=self.seed)
+                    X, y, test_size=self.test_size, random_state=self.random_state)
             # Save fingerprint and train/test sets
             self.X_hash = X_hash
             self.X_train, self.y_train = X_train, y_train
