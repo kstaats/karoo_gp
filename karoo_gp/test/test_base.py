@@ -37,11 +37,13 @@ def test_model_base(default_kwargs, X_shape):
     model = BaseGP(**kwargs)
     # Check all kwargs loaded correctly
     for k, v in kwargs.items():
-        if k not in ['terminals', 'functions']:  # term/func converted to cls
+        if k in ['terminals', 'constants']:  # term/func converted to cls
+            # TODO: test passing a Functions or Terminals class directly
+            assert getattr(model, f'_{k}') == v
+        elif k == 'functions':
+            assert isinstance(model.functions, Functions)
+        else:
             assert getattr(model, k) == v
-    assert isinstance(model.functions, Functions)
-    assert isinstance(model.terminals, Terminals)
-    # TODO: test passing a Functions or Terminals class directly
 
     # Initialize data
     X = np.ones(X_shape)
@@ -50,22 +52,10 @@ def test_model_base(default_kwargs, X_shape):
     noise  = (noise - 0.5) * 0.1
     y = y + noise
 
-    # Test predict and score functions (independent of population/data)
-    trees =[Tree.load(1, 'f((a)+(b))'), Tree.load(2, 'f((a)*(a))')]
-    predictions = model.batch_predict(X, trees)
-    for pred in predictions:
-        assert pred.shape == y.shape
-    scores = [model.calculate_score(p, y) for p in predictions]
-    expected = {
-        (10, 2): [dict(fitness=0.028375204003104337), dict(fitness=0.9979865501818704)],
-        (100, 2): [dict(fitness=0.0250126405341231), dict(fitness=0.9986793786245746)],
-    }[X_shape]
-    for exp, actual in zip(expected, scores):
-        assert exp['fitness'] == actual['fitness']
-
     # Fit 1 generation to process data, predict and score, but not evolve.
     model.gen_max = 1
     model.fit(X, y)
+    assert isinstance(model.terminals, Terminals)
     assert model.population.gen_id == 1
     assert model.X_hash == hash(X.data.tobytes())  # Fingerprint of X saved
     if X.shape[0] < 11:
@@ -80,6 +70,19 @@ def test_model_base(default_kwargs, X_shape):
     unique_expressions = set([t.expression for t in model.population.trees])
     assert len(model.cache[X_train_hash]) == len(unique_expressions)
 
+    # Test predict and score functions (independent of population/data)
+    trees =[Tree.load(1, 'f((a)+(b))'), Tree.load(2, 'f((a)*(a))')]
+    predictions = model.batch_predict(X, trees)
+    for pred in predictions:
+        assert pred.shape == y.shape
+    scores = [model.calculate_score(p, y) for p in predictions]
+    expected = {
+        (10, 2): [dict(fitness=0.028375204003104337), dict(fitness=0.9979865501818704)],
+        (100, 2): [dict(fitness=0.0250126405341231), dict(fitness=0.9986793786245746)],
+    }[X_shape]
+    for exp, actual in zip(expected, scores):
+        assert exp['fitness'] == actual['fitness']
+
     # Fit 2 generations to evolve the population
     old_pop_size = len(model.population.trees)
     model.gen_max = 2
@@ -92,8 +95,7 @@ def test_model_base(default_kwargs, X_shape):
 
 def test_base_rng(default_kwargs):
     model = BaseGP(**default_kwargs)
-    assert model.rng.randint(1000) == 804
-    assert np.random.randint(1000) == 435
+    assert model.rng.randint(1000) == np.random.randint(1000) == 435
 
 @pytest.mark.parametrize('ker', ['c', 'r', 'm'])
 def test_model_kernel(tmp_path, paths, default_kwargs, ker):
