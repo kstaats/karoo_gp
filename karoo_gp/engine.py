@@ -1,6 +1,7 @@
 import os
 import ast
 import operator as op
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -10,7 +11,7 @@ from .util import LazyLoader
 tf = LazyLoader('tf', globals(), 'tensorflow.compat.v1')
 
 
-class Engine:
+class Engine(ABC):
     """Calculate the output of a batch of data for a batch of trees"""
     def __init__(self, model, engine_type='default'):
         self.model = model
@@ -19,6 +20,7 @@ class Engine:
     def __repr__(self):
         return f"<Engine: {self.engine_type}>"
 
+    @abstractmethod
     def predict(self, trees, X, X_hash=None):
         """Takes a list of Tree objects and a numpy array of data
 
