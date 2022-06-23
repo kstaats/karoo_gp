@@ -1,7 +1,7 @@
 import ast
 import math
 from collections import defaultdict
-from karoo_gp import Function, Terminal
+from . import Function, Terminal
 
 # Used by load, i.e. recreate branch from symbol strings
 operators_ref = {

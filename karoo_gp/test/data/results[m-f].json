@@ -21,8 +21,8 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 50,
-        "expression": "-a**2 + a*c - a + b + c"
+        "id": 45,
+        "expression": "-a + 3*b + c - 2"
     },
     "score": {
         "fitness": 10.0
