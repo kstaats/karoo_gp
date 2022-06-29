@@ -223,7 +223,20 @@ class Branch:
         elif len(self.children) == 2:
             return f"({self.children[0].save()}{self.node.symbol}{self.children[1].save()})"
 
-    def display(self, width=60, symbol_max_len=3):
+    def display(self, *args, method='viz', **kwargs):
+        if method == 'list':
+            return self.display_list(*args, **kwargs)
+        elif method == 'viz':
+            return self.display_viz(*args, **kwargs)
+
+    def display_list(self, prefix=''):
+        output = prefix + repr(self.node) + '\n'
+        if self.children:
+            for child in self.children:
+                output += child.display_list(prefix = prefix + '   ')
+        return output
+
+    def display_viz(self, width=60, symbol_max_len=3):
         """Print a hierarchical tree representation of all nodes
 
         Cycle through depths starting with the root (centered). At each depth,
