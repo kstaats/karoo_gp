@@ -66,14 +66,14 @@ class Population:
         for tree, y_pred in zip(self.trees, predictions):
             cached = False
             if X_hash is not None:
-                cached_score = self.model.cache[X_hash].get(tree.expression)
+                cached_score = self.model.cache_[X_hash].get(tree.expression)
                 if cached_score:
                     tree.score = cached_score
                     cached = True
             if not cached:
                 tree.score = self.model.calculate_score(y_pred, y)
                 if X_hash is not None:
-                    self.model.cache[X_hash][tree.expression] = tree.score
+                    self.model.cache_[X_hash][tree.expression] = tree.score
             self.model.log(f'\nTree {tree.id} yields (sym): {tree.expression}'
                            f'\nwith fitness sum: {tree.fitness}')
         self.evaluated = True

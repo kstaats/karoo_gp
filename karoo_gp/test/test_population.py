@@ -8,7 +8,7 @@ from .util import load_data
 # Create a dummy model with mock functions to confirm calls
 class MockModel:
     def __init__(self):
-        self.cache = {}
+        self.cache_ = {}
         self.log=MagicMock()
         self.pause=MagicMock()
         self.error=MagicMock()

@@ -16,8 +16,8 @@ def X():
 
 class MockModel:
     random_state = 1000
-    cache = dict()
-    terminals = Terminals(['a', 'b', 'c'])
+    cache_ = dict()
+    terminals_ = Terminals(['a', 'b', 'c'])
 
 @pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
 def test_engine(trees, X, engine_type):
@@ -42,7 +42,7 @@ def test_engine(trees, X, engine_type):
 
     # Test skip cached expressions
     X_test_hash = hash(X_test.data.tobytes())
-    model.cache[X_test_hash] = {trees[0].expression: 'dummy'}
+    model.cache_[X_test_hash] = {trees[0].expression: 'dummy'}
     test_pred = engine.predict(trees, X_test, X_test_hash)
     assert sum(test_pred[0]) == 0
     assert sum(test_pred[1]) != 0

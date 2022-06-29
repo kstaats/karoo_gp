@@ -37,15 +37,10 @@ def test_model_base(default_kwargs, X_shape):
     model = BaseGP(**kwargs)
     # Check all kwargs loaded correctly
     for k, v in kwargs.items():
-        if k in ['terminals', 'constants']:  # term/func converted to cls
-            # TODO: test passing a Functions or Terminals class directly
-            assert getattr(model, f'_{k}') == v
-        elif k == 'functions':
-            assert isinstance(model.functions, Functions)
-        else:
-            assert getattr(model, k) == v
+        assert getattr(model, k) == v
 
     # Initialize data
+    np.random.seed(kwargs['random_state'])  # Not set by karoo until fit
     X = np.ones(X_shape)
     y = np.sum(X, axis=1)
     noise = np.random.rand(y.shape[0])
@@ -55,9 +50,9 @@ def test_model_base(default_kwargs, X_shape):
     # Fit 1 generation to process data, predict and score, but not evolve.
     model.gen_max = 1
     model.fit(X, y)
-    assert isinstance(model.terminals, Terminals)
+    assert isinstance(model.terminals_, Terminals)
     assert model.population.gen_id == 1
-    assert model.X_hash == hash(X.data.tobytes())  # Fingerprint of X saved
+    assert model.X_hash_ == hash(X.data.tobytes())  # Fingerprint of X saved
     if X.shape[0] < 11:
         assert model.X_train.shape == model.X_test.shape
         assert model.y_train.shape == model.y_train.shape
@@ -66,9 +61,9 @@ def test_model_base(default_kwargs, X_shape):
         assert model.X_train.shape[1] == model.X_test.shape[1] == X.shape[1]
         assert model.y_train.shape[0] + model.y_test.shape[0] == y.shape[0]
     X_train_hash = hash(model.X_train.data.tobytes())
-    assert X_train_hash in model.cache  # Tree scores are cached by X_train
+    assert X_train_hash in model.cache_  # Tree scores are cached by X_train
     unique_expressions = set([t.expression for t in model.population.trees])
-    assert len(model.cache[X_train_hash]) == len(unique_expressions)
+    assert len(model.cache_[X_train_hash]) == len(unique_expressions)
 
     # Test predict and score functions (independent of population/data)
     trees =[Tree.load(1, 'f((a)+(b))'), Tree.load(2, 'f((a)*(a))')]
@@ -92,10 +87,6 @@ def test_model_base(default_kwargs, X_shape):
     best_fitness = model.population.fittest().fitness
     for tree in model.population.trees:
         assert tree.fitness >= best_fitness
-
-def test_base_rng(default_kwargs):
-    model = BaseGP(**default_kwargs)
-    assert model.rng.randint(1000) == np.random.randint(1000) == 435
 
 @pytest.mark.parametrize('ker', ['c', 'r', 'm'])
 def test_model_kernel(tmp_path, paths, default_kwargs, ker):
