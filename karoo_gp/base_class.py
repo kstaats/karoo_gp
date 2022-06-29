@@ -159,7 +159,8 @@ class BaseGP(object):
         self.X_hash = None                   # hash of last-used fit data
         self.gen_max = gen_max               # number of generations to evolve
         self.swim = swim                     # culling method
-        self.tree_depth_max = tree_depth_max # max allowed depth
+        self.tree_depth_max = max(           # max allowed depth
+            tree_depth_base, tree_depth_max)
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
         self.tourn_size = tourn_size         # number of Trees per tournament
         self.evolve_repro = evolve_repro     # ratio of next_gen reproduced
