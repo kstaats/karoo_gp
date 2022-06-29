@@ -232,8 +232,8 @@ class Branch:
     def display_list(self, prefix=''):
         output = prefix + repr(self.node) + '\n'
         if self.children:
-            output += (''.join(child.display_list(prefix=prefix+' ')
-                       for child in self.children))
+            output += ''.join(child.display_list(prefix=prefix+' ')
+                              for child in self.children)
         return output
 
     def display_viz(self, width=60, symbol_max_len=3):
