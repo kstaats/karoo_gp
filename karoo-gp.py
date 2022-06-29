@@ -486,6 +486,7 @@ def fx_karoo_pause(model):
         if menu_dict['next_gen_len'] > 0:
             tree = model.population.next_gen_trees[input_b - 1]
         else:
+            # TODO: Tell user which population is being used
             tree = model.population.trees[input_b - 1]
         model.log(f'Tree {tree.id} yields (raw): {tree.raw_expression}')
         model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
