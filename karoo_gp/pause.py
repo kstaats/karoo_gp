@@ -233,66 +233,44 @@ def pause(menu_dict):
             menu_dict['input_a'] = 'next_gen'
 
     elif menu == 'e':  # evaluate a Tree against the TEST data
-        if menu_dict['gen_id'] == 1:
-            print('\n\t\033[32m You cannot evaluate the foundation population. '
-                  'Be patient ...\033[0;0m')
-
-        else:  # gen_id > 1
-            while True:
-                try:
-                    query = input('\n\t Select a Tree to evaluate: ')
-                    if query == '':
-                        break
-                    elif int(query) in range(1, menu_dict['next_gen_len']+1):
-                        menu_dict['input_a'] = 'eval'
-                        menu_dict['input_b'] = int(query)
-                        break
-                    else:
-                        raise ValueError()
-                except ValueError:
-                    print('\n\t\033[32m Enter a number from 1 including %s. '
-                          'Try again ...\033[0;0m' % str(menu_dict['next_gen_len']))
-                except KeyboardInterrupt:
-                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+        has_next_gen = menu_dict['next_gen_len'] > 0
+        pop_len_key = 'next_gen_len' if has_next_gen else 'population_len'
+        while True:
+            try:
+                query = input('\n\t Select a Tree to evaluate: ')
+                if query == '':
+                    break
+                elif int(query) in range(1, menu_dict[pop_len_key] + 1):
+                    menu_dict['input_a'] = 'eval'
+                    menu_dict['input_b'] = int(query)
+                    break
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 1 including %s. '
+                        'Try again ...\033[0;0m' % str(menu_dict[pop_len_key]))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     elif menu == 'p':  # print a Tree to screen -- NEED TO ADD: SymPy graphical print option
-
-        if menu_dict['gen_id'] == 1:  # first generation
-            while True:
-                try:
-                    query = input('\n\t Select a Tree to print: ')
-                    if query == '':
-                        break
-                    elif (int(query) in list(range(1, menu_dict['population_len'])) and
-                          menu_dict['gen_id'] == 1):
-                        menu_dict['input_a'] = 'print_a'
-                        menu_dict['input_b'] = int(query)
-                        break
-                    else:
-                        raise ValueError()
-                except ValueError:
-                    print('\n\t\033[32m Enter a number from 1 including %s. '
-                          'Try again ...\033[0;0m' % str(menu_dict['population_len']))
-                except KeyboardInterrupt:
-                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
-
-        else:  # second or higher generation
-            while True:
-                try:
-                    query = input('\n\t Select a Tree to print: ')
-                    if query == '':
-                        break
-                    elif int(query) in list(range(1, menu_dict['next_gen_len'])):
-                        menu_dict['input_a'] = 'print_b'
-                        menu_dict['input_b'] = int(query)
-                        break
-                    else:
-                        raise ValueError()
-                except ValueError:
-                    print('\n\t\033[32m Enter a number from 1 including %s. '
-                          'Try again ...\033[0;0m' % str(menu_dict['next_gen_len']))
-                except KeyboardInterrupt:
-                    print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+        has_next_gen = menu_dict['next_gen_len'] > 0
+        menu_dict['input_a'] = 'print_b' if has_next_gen else 'print_a'
+        pop_len_key = 'next_gen_len' if has_next_gen else 'population_len'
+        while True:
+            try:
+                query = input('\n\t Select a Tree to print: ')
+                if query == '':
+                    break
+                elif (int(query) in list(range(1, menu_dict[pop_len_key] + 1))):
+                    menu_dict['input_b'] = int(query)
+                    break
+                else:
+                    raise ValueError()
+            except ValueError:
+                print('\n\t\033[32m Enter a number from 1 including %s. '
+                        'Try again ...\033[0;0m' % str(menu_dict[pop_len_key] + 1))
+            except KeyboardInterrupt:
+                print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     elif menu == 'id':
         print('\n\t Current generation:', menu_dict['gen_id'])

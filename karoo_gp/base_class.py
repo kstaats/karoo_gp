@@ -183,7 +183,7 @@ class BaseGP(BaseEstimator):
         self.X_hash = None                   # hash of last-used fit data
         self.gen_max = gen_max               # number of generations to evolve
         self.swim = swim                     # culling method
-        self.tree_depth_max = tree_depth_max # max allowed depth
+        self.tree_depth_max = max(tree_depth_base, tree_depth_max) # max allowed depth
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
         self.tourn_size = tourn_size         # number of Trees per tournament
         self.evolve_repro = evolve_repro     # ratio of next_gen reproduced
@@ -302,7 +302,6 @@ class BaseGP(BaseEstimator):
                     f'{self.tree_pop_max} Trees.')
 
             # Evaluate population
-            self.log('Evaluating the first generation of trees...')
             self.population.evaluate(X_train, y_train, X_train_hash)
             self._pop_initialized = True
 
@@ -311,7 +310,6 @@ class BaseGP(BaseEstimator):
             for gen in range(self.population.gen_id, self.gen_max):
 
                 # Evolve the next generation
-                self.log(f'Evolve a population for Generation {gen + 1} ...')
                 self.population = self.population.evolve(
                     self.tree_pop_max,
                     self.functions,
@@ -479,7 +477,7 @@ class BaseGP(BaseEstimator):
         generic = dict(
             package='Karoo GP',
             launched=self.datetime,
-            dataset=self.filename,
+            dataset=str(self.filename),
         )
         config = dict(
             kernel=kernel,

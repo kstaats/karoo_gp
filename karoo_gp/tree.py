@@ -11,6 +11,7 @@ class Tree:
 
     def __init__(self, id, root, tree_type='g', score=None):
         """Initialize a Tree from an id and Branch"""
+        # TODO: start from 0
         self.id = id        # The tree's position within population
         self.root = root    # The top Branch (depth = 0)
         self.tree_type = tree_type
@@ -116,8 +117,7 @@ class Tree:
     def point_mutate(self, rng, functions, terminals, log):
         """Replace a node (including root) with random node of same type"""
         i_mutate = rng.randint(0, self.n_children + 1)
-        log(f'\t \033[36mwith node\033[1m {i_mutate} \033[0;0m\033[36mchosen '
-            f'for mutation\033[0;0m', display=['i'])
+        log(f'Node {i_mutate} chosen for mutation', display=['i'])
         branch = self.get_child(i_mutate)
         _type = type(branch.node)
         replace = {Terminal: terminals, Function: functions}[_type]
@@ -127,9 +127,8 @@ class Tree:
         """Replace a subtree (excluding root) with random subtree"""
         i_mutate = rng.randint(1, self.n_children + 1)
         branch = self.get_child(i_mutate)
-        kids = f'and {branch.n_children} sub-nodes ' if branch.children else ''
-        log(f'\t \033[36mwith node \033[1m {i_mutate} {kids}\033[0;0m\033[36m'
-            f'chosen for mutation\033[0;0m', display=['i'])
+        from_type = {Terminal: 'term', Function: 'func'}[type(branch.node)]
+        kids = f' and {branch.n_children} sub-nodes' if branch.children else ''
         if self.tree_type == 'f':
             # Replace all subtree nodes with random node of same type
             for c in range(branch.n_children + 1):
@@ -144,6 +143,11 @@ class Tree:
                                           self.tree_type, depth,
                                           force_function_root=False)
             self.set_child(i_mutate, replacement)
+        to_type = {
+            Terminal: 'term', Function: 'func'
+        }[type(self.get_child(i_mutate).node)]
+        log(f'Node {i_mutate}{kids} chosen for mutation, from {from_type} '
+            f'to {to_type}', display=['i'])
 
     def prune(self, rng, terminals, max_depth):
         """Shrink tree to a given depth."""
@@ -169,36 +173,20 @@ class Tree:
                   log, pause):
         """Replace node i (including subtree) with node i_mate from mate"""
         to_insert = mate.get_child(i_mate).copy()
-        if to_insert.children:
-            log(f'\n\033[36m From one parent:\033[0;0m\n {mate.display()} '
-                f'\n\033[36m ... we copy branch\033[1m {i_mate} '
-                f'\033[0;0m\033[36mas a new, sub-tree:\033[0;0m\n',
-                display=['db'])
-            log(to_insert.display(), display=['db'])
-            log(f'\n\033[36m ... and insert it into a copy of the second '
-                f'parent in place of the selected branch:\033[1m\n',
-                display=['db'])
-            log(self.get_child(i).display())
-            pause(display=['db'])
-        else:
-            has_kids = self.get_child(i).n_children
-            kids = f' and {has_kids} sub-nodes' if has_kids else ''
-            log(f'\n\033[36m In a copy of one parent:\033[0;0m\n ',
-                display=['db'])
-            log(self.display(), display=['db'])
-            log(f'\n\033[36m ... we remove node \033[1m '
-                f'{i}{kids} \033[0;0m\033[36mand replace with a terminal from '
-                f'branch_x:\033[0;0m\n', display=['db'])
-            log(mate.get_child(i_mate).display(), display=['db'])
-            pause(display=['db'])
+
+        # Get display fields before modifying
+        from_disp = self.display()
+        from_expr = self.get_child(i).parse()
+        with_expr = to_insert.parse()
 
         self.set_child(i, to_insert)
         initial_depth = self.depth
         self.prune(rng, terminals, tree_depth_max)
-        pruned_depth = self.depth
-        if initial_depth != pruned_depth:
-            log(f'\n\033[36m ... and prune to depth \033[1m {pruned_depth}:',
-                display=['db'])
-        log(f'\n\033[36m This is the resulting offspring:\033[0;0m\n'
-            f'{self.display()}', display=['db'])
+        prune = (f' and prune to depth {self.depth}'
+                 if self.depth != initial_depth else '')
+        log(f'\nIn a copy of the first parent: \n{from_disp}\n\n '
+            f'...we replace node {i} ({from_expr}) with node {i_mate} '
+            f'from the second parent: {with_expr}{prune}\n'
+            f'The resulting offspring is: \n{self.display()}',
+            display=['db'])
         pause(display=['db'])

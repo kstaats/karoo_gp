@@ -59,23 +59,30 @@ class Population:
 
         Uses model methods .predict and .score and manages model cache
         """
+        self.model.log(f'\nEvaluate all Trees in Generation {self.gen_id}')
+        self.model.pause(display=['i'])
+
         predictions = self.model.batch_predict(X, self.trees, X_hash)
         for tree, y_pred in zip(self.trees, predictions):
+            cached = False
             if X_hash is not None:
                 cached_score = self.model.cache[X_hash].get(tree.expression)
                 if cached_score:
                     tree.score = cached_score
-                    continue
-            tree.score = self.model.calculate_score(y_pred, y)
-            if X_hash is not None:
-                self.model.cache[X_hash][tree.expression] = tree.score
+                    cached = True
+            if not cached:
+                tree.score = self.model.calculate_score(y_pred, y)
+                if X_hash is not None:
+                    self.model.cache[X_hash][tree.expression] = tree.score
+            self.model.log(f'\nTree {tree.id} yields (sym): {tree.expression}'
+                           f'\nwith fitness sum: {tree.fitness}')
         self.evaluated = True
         self.history.append(self.fittest().save())
 
         self.fittest_dict = self.model.build_fittest_dict(self.trees)
-        self.model.log(f'\n\033[36m {len(self.fittest_dict)} '
-            f'trees\033[1m {np.sort(list(self.fittest_dict.keys()))} '
-            f'\033[0;0m\033[36moffer the highest fitness scores.\033[0;0m')
+        self.model.log(f'\n{len(self.fittest_dict)} trees '
+                       f'{np.sort(list(self.fittest_dict.keys()))} offer the '
+                       f'highest fitness scores.')
         self.model.pause(display=['g'])
 
     def evolve(self, tree_pop_max, functions, terminals, swim='p',
@@ -83,6 +90,10 @@ class Population:
                evolve_repro=0.1, evolve_point=0.1, evolve_branch=0.2,
                evolve_cross=0.6):
         """Return a new population evolved from self"""
+        log = self.model.log
+        pause = self.model.pause
+        rng = self.model.rng
+        log(f'\nEvolve a population for Generation {self.gen_id + 1} ...')
 
         # Calculte number of new trees per evolution type
         evolve_ratios = dict(repro=evolve_repro, point=evolve_point,
@@ -94,11 +105,8 @@ class Population:
         # of length tree_pop_max.
         evolve_amounts = {k: int(v * tree_pop_max)
                           for k, v in evolve_ratios.items()}
-        log = self.model.log
-        pause = self.model.pause
-        rng = self.model.rng
         # Create the list of eligible trees
-        log('\n Prepare a viable gene pool ...', display=['i'])
+        log('\nPrepare a viable gene pool ...', display=['i'])
         pause(display=['i'])
         self.fitness_gene_pool(swim, tree_depth_min, terminals)
         # Initialize new population and begin evolving new trees
@@ -106,15 +114,12 @@ class Population:
         for evolve_type, amount in evolve_amounts.items():
             verb = dict(repro='Reproductions', point='Point Mutations',
                         branch='Branch Mutations', cross='Crossovers')
-            log(f'  Perform {amount} {verb[evolve_type]} ...')
+            log(f'\nPerform {amount} {verb[evolve_type]} ...')
             pause(display=['i'])
             amount = amount // 2 if evolve_type == 'cross' else amount
             for _ in range(amount):
                 # Create offspring from first parent
                 parent = self.tournament(rng, tourn_size)
-                log(f'\n\t\033[36mThe winner of the tournament is '
-                    f'Tree:\033[1m{parent.id} \033[0;0m', display=['i'])
-
                 offspring = parent.copy(id=len(self.next_gen_trees) + 1)
                 # Reproduce: add to new population as-is
                 if evolve_type == 'repro':
@@ -141,13 +146,12 @@ class Population:
                     offspring_b = parent_b.copy(id=len(self.next_gen_trees) + 1)
                     i_mutate_b = rng.randint(1, parent_b.n_children + 1)
 
+                    log('', display=['i'])  # Extra line to separate from tourn
                     for from_id, to_id, to_i in [
                         (parent_a.id, parent_b.id, i_mutate_b),
                         (parent_b.id, parent_a.id, i_mutate_a)]:
-                        log(f'\t\033[36m crossover from \033[1mparent '
-                            f'{from_id} \033[0;0m\033[36mto \033[1moffspring '
-                            f'{to_id} \033[0;0m\033[36mat node\033[1m '
-                            f'{to_i} \033[0;0m', display=['i'])
+                        log(f'Crossover from parent {from_id} to offspring '
+                            f'{to_id} at node {to_i}', display=['i'])
 
                     # Replace b's branch i_b with a's branch i_a & vice versa
                     offspring_b.crossover(i_mutate_b, parent_a, i_mutate_a,
@@ -175,9 +179,9 @@ class Population:
                 # each tree must have the min number of nodes defined by user
                 if (tree.n_children + 1 >= tree_depth_min and
                     tree.expression != '1'):
-                    self.model.log(f'\t\033[36m Tree {tree.id} has >= '
-                                   f'{tree_depth_min} nodes and is added to '
-                                   f'the gene pool\033[0;0m', display=['i'])
+                    self.model.log(f'Tree {tree.id} has >= {tree_depth_min} '
+                                   f'nodes and is added to the gene pool',
+                                   display=['i'])
                     self.gene_pool.append(tree.id)
             elif swim == 'f':
                 # each tree must contain at least one instance of each feature
@@ -186,20 +190,23 @@ class Population:
                                if f'({t.symbol})' not in saved])
                 if not missing:
                     self.model.log(
-                        f'\t\033[36m Tree {tree.id} includes at least one'
-                        f' of each feature and is added to the gene '
-                        f'pool\033[0;0m', display=['i'])
+                        f'Tree {tree.id} includes at least one of each feature'
+                        f' and is added to the gene pool', display=['i'])
                     self.gene_pool.append(tree.id)
-        self.model.log(f'\n\t The total population of the gene pool is '
+        self.model.log(f'\nThe total population of the gene pool is '
                        f'{len(self.gene_pool)}', display=['i'])
+        self.model.pause(display=['i'])
 
     def tournament(self, rng, tournament_size=7):
-        self.model.log('\n\tEnter the tournament ...', display=['i'])
+        self.model.log('\nEnter the tournament ...', display=['i'])
         if not self.gene_pool:
             raise ValueError('Cannot conduct tournament: gene pool is empty')
         t_ids = [rng.choice(self.gene_pool) for _ in range(tournament_size)]
         trees = [self.trees[tree_id-1] for tree_id in t_ids]
         for t in trees:
-            self.model.log(f'\t\033[36m Tree {t.id} has fitness {t.fitness}'
-                           f'\033[0;0m', display=['i'])
-        return reduce(self.model.fitness_compare, trees)
+            self.model.log(f'Tree {t.id} has fitness {t.fitness}',
+                           display=['i'])
+        winner = reduce(self.model.fitness_compare, trees)
+        self.model.log(f'The winner of the tournament is Tree: {winner.id}',
+                       display=['i'])
+        return winner
