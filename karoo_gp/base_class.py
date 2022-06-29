@@ -143,7 +143,7 @@ class BaseGP(object):
             tree_depth_base=self.tree_depth_base,
             tree_pop_max=tree_pop_max,
         )
-        self.log(f'\n We have constructed the first, stochastic population of'
+        self.log(f'\n We have constructed the first, stochastic population of '
                  f'{self.tree_pop_max} Trees.')
 
         # Engine
@@ -257,7 +257,6 @@ class BaseGP(object):
 
         # Evaluate the initial population
         if not self.population.evaluated:
-            self.log('Evaluate the first generation of trees...')
             self.population.evaluate(X_train, y_train, X_train_hash)
 
         menu = 1
@@ -265,7 +264,6 @@ class BaseGP(object):
             for gen in range(self.population.gen_id, self.gen_max):
 
                 # Evolve the next generation
-                self.log(f'Evolve a population for Generation {gen + 1} ...')
                 self.population = self.population.evolve(
                     self.tree_pop_max,
                     self.functions,
@@ -433,7 +431,7 @@ class BaseGP(object):
         generic = dict(
             package='Karoo GP',
             launched=self.datetime,
-            dataset=self.filename,
+            dataset=str(self.filename),
         )
         config = dict(
             kernel=kernel,
