@@ -261,7 +261,7 @@ def pause(menu_dict):
                 query = input('\n\t Select a Tree to print: ')
                 if query == '':
                     break
-                elif (int(query) in list(range(1, menu_dict[pop_len_key] + 1))):
+                elif int(query) in range(1, menu_dict[pop_len_key] + 1):
                     menu_dict['input_b'] = int(query)
                     break
                 else:
