@@ -102,7 +102,7 @@ if len(sys.argv) < 3:
             try:
                 query = input('\t Select (f)ull or (g)row (default g): ')
                 if query in ['f', 'g', '']:
-                    tree_type = query or 'f'
+                    tree_type = query or 'g'
                     break
                 else:
                     raise ValueError()
