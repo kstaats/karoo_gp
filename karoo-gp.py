@@ -334,7 +334,7 @@ else:  # 2 or more command line arguments are provided
                     help='[f,g,r] Tree type: (f)ull, (g)row, or (r)amped half/half')
     ap.add_argument('-bas', action='store', dest='depth_base', default=4,
                     help='[3...10] maximum Tree depth for the initial population')
-    ap.add_argument('-max', action='store', dest='depth_max', default=4,
+    ap.add_argument('-max', action='store', dest='depth_max', default=None,
                     help='[3...10] maximum Tree depth for the entire run')
     ap.add_argument('-min', action='store', dest='depth_min', default=3,
                     help='minimum nodes, from 3 to 2^(base_depth +1) - 1')
@@ -369,7 +369,7 @@ else:  # 2 or more command line arguments are provided
     kernel = str(args.kernel)
     tree_type = str(args.type)
     tree_depth_base = int(args.depth_base)
-    tree_depth_max = int(args.depth_max)
+    tree_depth_max = None if args.depth_max is None else int(args.depth_max)
     tree_depth_min = int(args.depth_min)
     tree_pop_max = int(args.pop_max)
     gen_max = int(args.gen_max)

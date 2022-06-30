@@ -105,7 +105,7 @@ class BaseGP(object):
     """
 
     def __init__(
-        self, tree_type='r', tree_depth_base=3, tree_depth_max=3,
+        self, tree_type='r', tree_depth_base=3, tree_depth_max=None,
         tree_depth_min=1, tree_pop_max=100, gen_max=10, tourn_size=7,
         filename='', output_dir='', evolve_repro=0.1, evolve_point=0.1,
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
@@ -159,8 +159,26 @@ class BaseGP(object):
         self.X_hash = None                   # hash of last-used fit data
         self.gen_max = gen_max               # number of generations to evolve
         self.swim = swim                     # culling method
-        self.tree_depth_max = max(           # max allowed depth
-            tree_depth_base, tree_depth_max)
+
+        if tree_depth_max is None:           # max allowed depth
+            default_max = 4
+            if tree_depth_base > default_max:
+                # If user inputs a base depth larger than the default max
+                # depth, automatically increase the maximum and warn user.
+                self.tree_depth_max = tree_depth_base
+                self.log(f'Warning: tree depth base {tree_depth_base} is'
+                         f'greater than default max depth {default_max}; '
+                         f'increasing max depth to {tree_depth_base} '
+                         f'automatically.')
+            else:
+                self.tree_depth_max = default_max
+        elif tree_depth_max >= tree_depth_base:
+            self.tree_depth_max = tree_depth_max
+        else:
+            # If user-provided max_depth is less than base_depth, raise an error
+            raise ValueError(f'Max depth ({tree_depth_max}) must be greater '
+                             f'or equal to base depth ({tree_depth_base})')
+
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
         self.tourn_size = tourn_size         # number of Trees per tournament
         self.evolve_repro = evolve_repro     # ratio of next_gen reproduced
