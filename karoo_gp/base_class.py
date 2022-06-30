@@ -177,6 +177,25 @@ class BaseGP(BaseEstimator):
         self.log(msg, display)
         self.pause(display)
 
+    def log_history(self):
+        """Add the score of the current fittest tree to history"""
+        def recursively_merge_history(a, b):
+            """Concatenate values in multi-level dict to history"""
+            for k, v in a.items():
+                if type(v) is dict:
+                    if k not in b:
+                        b[k] = {}
+                    recursively_merge_history(v, b[k])
+                elif type(v) in [int, float, str, list]:
+                    if k not in b:
+                        b[k] = []
+                    b[k].append(v)
+                else:
+                    raise ValueError('Scoring must be a single- or multi-level'
+                                     ' dict of int, float, str or list values')
+        score = self.score(self.X_test, self.y_test)
+        recursively_merge_history(score, self.history_)
+
 
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Run Karoo GP                  |
@@ -219,7 +238,7 @@ class BaseGP(BaseEstimator):
             # Scoring: optionally overwritten by child class
             self.scoring_ = (self.scoring if self.scoring is not None else
                              dict(fitness=skm.mean_absolute_error))
-            self.history_ = {label: [] for label in self.scoring_.keys()}
+            self.history_ = {}
             # Engine
             self.cache_ = self.cache or {}
             if self.engine_type == 'numpy':
@@ -279,6 +298,7 @@ class BaseGP(BaseEstimator):
             self.log(f'\n We have constructed the first, stochastic population of'
                     f'{self.tree_pop_max} Trees.')
             self.population.evaluate(X, y, self.X_train_hash)
+            self.log_history()
 
         # Update max allowed depth
         self.tree_depth_max_ = max(self.tree_depth_base, self.tree_depth_max)
@@ -351,8 +371,7 @@ class BaseGP(BaseEstimator):
                 self.population.evaluate(X_train, y_train, self.X_train_hash)
 
                 # Add best score to history
-                for k, v in self.score(X_test, y_test).items():
-                    self.history_[k].append(v)
+                self.log_history()
 
             if self.mode == 's':  # (s)erver mode: terminate after run
                 menu = 0
