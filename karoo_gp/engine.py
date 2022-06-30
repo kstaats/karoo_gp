@@ -42,7 +42,11 @@ class Engine(ABC):
 #++++++++++++++++++++++++++++
 
 def inf_to_zero_divide(a, b):
-    return np.where(b==0, 0, a / b)
+    # This continued to raise 'RuntimeWarning: divide by zero' errors. This
+    # is a proposed solution. ref: https://stackoverflow.com/a/64747978
+    with np.errstate(divide='ignore'):
+        out = np.where(b==0, 0., a / b)
+    return out
 
 class NumpyEngine(Engine):
     def __init__(self, model):

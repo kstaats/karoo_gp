@@ -58,7 +58,7 @@ import numpy as np
 import pandas as pd
 
 from karoo_gp import pause as menu
-from karoo_gp import __version__, MultiClassifierGP, RegressorGP, MatchingGP
+from karoo_gp import __version__, MultiClassifierGP, RegressorGP, MatchingGP, BaseGP
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Interface for Configuation       |
@@ -134,7 +134,7 @@ if len(sys.argv) < 3:
         tree_pop_max = 1
         gen_max = 1
         tourn_size = 0
-        display = 'm'
+        display = 's'  # for play mode, initialize, print fittest tree and quit
         # evolve_repro, evolve_point, evolve_branch, evolve_cross,
         # tourn_size, precision, filename are not required
 
@@ -560,7 +560,9 @@ X, y = dataset.to_numpy(), y.to_numpy()
 #++++++++++++++++++++++++++++++++++++++++++
 
 # Select the correct class for kernel
-cls = {'c': MultiClassifierGP, 'r': RegressorGP, 'm': MatchingGP}[kernel]
+cls = {
+    'c': MultiClassifierGP, 'r': RegressorGP, 'm': MatchingGP, 'p': BaseGP
+}[kernel]
 
 # Initialize the model
 gp = cls(
@@ -590,11 +592,14 @@ gp = cls(
 # Fit to the data
 gp.fit(X, y)
 
-# TODO: Relocated from BaseGP.__init__(). Need to test/debug
-# if self.kernel == 'p':
-#     self.fx_data_tree_write(self.population.trees, 'a')
-#     sys.exit()
-
+if kernel == 'p':
+    tree = gp.population.trees[0]
+    print(f'\nTree ID {tree.id}')
+    print(f'  yields (raw): {tree.raw_expression}')
+    print(f'  yields (sym): {tree.expression}\n')
+    print(gp.population.trees[0].display(method='viz'))
+    print(gp.population.trees[0].display(method='list'))
+    # self.fx_data_tree_write(self.population.trees, 'a')
 
 # Save files and exit
 gp.fx_karoo_terminate()
