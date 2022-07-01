@@ -27,6 +27,7 @@ class Branch:
         self.parent = parent
         self.children = None
         self.bfs_ref = None
+        self.id = None
 
     @classmethod
     def load(cls, expr: str, tree_type, parent=None):
@@ -230,9 +231,18 @@ class Branch:
             return self.display_viz(*args, **kwargs)
 
     def display_list(self, prefix=''):
-        output = prefix + repr(self.node) + '\n'
+        _type = 'term' if type(self.node) is Terminal else 'func'
+        _symbol = self.node.symbol
+        _parent = '' if self.parent is None else self.parent.id
+        _arity = 0 if _type == 'term' else self.node.arity
+        _children = '' if not self.children else [c.id for c in self.children]
+        output = (
+            f'{prefix}NODE ID: {self.id}\n'
+            f'{prefix}  type: {_type}\n'
+            f'{prefix}  label: {_symbol}\tparent node: {_parent}\n'
+            f'{prefix}  arity: {_arity}\tchild node(s): {_children}\n\n')
         if self.children:
-            output += ''.join(child.display_list(prefix=prefix+' ')
+            output += ''.join(child.display_list(prefix=prefix+'\t')
                               for child in self.children)
         return output
 
