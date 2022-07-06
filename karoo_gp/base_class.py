@@ -190,9 +190,11 @@ class BaseGP(object):
     def pause(self, display={'i', 'g', 'm', 'db'}):
         if not self.pause_callback:
             self.log('No pause callback function provided')
-            return
-        if self.display in display or display is None:
+            return 0
+        elif self.display in display:
             self.pause_callback(self)
+        else:
+            return 0
 
     def error(self, msg, display={'i', 'g', 'm', 'db'}):
         self.log(msg, display)
@@ -343,7 +345,7 @@ class BaseGP(object):
         used via ContextManager, or manually.
         '''
         kernel = {
-            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm'
+            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm', BaseGP: 'p'
         }[type(self)]
         self.fx_data_params_write(kernel)
         self.fx_data_params_write_json(kernel)

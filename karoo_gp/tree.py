@@ -16,7 +16,7 @@ class Tree:
         self.root = root    # The top Branch (depth = 0)
         self.tree_type = tree_type
         self.score = score or {}
-        self.bfs_ref = None
+        self.renumber()
 
     @classmethod
     def load(cls, id, expr, tree_type='f'):
@@ -105,6 +105,12 @@ class Tree:
     #   Modify                  |
     #++++++++++++++++++++++++++++
 
+    def renumber(self, method='BFS'):
+        """Set the id of each branch of the subtree"""
+        self.root.bfs_ref = None
+        for i in range(0, self.n_children + 1):
+            self.get_child(i, method=method).id = i
+
     def set_child(self, i_child, branch, **kwargs):
         if i_child == 0:
             self.root = branch
@@ -112,7 +118,7 @@ class Tree:
         if i_child > n_ch:
             raise ValueError(f'Index "{i_child}" out of range ({n_ch}')
         self.root.set_child(i_child, branch, **kwargs)
-        self.bfs_ref = None
+        self.renumber()
 
     def point_mutate(self, rng, functions, terminals, log):
         """Replace a node (including root) with random node of same type"""
@@ -155,8 +161,10 @@ class Tree:
             return
         elif max_depth == 0 and type(self.root.node) != Terminal:  # Replace the root
             self.root = Branch(rng.choice(terminals.get()), self.tree_type)
+            self.renumber()
         elif max_depth == 1:  # Prune the root
             self.root.prune(rng, terminals)
+            self.renumber()
         else:  # Cycle through (BFS order), prune second-to-last depth
             last_depth_nodes = [self.root]
             for d in range(max_depth - 1, 0, -1):
@@ -168,6 +176,7 @@ class Tree:
                 if d == 1:  # second to last row
                     for node in this_depth_nodes:
                         node.prune(rng, terminals)
+            self.renumber()
 
     def crossover(self, i, mate, i_mate, rng, terminals, tree_depth_max,
                   log, pause):
