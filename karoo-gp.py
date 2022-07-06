@@ -369,7 +369,15 @@ else:  # 2 or more command line arguments are provided
     kernel = str(args.kernel)
     tree_type = str(args.type)
     tree_depth_base = int(args.depth_base)
-    tree_depth_max = None if args.depth_max is None else int(args.depth_max)
+    if args.depth_max is None:  # former default, required for tests to pass
+        tree_depth_max = max(4, tree_depth_base)
+    else:
+        user_max = int(args.depth_max)
+        if tree_depth_base > user_max:
+            raise ValueError(f'Max depth {user_max} must be greater '
+                             f'than base depth {tree_depth_base}')
+        else:
+            tree_depth_max = user_max
     tree_depth_min = int(args.depth_min)
     tree_pop_max = int(args.pop_max)
     gen_max = int(args.gen_max)

@@ -160,22 +160,11 @@ class BaseGP(object):
         self.gen_max = gen_max               # number of generations to evolve
         self.swim = swim                     # culling method
 
-        if tree_depth_max is None:           # max allowed depth
-            default_max = 4
-            if tree_depth_base > default_max:
-                # If user inputs a base depth larger than the default max
-                # depth, automatically increase the maximum and warn user.
-                self.tree_depth_max = tree_depth_base
-                self.log(f'Warning: tree depth base {tree_depth_base} is'
-                         f'greater than default max depth {default_max}; '
-                         f'increasing max depth to {tree_depth_base} '
-                         f'automatically.')
-            else:
-                self.tree_depth_max = default_max
+        if tree_depth_max is None:
+            self.tree_depth_max = tree_depth_base
         elif tree_depth_max >= tree_depth_base:
             self.tree_depth_max = tree_depth_max
         else:
-            # If user-provided max_depth is less than base_depth, raise an error
             raise ValueError(f'Max depth ({tree_depth_max}) must be greater '
                              f'or equal to base depth ({tree_depth_base})')
 
