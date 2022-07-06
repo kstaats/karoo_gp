@@ -14,7 +14,7 @@ class Terminal:
 
     def __repr__(self):
         return (f"<Terminal: symbol={self.symbol!r} "
-                f"type={self.type.__name__!r})>")
+                f"type={self.type.__name__!r}>")
 
 class Terminals:
     def __init__(self, variables, constants=None, types=None,
