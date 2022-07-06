@@ -332,7 +332,7 @@ else:  # 2 or more command line arguments are provided
                          '(c)lassification, or (m)atching')
     ap.add_argument('-typ', action='store', dest='type', default='r',
                     help='[f,g,r] Tree type: (f)ull, (g)row, or (r)amped half/half')
-    ap.add_argument('-bas', action='store', dest='depth_base', default=4,
+    ap.add_argument('-bas', action='store', dest='depth_base', type=int, default=4,
                     help='[3...10] maximum Tree depth for the initial population')
     ap.add_argument('-max', action='store', dest='depth_max', type=int, default=None,
                     help='[3...10] maximum Tree depth for the entire run')
