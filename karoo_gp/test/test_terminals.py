@@ -4,7 +4,7 @@ def test_terminal():
     t = Terminal('a')
     assert t.symbol == 'a'
     assert t.type == float
-    assert t.__repr__() == "<Terminal: symbol='a' type='float')>"
+    assert repr(t) == "<Terminal: symbol='a' type='float'>"
 
     t = Terminal(1, int)
     assert t.symbol == 1
