@@ -235,7 +235,7 @@ class Branch:
         _symbol = self.node.symbol
         _parent = '' if self.parent is None else self.parent.id
         _arity = 0 if _type == 'term' else self.node.arity
-        _children = '' if not self.children else [c.id for c in self.children]
+        _children = [] if not self.children else [c.id for c in self.children]
         output = (
             f'{prefix}NODE ID: {self.id}\n'
             f'{prefix}  type: {_type}\n'

@@ -183,7 +183,7 @@ class BaseGP(object):
         if not self.pause_callback:
             self.log('No pause callback function provided')
             return 0
-        elif self.display in display or display is None:
+        elif self.display in display:
             self.pause_callback(self)
         else:
             return 0
