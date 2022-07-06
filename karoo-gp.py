@@ -368,7 +368,7 @@ else:  # 2 or more command line arguments are provided
     # pass the argparse defaults and/or user inputs to the required variables
     kernel = str(args.kernel)
     tree_type = str(args.type)
-    tree_depth_base = int(args.depth_base)
+    tree_depth_base = args.depth_base
     tree_depth_max = args.depth_max
     tree_depth_min = int(args.depth_min)
     tree_pop_max = int(args.pop_max)
