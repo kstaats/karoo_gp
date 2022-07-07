@@ -3,7 +3,7 @@ import math
 from collections import defaultdict
 from . import Function, Terminal
 
-# Used by load, i.e. recreate branch from symbol strings
+# Used by load, i.e. recreate node from symbol strings
 operators_ref = {
     ast.Add: '+',
     ast.Sub: '-',
@@ -14,15 +14,15 @@ operators_ref = {
 }
 
 # TODO: Rename to 'Node'
-class Branch:
+class Node:
     """An recursive tree element with a node, parent and children"""
 
     #++++++++++++++++++++++++++++
     #   Initialize              |
     #++++++++++++++++++++++++++++
 
-    def __init__(self, node, tree_type, parent=None):
-        self.node = node
+    def __init__(self, node_data, tree_type, parent=None):
+        self.node_data = node_data
         self.tree_type = tree_type
         self.parent = parent
         self.children = None
@@ -44,23 +44,23 @@ class Branch:
         if type(expr) == ast.Expression:
             expr = expr.body
         if isinstance(expr, ast.Name):
-            node = Terminal(expr.id)
-            branch = Branch(node, tree_type, parent)
+            node_data = Terminal(expr.id)
+            node = Node(node_data, tree_type, parent)
         elif isinstance(expr, ast.Num):
-            node = Terminal(expr.value)
-            branch = Branch(node, tree_type, parent)
+            node_data = Terminal(expr.value)
+            node = Node(node_data, tree_type, parent)
         else:
             symbol = operators_ref[type(expr.op)]
-            node = Function(symbol)
-            branch = Branch(node, tree_type, parent)
+            node_data = Function(symbol)
+            node = Node(node_data, tree_type, parent)
             if isinstance(expr, ast.UnaryOp):
-                branch.children = [cls.recursive_load(expr.left, tree_type, branch)]
+                node.children = [cls.recursive_load(expr.left, tree_type, node)]
             elif isinstance(expr, ast.BinOp):
-                branch.children = [cls.recursive_load(expr.left, tree_type, branch),
-                                   cls.recursive_load(expr.right, tree_type, branch)]
+                node.children = [cls.recursive_load(expr.left, tree_type, node),
+                                   cls.recursive_load(expr.right, tree_type, node)]
             else:
                 raise ValueError("Unrecognized op type in load:", expr.op)
-        return branch
+        return node
 
     #++++++++++++++++++++++++++++
     #   Generate Random         |
@@ -82,7 +82,7 @@ class Branch:
     def breadth_first_generate(cls, rng, functions, terminals, tree_type,
                                tree_depth, parent=None,
                                force_function_root=True):
-        """Return a randomly-generated branch and subtree breadth-first"""
+        """Return a randomly-generated node and subtree breadth-first"""
         def fn():  # Helper functions to save space
             choice = rng.choice(functions.get())
             return (choice.symbol, choice.arity)
@@ -118,7 +118,7 @@ class Branch:
                 nodes_by_depth[i].append(node)
 
         # 2. Convert above into a string expr that's compatible with
-        # Branch.load().  Parse by recursively filling-in child nodes,
+        # Node.load().  Parse by recursively filling-in child nodes,
         # beginning with the root (depth 0). For node with arity n at depth d,
         # the children are the n left-most unused nodes from depth d + 1.
         used_index = {k: 0 for k in nodes_by_depth}  # Last node-index used
@@ -142,7 +142,7 @@ class Branch:
     @classmethod
     def recursive_generate(cls, rng, functions, terminals, tree_type, depth,
                            parent=None, force_function_root=True):
-        """Return a randomly generated branch depth-first (recursive)"""
+        """Return a randomly generated node and subtree depth-first (recursive)"""
         # Grow trees flip a coin for function/terminal (except root)
         if depth == 0:
             is_terminal = True
@@ -153,15 +153,15 @@ class Branch:
 
         # Create terminal or function
         if is_terminal:
-            node = rng.choice(terminals.get())
-            branch = cls(node, tree_type, parent=parent)
+            node_data = rng.choice(terminals.get())
+            node = cls(node_data, tree_type, parent=parent)
         else:
-            node = rng.choice(functions.get())
-            branch = cls(node, tree_type, parent=parent)
+            node_data = rng.choice(functions.get())
+            node = cls(node_data, tree_type, parent=parent)
             # Generate children
             args = (rng, functions, terminals, tree_type, depth-1)
-            branch.children = [cls.generate(*args, parent=branch) for c in range(node.arity)]
-        return branch
+            node.children = [cls.generate(*args, parent=node) for c in range(node_data.arity)]
+        return node
 
     # MAY REDESIGN: The original 'fx_..' functions use breadth-first ordering,
     # but the recursive method is depth-first. Changing the order would change
@@ -204,16 +204,16 @@ class Branch:
     #++++++++++++++++++++++++++++
 
     def __repr__(self):
-        return f"<Branch: {self.node!r}>"
+        return f"<Node: {self.node_data!r}>"
 
     def parse(self):
         """Return full list of symbols (recursive)"""
         if not self.children:
-            return f'({self.node.symbol})'
+            return f'({self.node_data.symbol})'
         elif len(self.children) == 1:
-            return f"({self.node.symbol}{self.children[0].parse()})"
+            return f"({self.node_data.symbol}{self.children[0].parse()})"
         elif len(self.children) == 2:
-            return f"({self.children[0].parse()}{self.node.symbol}{self.children[1].parse()})"
+            return f"({self.children[0].parse()}{self.node_data.symbol}{self.children[1].parse()})"
 
     def display(self, *args, method='viz', **kwargs):
         if method == 'list':
@@ -222,10 +222,10 @@ class Branch:
             return self.display_viz(*args, **kwargs)
 
     def display_list(self, prefix=''):
-        node_type = 'term' if isinstance(self.node, Terminal) else 'func'
-        symbol = self.node.symbol
+        node_type = 'term' if isinstance(self.node_data, Terminal) else 'func'
+        symbol = self.node_data.symbol
         parent = '' if self.parent is None else self.parent.id
-        arity = 0 if node_type == 'term' else self.node.arity
+        arity = 0 if node_type == 'term' else self.node_data.arity
         children = [] if not self.children else [c.id for c in self.children]
         output = (
             f'{prefix}NODE ID: {self.id}\n'
@@ -251,34 +251,34 @@ class Branch:
         for i in range(self.depth + 1):
             depth_output = ''
             depth_children = []
-            for (branch, branch_width) in last_children:
-                symbol = ' ' if branch is None else str(branch.node.symbol)[:symbol_max_len]
-                this_output = symbol.center(branch_width)
+            for (node, subtree_width) in last_children:
+                symbol = ' ' if node is None else str(node.node_data.symbol)[:symbol_max_len]
+                this_output = symbol.center(subtree_width)
                 this_children = []      # Children from this item
                 cum_width = 0           # Cumulative character-width of all subtrees
                 cum_cols = 0            # Cumulative maximum node-width of all subtrees
                 # If no children, propogate the empty spaces below terminal
-                if not branch or not branch.children:
+                if not node or not node.children:
                     cum_cols += 1
-                    cum_width += branch_width
-                    this_children.append((None, branch_width))
+                    cum_width += subtree_width
+                    this_children.append((None, subtree_width))
                 # If children, fill-in this_output with '_' to first/last child label
                 else:
-                    children_cols = [c.n_cols for c in branch.children]
+                    children_cols = [c.n_cols for c in node.children]
                     total_cols = sum(children_cols)
-                    for child, child_cols in zip(branch.children, children_cols):
+                    for child, child_cols in zip(node.children, children_cols):
                         # Convert each child's 'cols' into character spacing
                         cum_cols += child_cols
                         cum_ratio = cum_cols / total_cols
-                        target_width = math.ceil(cum_ratio * branch_width) - cum_width
-                        remaining_width = branch_width - cum_width
+                        target_width = math.ceil(cum_ratio * subtree_width) - cum_width
+                        remaining_width = subtree_width - cum_width
                         child_width = min(target_width, remaining_width)
                         # Add record and update tracked values
                         this_children.append((child, child_width))
                         cum_width += child_width
                     # Add lines to the output
                     start_padding = this_children[0][1] // 2          # Midpoint of first child
-                    end_padding = branch_width - (this_children[-1][1] // 2)  # ..of last child
+                    end_padding = subtree_width - (this_children[-1][1] // 2)  # ..of last child
                     with_line = ''
                     for i, v in enumerate(this_output):
                         with_line += '_' if (i > start_padding and i < end_padding and v == ' ') else v
@@ -324,7 +324,7 @@ class Branch:
 
     def copy(self):
         """Return an unlinked copy of self (recursive)"""
-        copy = Branch(self.node, self.tree_type, self.parent)
+        copy = Node(self.node_data, self.tree_type, self.parent)
         if self.children:
             copy.children = [c.copy() for c in self.children]
             for c in copy.children:
@@ -352,25 +352,25 @@ class Branch:
                     return target, n
             return False, n
 
-    def set_child(self, n, branch, method='BFS'):
-        """Replace the child in the nth position with supplied branch"""
+    def set_child(self, n, node, method='BFS'):
+        """Replace the child in the nth position with supplied node"""
         if n == 0:
             raise ValueError('Cannot set child 0; replace from parent node')
         n = n if method != 'BFS' else self.i_bfs(n)
-        complete, _ = self.recursive_set_child(n, branch)
+        complete, _ = self.recursive_set_child(n, node)
         self.bfs_ref = None  # Need to re-index as tree has changed
         return complete
 
-    def recursive_set_child(self, n, branch):
-        """Replace child in nth position with given branch (recursive)"""
+    def recursive_set_child(self, n, node):
+        """Replace child in nth position with given node (recursive)"""
         for i, child in enumerate(self.children):
             n -= 1
             if n == 0:
-                self.children[i] = branch
+                self.children[i] = node
                 self.children[i].parent = self
                 return True, n
             if child.children:
-                target, new_n = child.recursive_set_child(n, branch)
+                target, new_n = child.recursive_set_child(n, node)
                 if target:
                     return True, n
                 else:
@@ -382,7 +382,7 @@ class Branch:
         if not self.children:
             return
         for i_c, child in enumerate(self.children):
-            if type(child.node) is not Terminal:
-                replacement = Branch(rng.choice(terminals.get()),
+            if type(child.node_data) is not Terminal:
+                replacement = Node(rng.choice(terminals.get()),
                                      self.tree_type)
                 self.set_child(i_c + 1, replacement)

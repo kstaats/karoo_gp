@@ -34,7 +34,7 @@ override the default values, as follows:
     -tor [7 per 100]             number of trees selected for tournament
     -evr [0.0...1.0]             decimal percent of pop generated through Reproduction
     -evp [0.0...1.0]             decimal percent of pop generated through Point Mutation
-    -evb [0.0...1.0]             decimal percent of pop generated through Branch Mutation
+    -evb [0.0...1.0]             decimal percent of pop generated through Node Mutation
     -evc [0.0...1.0]             decimal percent of pop generated through Crossover
 
 If you include any of the above flags, then you *must* also
@@ -300,7 +300,7 @@ if len(sys.argv) < 3:
     evolve_repro = 0.1
     # quantity of a population generated through Point Mutation
     evolve_point = 0.1
-    # quantity of a population generated through Branch Mutation
+    # quantity of a population generated through Node Mutation
     evolve_branch = 0.2
     # quantity of a population generated through Crossover
     evolve_cross = 0.6
@@ -352,7 +352,7 @@ else:  # 2 or more command line arguments are provided
                          'through Point Mutation')
     ap.add_argument('-evb', action='store', dest='evo_b', default=0.2,
                     help='[0.0-1.0] decimal percent of pop generated '
-                         'through Branch Mutation')
+                         'through Node Mutation')
     ap.add_argument('-evc', action='store', dest='evo_c', default=0.6,
                     help='[0.0-1.0] decimal percent of pop generated '
                          'through Crossover')

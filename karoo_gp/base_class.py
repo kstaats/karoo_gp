@@ -90,7 +90,7 @@ class BaseGP(BaseEstimator):
     │   │   └─ Tree                     - an evolvable expression tree
     │   │      ├─ .expression           - a string of sympified expr, e.g. a*b
     │   │      ├─ .score                - a dict of results matching `scoring`
-    │   │      ├─ .root = Branch        - a recursive node which forms a Tree
+    │   │      ├─ .root = Node        - a recursive node which forms a Tree
     │   │      │   ├─ .symbol           - a terminal ('a') or function ('*')
     │   │      │   ├─ .arity            - instructions for generating children
     │   │      │   ├─ .parent           - the node immediately above
@@ -478,7 +478,7 @@ class BaseGP(BaseEstimator):
             file.write('\n')
             file.write('\n genetic operator Reproduction: ' + str(self.evolve_repro))
             file.write('\n genetic operator Point Mutation: ' + str(self.evolve_point))
-            file.write('\n genetic operator Branch Mutation: ' + str(self.evolve_branch))
+            file.write('\n genetic operator Node Mutation: ' + str(self.evolve_branch))
             file.write('\n genetic operator Crossover: ' + str(self.evolve_cross))
             file.write('\n')
             file.write('\n tournament size: ' + str(self.tourn_size))

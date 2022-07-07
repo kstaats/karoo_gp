@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import json
 
-from karoo_gp import Tree, Branch
+from karoo_gp import Tree, Node
 from .util import dump_json
 
 @pytest.fixture
@@ -48,9 +48,9 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
         get_child=tree.get_child(1).parse(),
     )
 
-    # Set child (replace a specific subtree with provided branch)
-    new_branch = Branch.load('((a)+(b))', tree_type)
-    tree.set_child(1, new_branch)
+    # Set child (replace a specific subtree with provided node)
+    new_node = Node.load('((a)+(b))', tree_type)
+    tree.set_child(1, new_node)
     assert tree.get_child(1).parse() == f'((a)+(b))'
     tree_output['set_child'] = tree.save()
 
@@ -60,13 +60,13 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     point_mutated = tree.save()
     tree_output['point_mutate'] = point_mutated
 
-    # Branch Mutate (randomly modify an entire subtree)
+    # Node Mutate (randomly modify an entire subtree)
     tree.branch_mutate(kwargs['rng'], kwargs['functions'], kwargs['terminals'],
                        tree_depth_max, log)
     branch_mutated = tree.save()
     tree_output['branch_mutate'] = branch_mutated
 
-    # Prune (remove branches beyond a given depth)
+    # Prune (remove nodees beyond a given depth)
     if tree.depth > 1:
         original_depth = tree.depth  # e.g. 4
         prune_depth = original_depth - 1
@@ -80,10 +80,10 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     # over the max, in which case prune.
     depth_before_crossover = tree.depth - 1
     crossover_mate = tree.copy()
-    branch_to_insert = crossover_mate.get_child(0).parse()
+    node_to_insert = crossover_mate.get_child(0).parse()
     tree.crossover(1, crossover_mate, 0, kwargs['rng'], kwargs['terminals'],
                    tree_depth_max, log, pause)
-    assert tree.get_child(1).parse() == branch_to_insert
+    assert tree.get_child(1).parse() == node_to_insert
     assert tree.depth - 1 == min(depth_before_crossover + 1, tree_depth_max)
     tree_output['crossover'] = tree.save()
 

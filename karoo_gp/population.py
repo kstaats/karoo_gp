@@ -113,7 +113,7 @@ class Population:
         self.next_gen_trees = []
         for evolve_type, amount in evolve_amounts.items():
             verb = dict(repro='Reproductions', point='Point Mutations',
-                        branch='Branch Mutations', cross='Crossovers')
+                        branch='Node Mutations', cross='Crossovers')
             log(f'\nPerform {amount} {verb[evolve_type]} ...')
             pause(display=['i'])
             amount = amount // 2 if evolve_type == 'cross' else amount
@@ -128,7 +128,7 @@ class Population:
                 elif evolve_type == 'point':
                     offspring.point_mutate(rng, functions, terminals, log)
                     self.next_gen_trees.append(offspring)
-                # Branch Mutate: replace a random subtree
+                # Node Mutate: replace a random subtree
                 elif evolve_type == 'branch':
                     offspring.branch_mutate(rng, functions, terminals,
                                             tree_depth_max, log)
@@ -153,7 +153,7 @@ class Population:
                         log(f'Crossover from parent {from_id} to offspring '
                             f'{to_id} at node {to_i}', display=['i'])
 
-                    # Replace b's branch i_b with a's branch i_a & vice versa
+                    # Replace b's node i_b with a's node i_a & vice versa
                     offspring_b.crossover(i_mutate_b, parent_a, i_mutate_a,
                                           rng, terminals, tree_depth_max,
                                           log, pause)

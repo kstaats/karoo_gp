@@ -1,7 +1,7 @@
 import numpy as np
 from sympy import sympify
 
-from . import Branch, Terminal, Function
+from . import Node, Terminal, Function
 
 class Tree:
 
@@ -10,10 +10,10 @@ class Tree:
     #++++++++++++++++++++++++++++
 
     def __init__(self, id, root, tree_type='g', score=None):
-        """Initialize a Tree from an id and Branch"""
+        """Initialize a Tree from an id and Node"""
         # TODO: start from 0
         self.id = id        # The tree's position within population
-        self.root = root    # The top Branch (depth = 0)
+        self.root = root    # The top Node (depth = 0)
         self.tree_type = tree_type
         self.score = score or {}
         self.renumber()
@@ -26,7 +26,7 @@ class Tree:
         elif expr[0] != '(':
             raise ValueError('Load-from expressions must start with tree type'
                              '("f"/"g") or "(".')
-        root = Branch.load(expr, tree_type)
+        root = Node.load(expr, tree_type)
         tree = cls(id, root, tree_type)
         return tree
 
@@ -38,7 +38,7 @@ class Tree:
     def generate(cls, id, tree_type, tree_depth_base,
                  functions, terminals, rng, method='BFS'):
         '''Generate a new Tree object given starting parameters.'''
-        root = Branch.generate(rng, functions, terminals, tree_type,
+        root = Node.generate(rng, functions, terminals, tree_type,
                                tree_depth_base, parent=None, method=method)
         return cls(id, root, tree_type)
 
@@ -70,7 +70,7 @@ class Tree:
     def expression(self):
         """Return the sympified expression
 
-        July '22: When fixing the branch.parse() parenthesis issue, sympify
+        July '22: When fixing the node.parse() parenthesis issue, sympify
         started producing 'zoo' values, which is the result of divide-by-zero.
         Consider the tree:
          ___/___
@@ -126,52 +126,52 @@ class Tree:
     #++++++++++++++++++++++++++++
 
     def renumber(self, method='BFS'):
-        """Set the id of each branch of the subtree"""
+        """Set the id of each node of the subtree"""
         self.root.bfs_ref = None
         for i in range(0, self.n_children + 1):
             self.get_child(i, method=method).id = i
 
-    def set_child(self, i_child, branch, **kwargs):
+    def set_child(self, i_child, node, **kwargs):
         if i_child == 0:
-            self.root = branch
+            self.root = node
         n_ch = self.n_children
         if i_child > n_ch:
             raise ValueError(f'Index "{i_child}" out of range ({n_ch}')
-        self.root.set_child(i_child, branch, **kwargs)
+        self.root.set_child(i_child, node, **kwargs)
         self.renumber()
 
     def point_mutate(self, rng, functions, terminals, log):
         """Replace a node (including root) with random node of same type"""
         i_mutate = rng.randint(0, self.n_children + 1)
         log(f'Node {i_mutate} chosen for mutation', display=['i'])
-        branch = self.get_child(i_mutate)
-        _type = type(branch.node)
+        node = self.get_child(i_mutate)
+        _type = type(node.node_data)
         replace = {Terminal: terminals, Function: functions}[_type]
-        branch.node = rng.choice(replace.get())
+        node.node_data = rng.choice(replace.get())
 
     def branch_mutate(self, rng, functions, terminals, tree_depth_max, log):
         """Replace a subtree (excluding root) with random subtree"""
         i_mutate = rng.randint(1, self.n_children + 1)
-        branch = self.get_child(i_mutate)
-        from_type = {Terminal: 'term', Function: 'func'}[type(branch.node)]
-        kids = f' and {branch.n_children} sub-nodes' if branch.children else ''
+        node = self.get_child(i_mutate)
+        from_type = {Terminal: 'term', Function: 'func'}[type(node.node_data)]
+        kids = f' and {node.n_children} sub-nodes' if node.children else ''
         if self.tree_type == 'f':
             # Replace all subtree nodes with random node of same type
-            for c in range(branch.n_children + 1):
-                child = branch.get_child(c)
-                _type = type(child.node)
+            for c in range(node.n_children + 1):
+                child = node.get_child(c)
+                _type = type(child.node_data)
                 replace = {Terminal: terminals, Function: functions}[_type]
-                child.node = rng.choice(replace.get())
+                child.node_data = rng.choice(replace.get())
         elif self.tree_type == 'g':
             # Replace subtree with new random subtree of same target depth
-            depth = tree_depth_max - branch.height
-            replacement = Branch.generate(rng, functions, terminals,
+            depth = tree_depth_max - node.height
+            replacement = Node.generate(rng, functions, terminals,
                                           self.tree_type, depth,
                                           force_function_root=False)
             self.set_child(i_mutate, replacement)
         to_type = {
             Terminal: 'term', Function: 'func'
-        }[type(self.get_child(i_mutate).node)]
+        }[type(self.get_child(i_mutate).node_data)]
         log(f'Node {i_mutate}{kids} chosen for mutation, from {from_type} '
             f'to {to_type}', display=['i'])
 
@@ -180,7 +180,7 @@ class Tree:
         if self.depth <= max_depth:
             return
         elif max_depth == 0 and type(self.root.node) != Terminal:  # Replace the root
-            self.root = Branch(rng.choice(terminals.get()), self.tree_type)
+            self.root = Node(rng.choice(terminals.get()), self.tree_type)
             self.renumber()
         elif max_depth == 1:  # Prune the root
             self.root.prune(rng, terminals)
