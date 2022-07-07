@@ -182,11 +182,11 @@ class BaseGP(BaseEstimator):
         def recursively_merge_history(a, b):
             """Concatenate values in multi-level dict to history"""
             for k, v in a.items():
-                if type(v) is dict:
+                if isinstance(v, dict):
                     if k not in b:
                         b[k] = {}
                     recursively_merge_history(v, b[k])
-                elif type(v) in [int, float, str, list]:
+                elif isinstance(v, (int, float, str, list)):
                     if k not in b:
                         b[k] = []
                     b[k].append(v)
