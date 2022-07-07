@@ -1,9 +1,9 @@
 import ast
 import math
 from collections import defaultdict
-from . import Function, Terminal
+from . import NodeData, get_function_node
 
-# Used by load, i.e. recreate node from symbol strings
+# Used by load, i.e. recreate node from label strings
 operators_ref = {
     ast.Add: '+',
     ast.Sub: '-',
@@ -13,16 +13,14 @@ operators_ref = {
     ast.USub: '-',
 }
 
-# TODO: Rename to 'Node'
 class Node:
     """An recursive tree element with a node, parent and children"""
 
     #++++++++++++++++++++++++++++
     #   Initialize              |
     #++++++++++++++++++++++++++++
-
     def __init__(self, node_data, tree_type, parent=None):
-        self.node_data = node_data
+        self.node_data = node_data  # Sets label, arity.. via setter (below)
         self.tree_type = tree_type
         self.parent = parent
         self.children = None
@@ -44,14 +42,14 @@ class Node:
         if type(expr) == ast.Expression:
             expr = expr.body
         if isinstance(expr, ast.Name):
-            node_data = Terminal(expr.id)
+            node_data = NodeData(expr.id, 'terminal')
             node = Node(node_data, tree_type, parent)
         elif isinstance(expr, ast.Num):
-            node_data = Terminal(expr.value)
+            node_data = NodeData(expr.value, 'constant')
             node = Node(node_data, tree_type, parent)
         else:
-            symbol = operators_ref[type(expr.op)]
-            node_data = Function(symbol)
+            label = operators_ref[type(expr.op)]
+            node_data = get_function_node(label)
             node = Node(node_data, tree_type, parent)
             if isinstance(expr, ast.UnaryOp):
                 node.children = [cls.recursive_load(expr.left, tree_type, node)]
@@ -67,81 +65,98 @@ class Node:
     #++++++++++++++++++++++++++++
 
     @classmethod
-    def generate(cls, rng, functions, terminals, tree_type, depth, parent=None,
-                 method='BFS', force_function_root=True):
+    def generate(cls, rng, get_nodes, tree_type, depth, parent=None,
+                 method='BFS', force_function_root=True, node_types=None,
+                 force_types=None):
         if method == 'BFS':
-            return cls.breadth_first_generate(rng, functions, terminals,
-                                              tree_type, depth, parent,
-                                              force_function_root)
+            return cls.breadth_first_generate(rng, get_nodes, tree_type,
+                                              depth, parent,
+                                              force_function_root, node_types,
+                                              force_types)
         elif method == 'DFS':
-            return cls.recursive_generate(rng, functions, terminals,
-                                          tree_type, depth, parent,
-                                          force_function_root)
+            return cls.recursive_generate(rng, get_nodes, tree_type, depth,
+                                          parent, force_function_root,
+                                          node_types, force_types)
 
     @classmethod
-    def breadth_first_generate(cls, rng, functions, terminals, tree_type,
-                               tree_depth, parent=None,
-                               force_function_root=True):
+    def breadth_first_generate(cls, rng, get_nodes, tree_type, tree_depth,
+                               parent=None, force_function_root=True,
+                               node_types=None, force_types=None):
         """Return a randomly-generated node and subtree breadth-first"""
-        def fn():  # Helper functions to save space
-            choice = rng.choice(functions.get())
-            return (choice.symbol, choice.arity)
+        def fn(types=None, depth=tree_depth):  # Helper functions to save space
+            types = types or ('operator', 'cond')
+            return rng.choice(get_nodes(types, depth))
         def tm():
-            choice = rng.choice(terminals.get())
-            return (choice.symbol, 0)
+            return rng.choice(get_nodes(('terminal', 'constant')))
         # 1. Call the random functions in BFS order and save the output.
         # Generate a dict of lists, one entry for each level of depth, with
         # randomly-chosen node at each level.
-        nodes_by_depth = defaultdict(list)  # left-to-right lists of nodes
-        if tree_depth == 0:
-            root_node = tm()
-        elif (tree_type == 'g' and not force_function_root and
-              rng.choice([False, True])):
-            # In special cases (branch mutate), root can be a terminal
+        nodes_by_height = defaultdict(list)  # left-to-right lists of nodes
+        if (tree_depth == 0 or
+            (tree_type == 'g' and
+             not force_function_root and
+             rng.choice([False, True]))):
             root_node = tm()
         else:
-            root_node = fn()
-        nodes_by_depth[0].append(root_node)
-        for i in range(1, tree_depth + 1):
-            sum_parent_arity = sum(p[1] for p in nodes_by_depth[i-1])
-            if not sum_parent_arity:
-                break  # Grow trees can be less than tree_depth
-            for _ in range(sum_parent_arity):
-                if i == tree_depth:
-                    node = tm()  # The bottom nodes are always terminals
-                elif tree_type == 'f':
-                    node = fn()  # For 'full', others are functions
-                elif tree_type == 'g':  # For 'grow', others are coin-flips
-                    node = rng.choice([fn, tm])()
-                else:
-                    raise ValueError('Only (f)ull and (g)row trees supported')
-                nodes_by_depth[i].append(node)
+            types = None
+            if force_types:
+                types = force_types[0]
+                force_types = force_types[1:]
+            if not types and node_types:
+                types = node_types
+            root_node = fn(types, tree_depth)
+        nodes_by_height[0].append(root_node)
+        for height in range(1, tree_depth + 1):
+            for _parent in nodes_by_height[height-1]:
+                for i in range(_parent.arity):
+                    if (height == tree_depth or
+                        (tree_type == 'g' and rng.choice([False, True]))):
+                        node = tm()
+                    else:
+                        types = None
+                        if force_types:
+                            types = force_types[0]
+                        if not types and _parent.child_type:
+                            types = _parent.child_type[i]
+                        node = fn(types, tree_depth - height)
+                    nodes_by_height[height].append(node)
+            if not nodes_by_height[height]:
+                break
+            if force_types:
+                force_types = force_types[1:]
 
         # 2. Convert above into a string expr that's compatible with
         # Node.load().  Parse by recursively filling-in child nodes,
         # beginning with the root (depth 0). For node with arity n at depth d,
         # the children are the n left-most unused nodes from depth d + 1.
-        used_index = {k: 0 for k in nodes_by_depth}  # Last node-index used
+        used_index = {k: 0 for k in nodes_by_height}  # Last node-index used
         def next_from_depth(depth):  # Return left-most unused node
-            output = nodes_by_depth[depth][used_index[depth]]
+            output = nodes_by_height[depth][used_index[depth]]
             used_index[depth] += 1
             return output
-        def build_expression(item, depth):  # Recursive function to build expr
-            if item[1] == 0:  # arity
-                return f'({item[0]})'  # symbol
-            elif item[1] == 2:
-                d = depth + 1
+        def build_expression(node, depth):  # Recursive function to build expr
+            d = depth + 1
+            if node.arity == 0:  # arity
+                return f'({node.label})'
+            elif node.arity == 1:
+                return f'({node.label}{build_expression(next_from_depth(d))})'
+            elif node.arity == 2:
                 return (f'({build_expression(next_from_depth(d), d)}'
-                        f'{item[0]}'  # symbol
+                        f'{node.label}'  # label
                         f'{build_expression(next_from_depth(d), d)})')
+            elif node.label == 'if':
+                return (f'({build_expression(next_from_depth(d), d)}'
+                        f'if{build_expression(next_from_depth(d), d)}'
+                        f'else{build_expression(next_from_depth(d), d)})')
             else:
-                raise ValueError(f'Arity {item[1]} not supported')
-        expr = build_expression(nodes_by_depth[0][0], 0)
+                raise ValueError(f'Cannot build expression for {node}.')
+        expr = build_expression(nodes_by_height[0][0], 0)
         return cls.load(expr, tree_type, parent=parent)
 
     @classmethod
-    def recursive_generate(cls, rng, functions, terminals, tree_type, depth,
-                           parent=None, force_function_root=True):
+    def recursive_generate(cls, rng, get_nodes, tree_type, depth,
+                           parent=None, force_function_root=True,
+                           node_types=None, force_types=None):
         """Return a randomly generated node and subtree depth-first (recursive)"""
         # Grow trees flip a coin for function/terminal (except root)
         if depth == 0:
@@ -153,14 +168,23 @@ class Node:
 
         # Create terminal or function
         if is_terminal:
-            node_data = rng.choice(terminals.get())
+            node_data = rng.choice(get_nodes(('terminal', 'constant')))
             node = cls(node_data, tree_type, parent=parent)
         else:
-            node_data = rng.choice(functions.get())
+            types = None
+            if force_types:
+                types = force_types[0]  # Can be falsy
+                force_types = force_types[1:]
+            types = types or node_types or ('operator', 'cond')
+            node_data = rng.choice(get_nodes(types, depth))
             node = cls(node_data, tree_type, parent=parent)
             # Generate children
-            args = (rng, functions, terminals, tree_type, depth-1)
-            node.children = [cls.generate(*args, parent=node) for c in range(node_data.arity)]
+            node.children = []
+            kwargs = dict(rng=rng, get_nodes=get_nodes, tree_type=tree_type,
+                          depth=depth-1, force_types=force_types, parent=node)
+            for i in range(node.arity):
+                node_types = None if not node.child_type else node.child_type[i]
+                node.children.append(cls.generate(**kwargs, node_types=node_types))
         return node
 
     # MAY REDESIGN: The original 'fx_..' functions use breadth-first ordering,
@@ -207,13 +231,13 @@ class Node:
         return f"<Node: {self.node_data!r}>"
 
     def parse(self):
-        """Return full list of symbols (recursive)"""
+        """Return full list of labels (recursive)"""
         if not self.children:
-            return f'({self.node_data.symbol})'
+            return f'({self.node_data.label})'
         elif len(self.children) == 1:
-            return f"({self.node_data.symbol}{self.children[0].parse()})"
+            return f"({self.node_data.label}{self.children[0].parse()})"
         elif len(self.children) == 2:
-            return f"({self.children[0].parse()}{self.node_data.symbol}{self.children[1].parse()})"
+            return f"({self.children[0].parse()}{self.node_data.label}{self.children[1].parse()})"
 
     def display(self, *args, method='viz', **kwargs):
         if method == 'list':
@@ -222,22 +246,19 @@ class Node:
             return self.display_viz(*args, **kwargs)
 
     def display_list(self, prefix=''):
-        node_type = 'term' if isinstance(self.node_data, Terminal) else 'func'
-        symbol = self.node_data.symbol
         parent = '' if self.parent is None else self.parent.id
-        arity = 0 if node_type == 'term' else self.node_data.arity
         children = [] if not self.children else [c.id for c in self.children]
         output = (
             f'{prefix}NODE ID: {self.id}\n'
-            f'{prefix}  type: {node_type}\n'
-            f'{prefix}  label: {symbol}\tparent node: {parent}\n'
-            f'{prefix}  arity: {arity}\tchild node(s): {children}\n\n')
+            f'{prefix}  type: {self.node_type}\n'
+            f'{prefix}  label: {self.label}\tparent node: {parent}\n'
+            f'{prefix}  arity: {self.arity}\tchild node(s): {children}\n\n')
         if self.children:
             output += ''.join(child.display_list(prefix=prefix+'\t')
                               for child in self.children)
         return output
 
-    def display_viz(self, width=60, symbol_max_len=3):
+    def display_viz(self, width=60, label_max_len=3):
         """Print a hierarchical tree representation of all nodes
 
         Cycle through depths starting with the root (centered). At each depth,
@@ -252,8 +273,8 @@ class Node:
             depth_output = ''
             depth_children = []
             for (node, subtree_width) in last_children:
-                symbol = ' ' if node is None else str(node.node_data.symbol)[:symbol_max_len]
-                this_output = symbol.center(subtree_width)
+                label = ' ' if node is None else str(node.node_data.label)[:label_max_len]
+                this_output = label.center(subtree_width)
                 this_children = []      # Children from this item
                 cum_width = 0           # Cumulative character-width of all subtrees
                 cum_cols = 0            # Cumulative maximum node-width of all subtrees
@@ -294,6 +315,22 @@ class Node:
     #++++++++++++++++++++++++++++
     #   Query                   |
     #++++++++++++++++++++++++++++
+    node_data_ = None
+
+    @property
+    def node_data(self):
+        """Return the NodeData object of instance"""
+        return self.node_data_
+
+    @node_data.setter
+    def node_data(self, node_data):
+        """Update the NodeData object and set node-specific attributes"""
+        self.node_data_ = node_data
+        self.label = node_data.label
+        self.node_type = node_data.node_type
+        self.arity = node_data.arity
+        self.min_depth = node_data.min_depth
+        self.child_type = node_data.child_type
 
     @property
     def depth(self):
@@ -377,12 +414,12 @@ class Node:
                     n = new_n
         return False, n
 
-    def prune(self, rng, terminals):
+    def prune(self, rng, get_nodes):
         """Replace all non-terminal child nodes with terminals"""
         if not self.children:
             return
         for i_c, child in enumerate(self.children):
-            if type(child.node_data) is not Terminal:
-                replacement = Node(rng.choice(terminals.get()),
-                                     self.tree_type)
+            if child.children:
+                replacement = Node(rng.choice(get_nodes(('terminal', 'constant'))),
+                                   self.tree_type)
                 self.set_child(i_c + 1, replacement)

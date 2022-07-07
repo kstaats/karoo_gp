@@ -2,16 +2,17 @@ import pytest
 from unittest.mock import MagicMock
 import json
 
-from karoo_gp import Tree, Node
+from karoo_gp import Tree, Node, get_nodes
 from .util import dump_json
 
 @pytest.fixture
-def tree_default_kwargs(rng, functions, terminals):
+def tree_default_kwargs(rng, node_lib):
+    def get_nodes_(*args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=node_lib)
     return dict(
         rng=rng,
         id=1,
-        functions=functions,
-        terminals=terminals,
+        get_nodes=get_nodes_
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g'])
@@ -55,14 +56,12 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     tree_output['set_child'] = tree.save()
 
     # Point Mutate (randomly change one function or terminal)
-    tree.point_mutate(kwargs['rng'], kwargs['functions'], kwargs['terminals'],
-                      log)
+    tree.point_mutate(kwargs['rng'], kwargs['get_nodes'], log)
     point_mutated = tree.save()
     tree_output['point_mutate'] = point_mutated
 
     # Node Mutate (randomly modify an entire subtree)
-    tree.branch_mutate(kwargs['rng'], kwargs['functions'], kwargs['terminals'],
-                       tree_depth_max, log)
+    tree.branch_mutate(kwargs['rng'], kwargs['get_nodes'], tree_depth_max, log)
     branch_mutated = tree.save()
     tree_output['branch_mutate'] = branch_mutated
 
@@ -70,7 +69,7 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     if tree.depth > 1:
         original_depth = tree.depth  # e.g. 4
         prune_depth = original_depth - 1
-        tree.prune(kwargs['rng'], kwargs['terminals'], prune_depth)
+        tree.prune(kwargs['rng'], kwargs['get_nodes'], prune_depth)
         assert tree.depth == prune_depth
         tree_output['prune'] = tree.save()
 
@@ -81,7 +80,7 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     depth_before_crossover = tree.depth - 1
     crossover_mate = tree.copy()
     node_to_insert = crossover_mate.get_child(0).parse()
-    tree.crossover(1, crossover_mate, 0, kwargs['rng'], kwargs['terminals'],
+    tree.crossover(1, crossover_mate, 0, kwargs['rng'], kwargs['get_nodes'],
                    tree_depth_max, log, pause)
     assert tree.get_child(1).parse() == node_to_insert
     assert tree.depth - 1 == min(depth_before_crossover + 1, tree_depth_max)

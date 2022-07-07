@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import numpy as np
 
-from karoo_gp import Population, Terminals, Functions
+from karoo_gp import Population, NodeData, get_function_node, get_nodes
 from .util import load_data
 
 # Create a dummy model with mock functions to confirm calls
@@ -14,6 +14,17 @@ class MockModel:
         self.error=MagicMock()
         self.rng=np.random.RandomState(1000)
         self.build_fittest_dict=MagicMock()
+
+        self.node_lib = ([NodeData(t, 'terminal') for t in ['a', 'b']] +
+                         [get_function_node(f) for f in ['+', '-', '*', '/']])
+
+    def update_terminals(self, new_terminals):
+        self.node_lib = list(filter(lambda n: n.node_type != 'terminal',
+                                    self.node_lib))
+        self.node_lib += [NodeData(t, 'terminal') for t in new_terminals]
+
+    def get_nodes(self, *args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=self.node_lib)
 
     def batch_predict(self, X, trees, X_hash):
         """Return an array of 1's of expected shape"""
@@ -35,8 +46,6 @@ def default_pop_kwargs():
         tree_type='r',
         tree_depth_base=3,
         tree_pop_max=10,
-        functions=Functions(['+', '-', '*', '/']),
-        terminals=Terminals(['a', 'b']),
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g', 'r'])
@@ -91,12 +100,11 @@ def default_evolve_params():
 def test_population_class(tmp_path, paths, default_pop_kwargs,
                           default_evolve_params):
     dataset_params = load_data(tmp_path, paths, 'r')
-    terminals = Terminals(dataset_params['terminals'])
+    kwargs = dict(default_pop_kwargs)
+    kwargs['model'].update_terminals(dataset_params['terminals'])
     X, y = dataset_params['X'], dataset_params['y']
 
-    pop_kwargs = dict(**default_pop_kwargs)
-    pop_kwargs['terminals'] = terminals
-    population = Population.generate(**pop_kwargs)
+    population = Population.generate(**kwargs)
     assert population.gen_id == 1
 
     # Evaluate
@@ -109,9 +117,7 @@ def test_population_class(tmp_path, paths, default_pop_kwargs,
     # Evolve
     new_population = population.evolve(
         **default_evolve_params,
-        tree_pop_max=pop_kwargs['tree_pop_max'],
-        functions=pop_kwargs['functions'],
-        terminals=pop_kwargs['terminals'])
+        tree_pop_max=kwargs['tree_pop_max'])
     # Create a new population of same length
     assert len(new_population.trees) == len(population.trees)
     for i, tree in enumerate(new_population.trees, start=1):

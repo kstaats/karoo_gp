@@ -549,7 +549,7 @@ func_path = karoo_dir / 'karoo_gp' / 'files' / f'operators_{suffix}.csv'
 filename = filename or karoo_dir / 'karoo_gp' / 'files' / f'data_{suffix}.csv'
 
 functions = np.loadtxt(func_path, delimiter=',', skiprows=1, dtype=str)
-functions = [f[0] for f in functions]  # Arity is now hard-coded by symbol
+functions = [f[0] for f in functions]  # Arity is now hard-coded by label
 dataset = pd.read_csv(filename)
 y = dataset.pop('s')
 terminals = list(dataset.keys())

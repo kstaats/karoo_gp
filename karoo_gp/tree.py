@@ -1,7 +1,7 @@
 import numpy as np
 from sympy import sympify
 
-from . import Node, Terminal, Function
+from . import Node
 
 class Tree:
 
@@ -36,10 +36,10 @@ class Tree:
 
     @classmethod
     def generate(cls, id, tree_type, tree_depth_base,
-                 functions, terminals, rng, method='BFS'):
+                 get_nodes, rng, method='BFS'):
         '''Generate a new Tree object given starting parameters.'''
-        root = Node.generate(rng, functions, terminals, tree_type,
-                               tree_depth_base, parent=None, method=method)
+        root = Node.generate(rng, get_nodes, tree_type, tree_depth_base,
+                             parent=None, method=method)
         return cls(id, root, tree_type)
 
     def copy(self, id=None, include_score=False):
@@ -140,50 +140,54 @@ class Tree:
         self.root.set_child(i_child, node, **kwargs)
         self.renumber()
 
-    def point_mutate(self, rng, functions, terminals, log):
+    # In mutation, node types within each tuple can be swapped
+    swappable = [('terminal', 'constant'), ('operator', 'cond'), ('bool')]
+
+    def point_mutate(self, rng, get_nodes, log):
         """Replace a node (including root) with random node of same type"""
         i_mutate = rng.randint(0, self.n_children + 1)
         log(f'Node {i_mutate} chosen for mutation', display=['i'])
         node = self.get_child(i_mutate)
-        _type = type(node.node_data)
-        replace = {Terminal: terminals, Function: functions}[_type]
-        node.node_data = rng.choice(replace.get())
+        for group in self.swappable:
+            if node.node_type in group:
+                types = group
+        node.node_data = rng.choice(get_nodes(types))
 
-    def branch_mutate(self, rng, functions, terminals, tree_depth_max, log):
+    def branch_mutate(self, rng, get_nodes, tree_depth_max, log):
         """Replace a subtree (excluding root) with random subtree"""
         i_mutate = rng.randint(1, self.n_children + 1)
         node = self.get_child(i_mutate)
-        from_type = {Terminal: 'term', Function: 'func'}[type(node.node_data)]
+        from_type = f'{node.node_type}'
         kids = f' and {node.n_children} sub-nodes' if node.children else ''
         if self.tree_type == 'f':
             # Replace all subtree nodes with random node of same type
             for c in range(node.n_children + 1):
                 child = node.get_child(c)
-                _type = type(child.node_data)
-                replace = {Terminal: terminals, Function: functions}[_type]
-                child.node_data = rng.choice(replace.get())
+                for group in self.swappable:
+                    if child.node_type in group:
+                        child.node_data = rng.choice(get_nodes(group))
+                        break
         elif self.tree_type == 'g':
             # Replace subtree with new random subtree of same target depth
             depth = tree_depth_max - node.height
-            replacement = Node.generate(rng, functions, terminals,
-                                          self.tree_type, depth,
-                                          force_function_root=False)
+            replacement = Node.generate(rng, get_nodes, self.tree_type, depth,
+                                        force_function_root=False)
             self.set_child(i_mutate, replacement)
-        to_type = {
-            Terminal: 'term', Function: 'func'
-        }[type(self.get_child(i_mutate).node_data)]
+        to_type = f'{node.node_type}'
         log(f'Node {i_mutate}{kids} chosen for mutation, from {from_type} '
             f'to {to_type}', display=['i'])
 
-    def prune(self, rng, terminals, max_depth):
+    def prune(self, rng, get_nodes, max_depth):
         """Shrink tree to a given depth."""
         if self.depth <= max_depth:
             return
-        elif max_depth == 0 and type(self.root.node) != Terminal:  # Replace the root
-            self.root = Node(rng.choice(terminals.get()), self.tree_type)
+        elif (max_depth == 0 and  # Replace the root
+              self.root.node_type not in ('terminal', 'constant')):
+            self.root = Node(rng.choice(get_nodes(('terminal', 'constant'))),
+                             self.tree_type)
             self.renumber()
         elif max_depth == 1:  # Prune the root
-            self.root.prune(rng, terminals)
+            self.root.prune(rng, get_nodes)
             self.renumber()
         else:  # Cycle through (BFS order), prune second-to-last depth
             last_depth_nodes = [self.root]
@@ -195,10 +199,10 @@ class Tree:
                 last_depth_nodes = this_depth_nodes
                 if d == 1:  # second to last row
                     for node in this_depth_nodes:
-                        node.prune(rng, terminals)
+                        node.prune(rng, get_nodes)
             self.renumber()
 
-    def crossover(self, i, mate, i_mate, rng, terminals, tree_depth_max,
+    def crossover(self, i, mate, i_mate, rng, get_nodes, tree_depth_max,
                   log, pause):
         """Replace node i (including subtree) with node i_mate from mate"""
         to_insert = mate.get_child(i_mate).copy()
@@ -210,7 +214,7 @@ class Tree:
 
         self.set_child(i, to_insert)
         initial_depth = self.depth
-        self.prune(rng, terminals, tree_depth_max)
+        self.prune(rng, get_nodes, tree_depth_max)
         prune = (f' and prune to depth {self.depth}'
                  if self.depth != initial_depth else '')
         log(f'\nIn a copy of the first parent: \n{from_disp}\n\n '

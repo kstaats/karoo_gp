@@ -1,9 +1,9 @@
 {
-    "node_type": "<class 'karoo_gp.functions.Function'>",
+    "node_type": "operator",
     "tree_type": "f",
     "parent": null,
-    "children": "[<Node: <Function: symbol=/, type='arithmetic', arity=2>>, <Node: <Function: symbol=/, type='arithmetic', arity=2>>]",
-    "repr": "<Node: <Function: symbol=/, type='arithmetic', arity=2>>",
+    "children": "[<Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>, <Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>]",
+    "repr": "<Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>",
     "parse": "((((((2)/(2))-((3)+(c)))+(((2)+(3))-((3)-(c))))/((((3)/(3))+((2)*(1)))/(((2)*(1))-((a)-(2)))))/(((((c)+(3))-((c)+(2)))*(((a)*(2))+((2)*(1))))/((((b)-(1))-((1)+(a)))+(((3)*(c))+((b)*(1))))))",
     "display": "                _____________/_______________               \n        ______/________               ______/________       \n     __+____        __/____        __*____        __+____   \n   -__     -__    +__     -__    -__     +__    -__     +__ \n /_  +_  +_  -_ /_  *_  *_  -_ +_  +_  *_  *_ -_  +_  *_  *_\n2 2 3 c 2 3 3 c3 3 2 1 2 1 a 2c 3 c 2 a 2 2 1b 1 1 a 3 c b 1\n",
     "depth": 5,

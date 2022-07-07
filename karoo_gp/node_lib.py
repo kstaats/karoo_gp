@@ -49,7 +49,6 @@ def get_function_node(label: str) -> NodeData:
             return node
     raise ValueError(f'NodeData not found for label: {label}')
 
-@cache
 def get_nodes(types: Iterable[str], depth=2,
               lib: List[NodeData]=function_lib) -> List[NodeData]:
     """Return all NodeDatas of given types for min_depth from a given lib

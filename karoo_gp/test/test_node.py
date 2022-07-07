@@ -1,20 +1,18 @@
-import ast, json
-from collections import defaultdict
-from unittest.mock import MagicMock
+import json
 
 import pytest
 import numpy as np
 
-from karoo_gp import Node
+from karoo_gp import Node, get_nodes
 from .util import dump_json
 
-
 @pytest.fixture
-def node_default_kwargs(rng, functions, terminals):
+def node_default_kwargs(rng, node_lib):
+    def get_nodes_(*args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=node_lib)
     return dict(
         rng=rng,
-        functions=functions,
-        terminals=terminals,
+        get_nodes=get_nodes_
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g'])
@@ -36,7 +34,7 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
     # Query attributes/methods
     random_int = int(kwargs['rng'].randint(1000))
     node_output = dict(
-        node_type=str(type(node.node_data)),
+        node_type=node.node_type,
         tree_type=node.tree_type,
         parent=node.parent,
         children=str(node.children),
@@ -61,7 +59,7 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
     node_output['set_child'] = node.parse()
 
     if node.depth > 1:
-        node.prune(kwargs['rng'], kwargs['terminals'])
+        node.prune(kwargs['rng'], kwargs['get_nodes'])
         assert node.depth == 1
         node_output['prune'] = node.parse()
 

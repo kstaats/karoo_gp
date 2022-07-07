@@ -26,8 +26,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from datetime import datetime
 
-from . import Functions, Terminals, NumpyEngine, TensorflowEngine, \
-              Population, Tree
+from . import NumpyEngine, TensorflowEngine, Population, Tree, NodeData, \
+              get_function_node, get_nodes
 
 # TODO: This is used to save the final population and the generated self.path
 # is used by fx_data_params_write/_json. I think this should be moved back to
@@ -69,16 +69,13 @@ class BaseGP(BaseEstimator):
 
     BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
+    ├─ .node_lib = Nodes                - all active terminals, constands, fx
     ├─ .decoder(y)                      - Initialize with y_train
     │   └─ .transform(pred)             - transforms prediction to match y
     │
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
-    │
-    ├─ .terminals = Terminals           - list of terminals + constants
-    │   └─ .get(instx)                  - returns list of terminals from instx
-    │
-    ├─ .functions = Functions           - operators and associated type/arity
-    │   └─ .get(instx)                  - returns list of functions from instx
+    |
+    ├─ .get_nodes(types, depth)         - return matching nodes from node_lib
     │
     ├─ .engine = Engine                 - Numpy for cpu, Tensorflow for gpu
     │   └─ .predict(trees, X, X_hash)   - returns X predictions for each tree
@@ -90,8 +87,8 @@ class BaseGP(BaseEstimator):
     │   │   └─ Tree                     - an evolvable expression tree
     │   │      ├─ .expression           - a string of sympified expr, e.g. a*b
     │   │      ├─ .score                - a dict of results matching `scoring`
-    │   │      ├─ .root = Node        - a recursive node which forms a Tree
-    │   │      │   ├─ .symbol           - a terminal ('a') or function ('*')
+    │   │      ├─ .root = Node          - a recursive node which forms a Tree
+    │   │      │   ├─ .label            - a terminal ('a') or function ('*')
     │   │      │   ├─ .arity            - instructions for generating children
     │   │      │   ├─ .parent           - the node immediately above
     │   │      │   └─ .children         - the nodes immediately below
@@ -113,8 +110,7 @@ class BaseGP(BaseEstimator):
     history_ = None
     X_hash_ = None
     test_split_ = None
-    terminals_ = None
-    functions_ = None
+    node_lib = None
     population = None
     cache_ = None
 
@@ -255,44 +251,37 @@ class BaseGP(BaseEstimator):
 
     def check_population(self, X, y):
         """Initialize and/or validate population parameters"""
-        # Terminals
-        if self.terminals_ is None:
+        # Nodes
+        if self.node_lib is None:
+
+            # Terminals
             if self.terminals is None:
                 terms = [f'f{i}' for i in range(X.shape[1])]
             elif (isinstance(self.terminals, list) and
-                  all(isinstance(t, str) for t in self.terminals)):
+                  all(isinstance(t, str) for t in self.terminals) and
+                  len(self.terminals) == X.shape[1]):
                 terms = self.terminals
             else:
                 raise ValueError('terminals must be a list of strings')
+            terminals = [NodeData(t, 'terminal') for t in terms]
+
+            # Constants
             if self.constants is not None and (
                 not isinstance(self.constants, list) or
-                not all(type(c) in [int, float] for c in self.constants)):
+                not all(isinstance(c, (int, float)) for c in self.constants)):
                 raise ValueError('constants must be a list of ints or floats')
-            self.terminals_ = Terminals(terms, self.constants)
-        if len(self.terminals_.variables) != X.shape[1]:
-            raise ValueError('terminals and features must be same length')
+            constants = self.constants or []
 
-        # Functions
-        if self.functions_ is None:
-            # Validate functions
-            if isinstance(self.functions, Functions):
-                self.functions_ = self.functions
-            elif isinstance(self.functions, list):
-                # TODO validate symbol against supported
-                self.functions_ = Functions(self.functions)
-            # TODO support function type as args, e.g. 'logic, arithmetic'
-            elif self.functions is None:
-                self.functions_ = Functions.arithmetic()
-            else:
-                raise ValueError('functions must be a list of strings or type '
-                                'Functions')
+            # Functions
+            function_labels = self.functions or ['+', '-', '*', '/', '**']
+            functions = [get_function_node(f) for f in function_labels]
+
+            self.node_lib = terminals + constants + functions
 
         # Population
         if self.population is None:
             self.population = Population.generate(
                 model=self,
-                functions=self.functions_,
-                terminals=self.terminals_,
                 tree_type=self.tree_type,
                 tree_depth_base=self.tree_depth_base,
                 tree_pop_max=self.tree_pop_max,
@@ -363,11 +352,9 @@ class BaseGP(BaseEstimator):
                 # Evolve the next generation
                 self.population = self.population.evolve(
                     self.tree_pop_max,
-                    self.functions_,
-                    self.terminals_,
                     self.swim,
                     self.tree_depth_min,
-                    max(self.tree_depth_max_, self.tree_depth_base),
+                    self.tree_depth_max_,
                     self.tourn_size,
                     self.evolve_repro,
                     self.evolve_point,
@@ -420,6 +407,9 @@ class BaseGP(BaseEstimator):
         """Return a dict with the results of each scoring function"""
         return {label: fx(y_true, y_pred)
                 for label, fx in self.scoring_.items()}
+
+    def get_nodes(self, *args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=self.node_lib)
 
     def fx_karoo_terminate(self):
         '''

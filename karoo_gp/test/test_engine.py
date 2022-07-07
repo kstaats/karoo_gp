@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from karoo_gp import NumpyEngine, TensorflowEngine, Terminals, Tree
+from karoo_gp import NumpyEngine, TensorflowEngine, Tree, NodeData, get_nodes
 
 @pytest.fixture
 def trees():
@@ -17,7 +17,9 @@ def X():
 class MockModel:
     random_state = 1000
     cache_ = dict()
-    terminals_ = Terminals(['a', 'b', 'c'])
+    node_lib = [NodeData(t, 'terminal') for t in ['a', 'b', 'c']]
+    def get_nodes(self, *args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=self.node_lib)
 
 @pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
 def test_engine(trees, X, engine_type):

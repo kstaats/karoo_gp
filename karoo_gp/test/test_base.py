@@ -1,8 +1,7 @@
 import pytest
 import numpy as np
 
-from karoo_gp import BaseGP, RegressorGP, MultiClassifierGP, MatchingGP, Tree, \
-                     Functions, Terminals
+from karoo_gp import BaseGP, RegressorGP, MultiClassifierGP, MatchingGP, Tree
 from .util import load_data
 
 @pytest.fixture
@@ -50,7 +49,6 @@ def test_model_base(default_kwargs, X_shape):
     # Fit 1 generation to process data, predict and score, but not evolve.
     model.gen_max = 1
     model.fit(X, y)
-    assert isinstance(model.terminals_, Terminals)
     assert model.population.gen_id == 1
     assert model.X_hash_ == hash(X.data.tobytes())  # Fingerprint of X saved
     if X.shape[0] < 11:

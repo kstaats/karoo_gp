@@ -18,11 +18,11 @@ class Population:
         self.gene_pool = []
 
     @classmethod
-    def generate(cls, model=None, functions=None, terminals=None,
-                 tree_type='r', tree_depth_base=3, tree_pop_max=100):
+    def generate(cls, model=None, tree_type='r', tree_depth_base=3,
+                 tree_pop_max=100):
         """Return a new Population of a type/amount trees"""
         trees = []
-        args = (functions, terminals, model.rng)
+        args = (model.get_nodes, model.rng)
         if tree_type == 'r':
             # (r)amped 50/50:  Create 1 full- and 1 grow-tree with each level of
             # depth, from 2 to the max depth.
@@ -85,10 +85,9 @@ class Population:
                        f'highest fitness scores.')
         self.model.pause(display=['g'])
 
-    def evolve(self, tree_pop_max, functions, terminals, swim='p',
-               tree_depth_min=None, tree_depth_max=5, tourn_size=7,
-               evolve_repro=0.1, evolve_point=0.1, evolve_branch=0.2,
-               evolve_cross=0.6):
+    def evolve(self, tree_pop_max, swim='p', tree_depth_min=None,
+               tree_depth_max=5, tourn_size=7, evolve_repro=0.1,
+               evolve_point=0.1, evolve_branch=0.2, evolve_cross=0.6):
         """Return a new population evolved from self"""
         log = self.model.log
         pause = self.model.pause
@@ -108,12 +107,12 @@ class Population:
         # Create the list of eligible trees
         log('\nPrepare a viable gene pool ...', display=['i'])
         pause(display=['i'])
-        self.fitness_gene_pool(swim, tree_depth_min, terminals)
+        self.fitness_gene_pool(swim, tree_depth_min)
         # Initialize new population and begin evolving new trees
         self.next_gen_trees = []
         for evolve_type, amount in evolve_amounts.items():
             verb = dict(repro='Reproductions', point='Point Mutations',
-                        branch='Node Mutations', cross='Crossovers')
+                        branch='Branch Mutations', cross='Crossovers')
             log(f'\nPerform {amount} {verb[evolve_type]} ...')
             pause(display=['i'])
             amount = amount // 2 if evolve_type == 'cross' else amount
@@ -126,11 +125,11 @@ class Population:
                     self.next_gen_trees.append(offspring)
                 # Point Mutate: replace a single node
                 elif evolve_type == 'point':
-                    offspring.point_mutate(rng, functions, terminals, log)
+                    offspring.point_mutate(rng, self.model.get_nodes, log)
                     self.next_gen_trees.append(offspring)
                 # Node Mutate: replace a random subtree
                 elif evolve_type == 'branch':
-                    offspring.branch_mutate(rng, functions, terminals,
+                    offspring.branch_mutate(rng, self.model.get_nodes,
                                             tree_depth_max, log)
                     self.next_gen_trees.append(offspring)
                 # Crossover: create 2 unique offspring by splicing 2 parents
@@ -155,12 +154,12 @@ class Population:
 
                     # Replace b's node i_b with a's node i_a & vice versa
                     offspring_b.crossover(i_mutate_b, parent_a, i_mutate_a,
-                                          rng, terminals, tree_depth_max,
-                                          log, pause)
+                                          rng, self.model.get_nodes,
+                                          tree_depth_max, log, pause)
                     self.next_gen_trees.append(offspring_b)
                     offspring_a.crossover(i_mutate_a, parent_b, i_mutate_b,
-                                          rng, terminals, tree_depth_max,
-                                          log, pause)
+                                          rng, self.model.get_nodes,
+                                          tree_depth_max, log, pause)
                     self.next_gen_trees.append(offspring_a)
 
         # Return next generation as a Population
@@ -172,7 +171,7 @@ class Population:
     #   Evolution               |
     #++++++++++++++++++++++++++++
 
-    def fitness_gene_pool(self, swim='p', tree_depth_min=None, terminals=None):
+    def fitness_gene_pool(self, swim='p', tree_depth_min=None):
         self.gene_pool = []
         for tree in self.trees:
             if swim == 'p':
@@ -186,8 +185,8 @@ class Population:
             elif swim == 'f':
                 # each tree must contain at least one instance of each feature
                 saved = tree.save()
-                missing = sum([1 for t in terminals.get()
-                               if f'({t.symbol})' not in saved])
+                missing = sum([1 for t in self.model.get_nodes(('terminal'))
+                               if f'({t.label})' not in saved])
                 if not missing:
                     self.model.log(
                         f'Tree {tree.id} includes at least one of each feature'

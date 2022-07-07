@@ -1,6 +1,4 @@
 from .pause import pause
-from .terminals import Terminal, Terminals
-from .functions import Function, Functions
 from .node_lib import NodeData, function_lib, get_nodes, get_function_node
 from .node import Node
 from .tree import Tree

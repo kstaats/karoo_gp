@@ -4,7 +4,7 @@ from collections import namedtuple
 import pytest
 import numpy as np
 
-from karoo_gp import Functions, Terminals, NodeData, get_function_node
+from karoo_gp import NodeData, get_function_node
 
 
 @pytest.fixture
@@ -49,14 +49,6 @@ def mock_func():
     def handler(*args, **kwargs):
         pass
     return handler
-
-@pytest.fixture()
-def functions():
-    return Functions(['+', '-', '*', '/'])
-
-@pytest.fixture()
-def terminals():
-    return Terminals(['a', 'b', 'c'], constants=[1, 2, 3])
 
 @pytest.fixture()
 def node_lib():
