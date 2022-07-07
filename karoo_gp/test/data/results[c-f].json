@@ -7,7 +7,7 @@
         "precision": 6,
         "tree_type": "f",
         "tree_depth_base": 3,
-        "tree_depth_max": 4,
+        "tree_depth_max": 3,
         "min_node_count": 3,
         "genetic_operators": {
             "reproduction": 0.1,

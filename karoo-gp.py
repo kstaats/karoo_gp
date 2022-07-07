@@ -58,7 +58,7 @@ import numpy as np
 import pandas as pd
 
 from karoo_gp import pause as menu
-from karoo_gp import __version__, MultiClassifierGP, RegressorGP, MatchingGP
+from karoo_gp import __version__, MultiClassifierGP, RegressorGP, MatchingGP, BaseGP
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   User Interface for Configuation       |
@@ -102,7 +102,7 @@ if len(sys.argv) < 3:
             try:
                 query = input('\t Select (f)ull or (g)row (default g): ')
                 if query in ['f', 'g', '']:
-                    tree_type = query or 'f'
+                    tree_type = query or 'g'
                     break
                 else:
                     raise ValueError()
@@ -134,7 +134,7 @@ if len(sys.argv) < 3:
         tree_pop_max = 1
         gen_max = 1
         tourn_size = 0
-        display = 'm'
+        display = 's'  # for play mode, initialize, print fittest tree and quit
         # evolve_repro, evolve_point, evolve_branch, evolve_cross,
         # tourn_size, precision, filename are not required
 
@@ -332,9 +332,9 @@ else:  # 2 or more command line arguments are provided
                          '(c)lassification, or (m)atching')
     ap.add_argument('-typ', action='store', dest='type', default='r',
                     help='[f,g,r] Tree type: (f)ull, (g)row, or (r)amped half/half')
-    ap.add_argument('-bas', action='store', dest='depth_base', default=4,
+    ap.add_argument('-bas', action='store', dest='depth_base', type=int, default=4,
                     help='[3...10] maximum Tree depth for the initial population')
-    ap.add_argument('-max', action='store', dest='depth_max', default=4,
+    ap.add_argument('-max', action='store', dest='depth_max', type=int, default=None,
                     help='[3...10] maximum Tree depth for the entire run')
     ap.add_argument('-min', action='store', dest='depth_min', default=3,
                     help='minimum nodes, from 3 to 2^(base_depth +1) - 1')
@@ -368,8 +368,8 @@ else:  # 2 or more command line arguments are provided
     # pass the argparse defaults and/or user inputs to the required variables
     kernel = str(args.kernel)
     tree_type = str(args.type)
-    tree_depth_base = int(args.depth_base)
-    tree_depth_max = int(args.depth_max)
+    tree_depth_base = args.depth_base
+    tree_depth_max = args.depth_max
     tree_depth_min = int(args.depth_min)
     tree_pop_max = int(args.pop_max)
     gen_max = int(args.gen_max)
@@ -560,7 +560,9 @@ X, y = dataset.to_numpy(), y.to_numpy()
 #++++++++++++++++++++++++++++++++++++++++++
 
 # Select the correct class for kernel
-cls = {'c': MultiClassifierGP, 'r': RegressorGP, 'm': MatchingGP}[kernel]
+cls = {
+    'c': MultiClassifierGP, 'r': RegressorGP, 'm': MatchingGP, 'p': BaseGP
+}[kernel]
 
 # Initialize the model
 gp = cls(
@@ -590,11 +592,14 @@ gp = cls(
 # Fit to the data
 gp.fit(X, y)
 
-# TODO: Relocated from BaseGP.__init__(). Need to test/debug
-# if self.kernel == 'p':
-#     self.fx_data_tree_write(self.population.trees, 'a')
-#     sys.exit()
-
+if kernel == 'p':
+    tree = gp.population.trees[0]
+    print(f'\nTree ID {tree.id}')
+    print(f'  yields (raw): {tree.raw_expression}')
+    print(f'  yields (sym): {tree.expression}\n')
+    print(gp.population.trees[0].display(method='viz'))
+    print(gp.population.trees[0].display(method='list'))
+    # self.fx_data_tree_write(self.population.trees, 'a')
 
 # Save files and exit
 gp.fx_karoo_terminate()

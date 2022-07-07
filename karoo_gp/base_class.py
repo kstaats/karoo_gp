@@ -119,7 +119,7 @@ class BaseGP(BaseEstimator):
     cache_ = None
 
     def __init__(
-        self, tree_type='r', tree_depth_base=3, tree_depth_max=3,
+        self, tree_type='r', tree_depth_base=3, tree_depth_max=None,
         tree_depth_min=1, tree_pop_max=100, gen_max=10, tourn_size=7,
         filename='', output_dir='', evolve_repro=0.1, evolve_point=0.1,
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
@@ -169,9 +169,11 @@ class BaseGP(BaseEstimator):
     def pause(self, display={'i', 'g', 'm', 'db'}):
         if not self.pause_callback:
             self.log('No pause callback function provided')
-            return
-        if self.display in display or display is None:
+            return 0
+        elif self.display in display:
             self.pause_callback(self)
+        else:
+            return 0
 
     def error(self, msg, display={'i', 'g', 'm', 'db'}):
         self.log(msg, display)
@@ -301,8 +303,14 @@ class BaseGP(BaseEstimator):
             self.log_history()
 
         # Update max allowed depth
-        self.tree_depth_max_ = max(self.tree_depth_base, self.tree_depth_max)
-
+        if self.tree_depth_max is None:
+            self.tree_depth_max_ = self.tree_depth_base
+        elif self.tree_depth_max >= self.tree_depth_base:
+            self.tree_depth_max_ = self.tree_depth_max
+        else:
+            raise ValueError(f'Max depth ({self.tree_depth_max}) must be '
+                             f'greater than or equal to base depth ('
+                             f'{self.tree_depth_base})')
 
     def check_test_split(self, X, y):
         """Split train/test data; reuse subsequently for same X, y"""
@@ -423,7 +431,7 @@ class BaseGP(BaseEstimator):
         used via ContextManager, or manually.
         '''
         kernel = {
-            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm'
+            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm', BaseGP: 'p'
         }[type(self)]
         self.fx_data_params_write(kernel)
         self.fx_data_params_write_json(kernel)
