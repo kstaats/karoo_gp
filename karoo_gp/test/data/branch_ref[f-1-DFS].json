@@ -2,7 +2,7 @@
     "node_type": "<class 'karoo_gp.functions.Function'>",
     "tree_type": "f",
     "parent": null,
-    "children": "[<Branch: <Terminal: symbol='a' type='float')>>, <Branch: <Terminal: symbol=1 type='float')>>]",
+    "children": "[<Branch: <Terminal: symbol='a' type='float'>>, <Branch: <Terminal: symbol=1 type='float'>>]",
     "repr": "<Branch: <Function: symbol=/, type='arithmetic', arity=2>>",
     "parse": "(a)/(1)",
     "save": "((a)/(1))",
