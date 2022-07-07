@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-07_07-28-34-057021",
+    "launched": "2022-07-07_08-29-33-982935",
     "dataset": "karoo_gp/files/data_REGRESS.csv",
     "config": {
         "kernel": "r",
@@ -21,11 +21,11 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 2,
-        "expression": "1"
+        "id": 7,
+        "expression": "t/(r + t)"
     },
     "score": {
-        "fitness": 0.05,
-        "mean_squared_error": 7.77778e-05
+        "fitness": 3.1219,
+        "mean_squared_error": 0.149193
     }
 }

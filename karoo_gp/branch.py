@@ -211,18 +211,9 @@ class Branch:
         if not self.children:
             return f'({self.node.symbol})'
         elif len(self.children) == 1:
-            return f"{self.node.symbol}{self.children[0].parse()}"
+            return f"({self.node.symbol}{self.children[0].parse()})"
         elif len(self.children) == 2:
-            return f"{self.children[0].parse()}{self.node.symbol}{self.children[1].parse()}"
-
-    def save(self):
-        """Return a complete representation of state as a string"""
-        if not self.children:
-            return f"({self.node.symbol})"
-        elif len(self.children) == 1:
-            return f"({self.node.save}{self.children[0].save()})"
-        elif len(self.children) == 2:
-            return f"({self.children[0].save()}{self.node.symbol}{self.children[1].save()})"
+            return f"({self.children[0].parse()}{self.node.symbol}{self.children[1].parse()})"
 
     def display(self, *args, method='viz', **kwargs):
         if method == 'list':

@@ -119,10 +119,9 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     model.gen_max = 1
     model.fit(X, y)
     initial_expected = {
-        'c': dict(sym='pl*pw - pl', fit=88.0,
-                  fitlist='1245678910111213141516171920212258'),
-        'r': dict(sym='1', fit=0.05, fitlist='1410273738'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='12345791016202324283642434546'),
+        'c': dict(sym='pl + pw**2 - sl', fit=107.0, fitlist='125224793'),
+        'r': dict(sym='1', fit=0.05, fitlist='1103738'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='12345679101116182023242836424346'),
     }
     compare_expected(model, initial_expected[ker])
 
@@ -130,9 +129,9 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     model.gen_max = 2
     model.fit(X, y)
     fit_expected = {
-        'c': dict(sym='pl - sw', fit=83.0, fitlist='12313752'),
+        'c': dict(sym='pl + pw**2 - sl', fit=107.0, fitlist='1237455758'),
         'r': dict(sym='1', fit=0.05,
-                  fitlist='13410133752878889'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='54593'),
+                  fitlist='1561620232945497173749798'),
+        'm': dict(sym='3*b', fit=10.0, fitlist='545'),
     }
     compare_expected(model, fit_expected[ker])

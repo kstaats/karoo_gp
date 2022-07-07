@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-07_07-28-27-046327",
+    "launched": "2022-07-07_08-29-26-818672",
     "dataset": "karoo_gp/files/data_CLASSIFY.csv",
     "config": {
         "kernel": "c",
@@ -21,41 +21,41 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 7,
-        "expression": "pw**2*sw + 2*pw - sw**2"
+        "id": 10,
+        "expression": "pl**2*pw/sw + 2*sl*(pl - sw)"
     },
     "score": {
-        "fitness": 20.0,
+        "fitness": 18.0,
         "classification_report": {
             "0.0": {
-                "precision": 0.5625,
+                "precision": 1.0,
                 "recall": 1.0,
-                "f1-score": 0.72,
+                "f1-score": 1.0,
                 "support": 9
             },
             "1.0": {
-                "precision": 1.0,
-                "recall": 0.16666666666666666,
-                "f1-score": 0.2857142857142857,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1-score": 0.0,
                 "support": 12
             },
             "2.0": {
-                "precision": 0.75,
+                "precision": 0.42857142857142855,
                 "recall": 1.0,
-                "f1-score": 0.8571428571428571,
+                "f1-score": 0.6,
                 "support": 9
             },
-            "accuracy": 0.6666666666666666,
+            "accuracy": 0.6,
             "macro avg": {
-                "precision": 0.7708333333333334,
-                "recall": 0.7222222222222223,
-                "f1-score": 0.620952380952381,
+                "precision": 0.4761904761904762,
+                "recall": 0.6666666666666666,
+                "f1-score": 0.5333333333333333,
                 "support": 30
             },
             "weighted avg": {
-                "precision": 0.79375,
-                "recall": 0.6666666666666666,
-                "f1-score": 0.5874285714285714,
+                "precision": 0.4285714285714286,
+                "recall": 0.6,
+                "f1-score": 0.4799999999999999,
                 "support": 30
             }
         },
@@ -66,9 +66,9 @@
                 0
             ],
             [
-                7,
-                2,
-                3
+                0,
+                0,
+                12
             ],
             [
                 0,

@@ -68,11 +68,31 @@ class Tree:
 
     @property
     def expression(self):
-        """Return the sympified expression"""
-        return str(sympify(self.raw_expression))
+        """Return the sympified expression
+
+        July '22: When fixing the branch.parse() parenthesis issue, sympify
+        started producing 'zoo' values, which is the result of divide-by-zero.
+        Consider the tree:
+         ___/___
+        a     __-__
+             a     a
+        Under the new system, it parses to ((a)/((a)-(a))), or a/0.
+        Under the old system, it parsed to (a)/(a)-(a). Because of this,
+        sympy never could've have resulted in a divide-by-zero error, so this
+        was never an issue before.
+
+        Our approach to divide-by-zero in Engine is to replace it with zeros.
+        We do the same here, and then sympify again (to let the zero propagate)
+        until there are no more 'zoo's.
+        """
+        result = str(sympify(self.raw_expression))
+        while 'zoo' in result:
+            result = result.replace('zoo', '0')
+            result = str(sympify(result))
+        return result
 
     def save(self):
-        return f'{self.tree_type}{self.root.save()}'
+        return f'{self.tree_type}{self.raw_expression}'
 
     def display(self, *args, **kwargs):
         return self.root.display(*args, **kwargs)
