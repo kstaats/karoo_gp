@@ -6,6 +6,7 @@ import subprocess
 import pytest
 import numpy as np
 
+from .util import dump_json
 
 @pytest.mark.parametrize('seed', ['1000'])
 @pytest.mark.parametrize('bas', ['3'])
@@ -14,7 +15,7 @@ import numpy as np
 def test_cli(tmp_path, paths, ker, typ, bas, seed):
     """Test that the CLI yields consistent results with different kernels/trees."""
     # default pop is 10, except for m-g and m-f that need higher pop to pass
-    pop = str({('m', 'g'): 35, ('m', 'f'): 50, ('m', 'r'): 15}.get((ker, typ), 10))
+    pop = str({('m', 'g'): 35, ('m', 'f'): 25, ('m', 'r'): 15}.get((ker, typ), 10))
     data_file = paths.data_files[ker]  # get the right data file for the kernel
     cmd = ['python3', paths.karoo, '-ker', ker, '-typ', typ, '-bas', bas,
            '-pop', pop, '-rsd', seed, '-fil', data_file]
@@ -31,6 +32,7 @@ def test_cli(tmp_path, paths, ker, typ, bas, seed):
     expected_res_path = paths.test_data / f'results[{ker}-{typ}].json'
     with actual_res_path.open() as actual_res_file:
         actual_json = json.load(actual_res_file)
+        # dump_json(actual_json, expected_res_path)  # CAUTION: reset expected
     with expected_res_path.open() as expected_res_file:
         expected_json = json.load(expected_res_file)
 

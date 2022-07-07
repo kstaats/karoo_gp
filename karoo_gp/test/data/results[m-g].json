@@ -1,13 +1,13 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-06_20-36-33-411609",
+    "launched": "2022-07-07_07-28-41-629418",
     "dataset": "karoo_gp/files/data_MATCH.csv",
     "config": {
         "kernel": "m",
         "precision": 6,
         "tree_type": "g",
         "tree_depth_base": 3,
-        "tree_depth_max": 3,
+        "tree_depth_max": null,
         "min_node_count": 3,
         "genetic_operators": {
             "reproduction": 0.1,
@@ -21,7 +21,7 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 33,
+        "id": 27,
         "expression": "a + b + c"
     },
     "score": {

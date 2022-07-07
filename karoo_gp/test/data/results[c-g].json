@@ -1,13 +1,13 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-06-20_12-41-23-105632",
+    "launched": "2022-07-07_07-28-27-046327",
     "dataset": "karoo_gp/files/data_CLASSIFY.csv",
     "config": {
         "kernel": "c",
         "precision": 6,
         "tree_type": "g",
         "tree_depth_base": 3,
-        "tree_depth_max": 3,
+        "tree_depth_max": null,
         "min_node_count": 3,
         "genetic_operators": {
             "reproduction": 0.1,
@@ -21,16 +21,16 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 6,
-        "expression": "pl + sl - sw**2 + 1"
+        "id": 7,
+        "expression": "pw**2*sw + 2*pw - sw**2"
     },
     "score": {
         "fitness": 20.0,
         "classification_report": {
             "0.0": {
-                "precision": 0.9,
+                "precision": 0.5625,
                 "recall": 1.0,
-                "f1-score": 0.9473684210526316,
+                "f1-score": 0.72,
                 "support": 9
             },
             "1.0": {
@@ -40,22 +40,22 @@
                 "support": 12
             },
             "2.0": {
-                "precision": 0.5,
+                "precision": 0.75,
                 "recall": 1.0,
-                "f1-score": 0.6666666666666666,
+                "f1-score": 0.8571428571428571,
                 "support": 9
             },
             "accuracy": 0.6666666666666666,
             "macro avg": {
-                "precision": 0.7999999999999999,
+                "precision": 0.7708333333333334,
                 "recall": 0.7222222222222223,
-                "f1-score": 0.633249791144528,
+                "f1-score": 0.620952380952381,
                 "support": 30
             },
             "weighted avg": {
-                "precision": 0.8200000000000001,
+                "precision": 0.79375,
                 "recall": 0.6666666666666666,
-                "f1-score": 0.5984962406015039,
+                "f1-score": 0.5874285714285714,
                 "support": 30
             }
         },
@@ -66,9 +66,9 @@
                 0
             ],
             [
-                1,
+                7,
                 2,
-                9
+                3
             ],
             [
                 0,
