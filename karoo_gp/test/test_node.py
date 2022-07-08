@@ -3,7 +3,7 @@ import json
 import pytest
 import numpy as np
 
-from karoo_gp import Node, get_nodes
+from karoo_gp import Node, NodeData, get_nodes, function_lib
 from .util import dump_json
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
         parent=node.parent,
         children=str(node.children),
         repr=str(node),
-        parse=node.parse(),
+        parse=node.raw_expression,
         display=node.display(),
         depth=node.depth,
         height=node.height,
@@ -51,17 +51,17 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
         second_child = node.get_child(2, method)
         expected_height = {'BFS': 1, 'DFS': 2}[method]
         assert second_child.height == expected_height
-        node_output['second_child'] = second_child.parse()
+        node_output['second_child'] = second_child.raw_expression
 
     new_child_node = Node.load('((a)+(b))', tree_type)
     node.set_child(2, new_child_node, method)
-    assert node.get_child(2, method).parse() == new_child_node.parse()
-    node_output['set_child'] = node.parse()
+    assert node.get_child(2, method).raw_expression == new_child_node.raw_expression
+    node_output['set_child'] = node.raw_expression
 
     if node.depth > 1:
         node.prune(kwargs['rng'], kwargs['get_nodes'])
         assert node.depth == 1
-        node_output['prune'] = node.parse()
+        node_output['prune'] = node.raw_expression
 
     # Load reference and compare
     fname = paths.test_data / (f'node_ref[{tree_type}-{tree_depth_base}-'
@@ -72,3 +72,49 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
     for k, v in ref.items():
         assert v == node_output[k], f'Non-matching value for "{k}"'
 
+@pytest.mark.parametrize('force_types', ['cond', 'bool', 'condbool'])
+@pytest.mark.parametrize('tree_type', ['f', 'g'])
+@pytest.mark.parametrize('method', ['BFS', 'DFS'])
+def test_node_force_types(rng, force_types, tree_type, method):
+    """Confirm that the force_types kwarg works correctly
+
+    Secondarily, verify that 'cond' and 'bool' funcs work correctly.
+    TODO: Add to test_node library"""
+
+    # Generate trees using rules
+    ft = dict(
+        cond=[['cond']], bool=[['bool']], condbool=[['cond'], ['bool']]
+    )[force_types]
+    lib = ([NodeData(t, 'terminal') for t in ['a', 'b']] +
+           [NodeData(c, 'constant') for c in [2, 3]] +
+           function_lib)
+    def get_nodes_(*args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=lib)
+    for i in range(10):
+        node = Node.generate(rng, get_nodes_, tree_type, depth=3,
+                             force_types=ft, method=method)
+
+        # Verify root node is generated correctly
+        assert node.node_type in ft[0]
+        if len(ft) == 1:
+            continue
+
+        # Verify deeper nodes are generated correctly
+        i_node = 1
+        for height in range(1, len(ft)):
+            while True:
+                child = node.get_child(i_node, method='BFS')
+                i_node += 1
+                if child.height > height:
+                    break
+                if child.node_type == 'terminal' and ft[height] == ['bool']:
+                    from IPython import embed; embed()
+                assert child.node_type in ft[height]
+
+        # Verify that tree is parsed/simplified correctly
+        raw = node.raw_expression
+        expr = node.expression
+        assert len(raw) >= len(expr)
+        for i_child in range(node.n_children):
+            child = node.get_child(i_child)
+            assert str(child.label) in raw

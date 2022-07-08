@@ -1,6 +1,7 @@
 import ast
 import math
 from collections import defaultdict
+from sympy import sympify
 from . import NodeData, get_function_node
 
 # Used by load, i.e. recreate node from label strings
@@ -11,6 +12,19 @@ operators_ref = {
     ast.Div: '/',
     ast.Pow: '**',
     ast.USub: '-',
+    ast.Gt: '>',
+    ast.Lt: '<',
+    ast.Eq: '==',
+    ast.NotEq: '!=',
+    ast.LtE: '<=',
+    ast.GtE: '>=',
+    ast.And: 'and',
+    ast.Or: 'or',
+    ast.Not: 'not',
+    ast.IfExp: 'if',
+    'abs': 'abs',  # These 3 not supported by ast so appears as type ast.Call
+    'square': 'square',
+    'sqrt': 'sqrt',
 }
 
 class Node:
@@ -39,25 +53,49 @@ class Node:
 
     @classmethod
     def recursive_load(cls, expr, tree_type, parent=None):
-        if type(expr) == ast.Expression:
+        if isinstance(expr, ast.Expression):
             expr = expr.body
-        if isinstance(expr, ast.Name):
+        if isinstance(expr, ast.Name):  # Terminal
             node_data = NodeData(expr.id, 'terminal')
             node = Node(node_data, tree_type, parent)
-        elif isinstance(expr, ast.Num):
+        elif isinstance(expr, ast.Num):  # Constant
             node_data = NodeData(expr.value, 'constant')
             node = Node(node_data, tree_type, parent)
         else:
-            label = operators_ref[type(expr.op)]
+            # Parse the label
+            if isinstance(expr, ast.IfExp):  # Cond
+                label = operators_ref[type(expr)]
+            elif isinstance(expr, ast.Compare):  # Gt, Lt..
+                label = operators_ref[type(expr.ops[0])]
+            # Operator or not/and
+            elif isinstance(expr, (ast.UnaryOp, ast.BinOp, ast.BoolOp)):
+                label = operators_ref[type(expr.op)]
+            elif isinstance(expr, ast.Call):
+                label = expr.func.id
+            else:
+                raise ValueError(f'Unsupported element in ast tree: {expr}')
+
+            # Create a node from label
             node_data = get_function_node(label)
             node = Node(node_data, tree_type, parent)
-            if isinstance(expr, ast.UnaryOp):
-                node.children = [cls.recursive_load(expr.left, tree_type, node)]
-            elif isinstance(expr, ast.BinOp):
-                node.children = [cls.recursive_load(expr.left, tree_type, node),
-                                   cls.recursive_load(expr.right, tree_type, node)]
+
+            # Load children
+            if isinstance(expr, ast.IfExp):  # Cond
+                children = [expr.test, expr.body, expr.orelse]
+            elif isinstance(expr, ast.Compare):  # Bool
+                children = [expr.left] + expr.comparators
+            elif isinstance(expr, ast.BoolOp):
+                children = expr.values
+            elif isinstance(expr, ast.UnaryOp):  # Operator, arity 1
+                if isinstance(expr.op, ast.Not):
+                    children = [expr.operand]
+                else:
+                    children = [expr.left]
+            elif isinstance(expr, ast.BinOp):  # Operator, arity 2
+                children = [expr.left, expr.right]
             else:
-                raise ValueError("Unrecognized op type in load:", expr.op)
+                children = expr.args
+            node.children = [cls.recursive_load(c, tree_type, node) for c in children]
         return node
 
     #++++++++++++++++++++++++++++
@@ -110,7 +148,9 @@ class Node:
             for _parent in nodes_by_height[height-1]:
                 for i in range(_parent.arity):
                     if (height == tree_depth or
-                        (tree_type == 'g' and rng.choice([False, True]))):
+                        (tree_type == 'g' and
+                         _parent.min_depth <= 1 and
+                         rng.choice([False, True]))):
                         node = tm()
                     else:
                         types = None
@@ -139,7 +179,7 @@ class Node:
             if node.arity == 0:  # arity
                 return f'({node.label})'
             elif node.arity == 1:
-                return f'({node.label}{build_expression(next_from_depth(d))})'
+                return f'({node.label}{build_expression(next_from_depth(d), d)})'
             elif node.arity == 2:
                 return (f'({build_expression(next_from_depth(d), d)}'
                         f'{node.label}'  # label
@@ -230,14 +270,43 @@ class Node:
     def __repr__(self):
         return f"<Node: {self.node_data!r}>"
 
-    def parse(self):
+    @property
+    def raw_expression(self):
         """Return full list of labels (recursive)"""
         if not self.children:
-            return f'({self.node_data.label})'
+            return f'({self.label})'
         elif len(self.children) == 1:
-            return f"({self.node_data.label}{self.children[0].parse()})"
+            return f'({self.label}{self.children[0].raw_expression})'
         elif len(self.children) == 2:
-            return f"({self.children[0].parse()}{self.node_data.label}{self.children[1].parse()})"
+            return (f'({self.children[0].raw_expression}{self.label}'
+                    f'{self.children[1].raw_expression})')
+        elif self.label == 'if':
+            return (f'({self.children[0].raw_expression}'
+                    f'if{self.children[1].raw_expression}'
+                    f'else{self.children[2].raw_expression})')
+
+    @property
+    def expression(self):
+        """Return simplified expression (recursive)"""
+        raw_expression = self.raw_expression
+        # Certain statements not supported by sympy, so only
+        # sympify nodes *below* all of those.
+        if 'if' in raw_expression:
+            return (f'({self.children[0].expression};'
+                    f'if{self.children[1].expression}'
+                    f'else{self.children[2].expression})')
+        elif any(f in raw_expression for f in ('and', 'or')):
+            return (f'({self.children[0].expression}{self.label}'
+                    f'{self.children[0].expression})')
+        elif 'not' in raw_expression:
+            return (f'(not{self.children[0].expression})')
+        # Outputs of divide-by-zero, e.g. a/(b-b), are sympified to 'zoo'.
+        # Replace any instance, and then re-sympify to let the 0 propogate.
+        result = str(sympify(raw_expression))
+        while 'zoo' in result:
+            result = result.replace('zoo', '0')
+            result = str(sympify(result))
+        return result
 
     def display(self, *args, method='viz', **kwargs):
         if method == 'list':
@@ -273,7 +342,7 @@ class Node:
             depth_output = ''
             depth_children = []
             for (node, subtree_width) in last_children:
-                label = ' ' if node is None else str(node.node_data.label)[:label_max_len]
+                label = ' ' if node is None else str(node.label)[:label_max_len]
                 this_output = label.center(subtree_width)
                 this_children = []      # Children from this item
                 cum_width = 0           # Cumulative character-width of all subtrees
