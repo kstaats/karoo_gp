@@ -19,10 +19,11 @@ class Population:
 
     @classmethod
     def generate(cls, model=None, tree_type='r', tree_depth_base=3,
-                 tree_pop_max=100):
+                 tree_pop_max=100, force_types=None):
         """Return a new Population of a type/amount trees"""
         trees = []
-        args = (model.get_nodes, model.rng)
+        kwargs = dict(get_nodes=model.get_nodes, rng=model.rng,
+                      force_types=force_types)
         if tree_type == 'r':
             # (r)amped 50/50:  Create 1 full- and 1 grow-tree with each level of
             # depth, from 2 to the max depth.
@@ -33,19 +34,19 @@ class Population:
                 for d in range(tree_depth_base):
                     for _type in ['f', 'g']:
                         trees.append(Tree.generate(len(trees)+1, _type, d+1,
-                                                   *args))
+                                                   **kwargs))
 
             # ..and add grow trees of base depth for the remainder.
             extras = tree_pop_max - len(trees)
             for i in range(extras):
-                trees.append(Tree.generate(len(trees)+1,
-                                           'g', tree_depth_base, *args))
+                trees.append(Tree.generate(len(trees)+1, 'g', tree_depth_base,
+                                           **kwargs))
         else:
             # (f)ull: Fill-in all nodes to the maximum depth
             # (g)row: Add nodes or terminals at random up to max depth
             for i in range(tree_pop_max):
-                trees.append(Tree.generate(i+1, tree_type,
-                                           tree_depth_base, *args))
+                trees.append(Tree.generate(i+1, tree_type, tree_depth_base,
+                                           **kwargs))
         return cls(model, trees)
 
     def fittest(self):
@@ -130,6 +131,7 @@ class Population:
                 # Node Mutate: replace a random subtree
                 elif evolve_type == 'branch':
                     offspring.branch_mutate(rng, self.model.get_nodes,
+                                            self.model.force_types,
                                             tree_depth_max, log)
                     self.next_gen_trees.append(offspring)
                 # Crossover: create 2 unique offspring by splicing 2 parents

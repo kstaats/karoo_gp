@@ -121,9 +121,9 @@ class BaseGP(BaseEstimator):
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
         swim='p', mode='s', random_state=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
-        functions=None, terminals=None, constants=None, test_size=0.2,
-        scoring=None, higher_is_better=False, prediction_transformer=None,
-        cache=None):
+        functions=None, force_types=[('operator', 'cond')], terminals=None,
+        constants=None, test_size=0.2, scoring=None, higher_is_better=False,
+        prediction_transformer=None, cache=None):
         """Initialize a Karoo_GP object with given parameters"""
 
         # Model parameters
@@ -150,6 +150,7 @@ class BaseGP(BaseEstimator):
         self.tf_device = tf_device
         self.tf_device_log = tf_device_log
         self.functions = functions
+        self.force_types = force_types       # default: root = operator/cond
         self.terminals = terminals
         self.constants = constants
         self.test_size = test_size           # how to portion train/test data
@@ -285,6 +286,7 @@ class BaseGP(BaseEstimator):
                 tree_type=self.tree_type,
                 tree_depth_base=self.tree_depth_base,
                 tree_pop_max=self.tree_pop_max,
+                force_types=self.force_types,
             )
             self.log(f'\n We have constructed the first, stochastic population of'
                     f'{self.tree_pop_max} Trees.')

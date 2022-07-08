@@ -104,22 +104,18 @@ class Node:
 
     @classmethod
     def generate(cls, rng, get_nodes, tree_type, depth, parent=None,
-                 method='BFS', force_function_root=True, node_types=None,
-                 force_types=None):
+                 method='BFS', node_types=None, force_types=None):
         if method == 'BFS':
             return cls.breadth_first_generate(rng, get_nodes, tree_type,
-                                              depth, parent,
-                                              force_function_root, node_types,
+                                              depth, parent, node_types,
                                               force_types)
         elif method == 'DFS':
             return cls.recursive_generate(rng, get_nodes, tree_type, depth,
-                                          parent, force_function_root,
-                                          node_types, force_types)
+                                          parent, node_types, force_types)
 
     @classmethod
     def breadth_first_generate(cls, rng, get_nodes, tree_type, tree_depth,
-                               parent=None, force_function_root=True,
-                               node_types=None, force_types=None):
+                               parent=None, node_types=None, force_types=None):
         """Return a randomly-generated node and subtree breadth-first"""
         def fn(types=None, depth=tree_depth):  # Helper functions to save space
             types = types or ('operator', 'cond')
@@ -132,7 +128,7 @@ class Node:
         nodes_by_height = defaultdict(list)  # left-to-right lists of nodes
         if (tree_depth == 0 or
             (tree_type == 'g' and
-             not force_function_root and
+             not force_types and
              rng.choice([False, True]))):
             root_node = tm()
         else:
@@ -194,14 +190,13 @@ class Node:
         return cls.load(expr, tree_type, parent=parent)
 
     @classmethod
-    def recursive_generate(cls, rng, get_nodes, tree_type, depth,
-                           parent=None, force_function_root=True,
+    def recursive_generate(cls, rng, get_nodes, tree_type, depth, parent=None,
                            node_types=None, force_types=None):
         """Return a randomly generated node and subtree depth-first (recursive)"""
         # Grow trees flip a coin for function/terminal (except root)
         if depth == 0:
             is_terminal = True
-        elif tree_type == 'g' and (parent is not None or not force_function_root):
+        elif tree_type == 'g' and (parent is not None or not force_types):
             is_terminal = rng.choice([False, True])
         else:
             is_terminal = False

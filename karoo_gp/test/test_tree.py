@@ -12,7 +12,8 @@ def tree_default_kwargs(rng, node_lib):
     return dict(
         rng=rng,
         id=1,
-        get_nodes=get_nodes_
+        get_nodes=get_nodes_,
+        force_types=[('operator', 'cond')]
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g'])
@@ -61,7 +62,8 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
     tree_output['point_mutate'] = point_mutated
 
     # Node Mutate (randomly modify an entire subtree)
-    tree.branch_mutate(kwargs['rng'], kwargs['get_nodes'], tree_depth_max, log)
+    tree.branch_mutate(kwargs['rng'], kwargs['get_nodes'], kwargs['force_types'],
+                       tree_depth_max, log)
     branch_mutated = tree.save()
     tree_output['branch_mutate'] = branch_mutated
 

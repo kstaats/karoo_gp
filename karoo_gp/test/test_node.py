@@ -15,7 +15,8 @@ def node_default_kwargs(rng, node_lib):
         return get_nodes(*args, **kwargs, lib=node_lib)
     return dict(
         rng=rng,
-        get_nodes=get_nodes_
+        get_nodes=get_nodes_,
+        force_types=[('operator', 'cond')]
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g'])

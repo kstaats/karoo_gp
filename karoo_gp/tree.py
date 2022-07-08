@@ -34,11 +34,13 @@ class Tree:
     #++++++++++++++++++++++++++++
 
     @classmethod
-    def generate(cls, id, tree_type, tree_depth_base,
-                 get_nodes, rng, method='BFS'):
+    def generate(cls, id=None, tree_type='g', tree_depth_base=3,
+                 get_nodes=None, rng=None,
+                 force_types=None, method='BFS'):
         '''Generate a new Tree object given starting parameters.'''
         root = Node.generate(rng, get_nodes, tree_type, tree_depth_base,
-                             parent=None, method=method)
+                             parent=None, force_types=force_types,
+                             method=method)
         return cls(id, root, tree_type)
 
     def copy(self, id=None, include_score=False):
@@ -132,7 +134,7 @@ class Tree:
                 types = group
         node.node_data = rng.choice(get_nodes(types))
 
-    def branch_mutate(self, rng, get_nodes, tree_depth_max, log):
+    def branch_mutate(self, rng, get_nodes, force_types, tree_depth_max, log):
         """Replace a subtree (excluding root) with random subtree"""
         i_mutate = rng.randint(1, self.n_children + 1)
         node = self.get_child(i_mutate)
@@ -148,9 +150,11 @@ class Tree:
                         break
         elif self.tree_type == 'g':
             # Replace subtree with new random subtree of same target depth
-            depth = tree_depth_max - node.height
+            height = node.height
+            depth = tree_depth_max - height
+            force_types_ = None if height + 1 > len(force_types) else force_types[height]
             replacement = Node.generate(rng, get_nodes, self.tree_type, depth,
-                                        force_function_root=False)
+                                        force_types=force_types_)
             self.set_child(i_mutate, replacement)
         to_type = f'{node.node_type}'
         log(f'Node {i_mutate}{kids} chosen for mutation, from {from_type} '
