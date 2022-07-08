@@ -2,15 +2,15 @@
     "node_type": "operator",
     "tree_type": "f",
     "parent": null,
-    "children": "[<Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>, <Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>]",
+    "children": "[<Node: NodeData(label='sqrt', node_type='operator', arity=1, min_depth=1, child_type=None)>, <Node: NodeData(label='sqrt', node_type='operator', arity=1, min_depth=1, child_type=None)>]",
     "repr": "<Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>",
-    "parse": "((((((2)/(2))-((3)+(c)))+(((2)+(3))-((3)-(c))))/((((3)/(3))+((2)*(1)))/(((2)*(1))-((a)-(2)))))/(((((c)+(3))-((c)+(2)))*(((a)*(2))+((2)*(1))))/((((b)-(1))-((1)+(a)))+(((3)*(c))+((b)*(1))))))",
-    "display": "                _____________/_______________               \n        ______/________               ______/________       \n     __+____        __/____        __*____        __+____   \n   -__     -__    +__     -__    -__     +__    -__     +__ \n /_  +_  +_  -_ /_  *_  *_  -_ +_  +_  *_  *_ -_  +_  *_  *_\n2 2 3 c 2 3 3 c3 3 2 1 2 1 a 2c 3 c 2 a 2 2 1b 1 1 a 3 c b 1\n",
+    "parse": "((sqrt((((2)**(3))+((c)*(2)))+(((3)!=(c))if(square(3))else((3)+(3)))))/(sqrt((((2)*(1))**(square(2)))-(((1)**(a))**(square(2))))))",
+    "display": "                   __________/__________________            \n                sqr                           sqr           \n         ________+________                 ____-______      \n     __+____         ____if_____         **___       **___  \n   **_     *__     !=_  squ    +__     *__  squ    **_  squ \n 2   3   c   2   3   c   3   3   3   2   1   2   1   a   2  \n",
     "depth": 5,
     "height": 0,
-    "n_children": 62,
-    "n_cols": 32,
-    "second_child": "(((((c)+(3))-((c)+(2)))*(((a)*(2))+((2)*(1))))/((((b)-(1))-((1)+(a)))+(((3)*(c))+((b)*(1)))))",
-    "set_child": "((((((2)/(2))-((3)+(c)))+(((2)+(3))-((3)-(c))))/((((3)/(3))+((2)*(1)))/(((2)*(1))-((a)-(2)))))/((a)+(b)))",
-    "prune": "((1)/(b))"
+    "n_children": 32,
+    "n_cols": 15,
+    "second_child": "(sqrt((((2)*(1))**(square(2)))-(((1)**(a))**(square(2)))))",
+    "set_child": "((sqrt((((2)**(3))+((c)*(2)))+(((3)!=(c))if(square(3))else((3)+(3)))))/((a)+(b)))",
+    "prune": "((3)/(c))"
 }
