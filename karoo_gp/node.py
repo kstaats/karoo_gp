@@ -270,43 +270,47 @@ class Node:
     def __repr__(self):
         return f"<Node: {self.node_data!r}>"
 
-    @property
-    def raw_expression(self):
-        """Return full list of labels (recursive)"""
-        if not self.children:
-            return f'({self.label})'
-        elif len(self.children) == 1:
-            return f'({self.label}{self.children[0].raw_expression})'
-        elif len(self.children) == 2:
-            return (f'({self.children[0].raw_expression}{self.label}'
-                    f'{self.children[1].raw_expression})')
-        elif self.label == 'if':
-            return (f'({self.children[0].raw_expression}'
-                    f'if{self.children[1].raw_expression}'
-                    f'else{self.children[2].raw_expression})')
+    def parse(self, simplified=False):
+        """Parse nodes either raw (all nodes) or simplified to string"""
 
-    @property
-    def expression(self):
-        """Return simplified expression (recursive)"""
-        raw_expression = self.raw_expression
-        # Certain statements not supported by sympy, so only
-        # sympify nodes *below* all of those.
-        if 'if' in raw_expression:
-            return (f'({self.children[0].expression};'
-                    f'if{self.children[1].expression}'
-                    f'else{self.children[2].expression})')
-        elif any(f in raw_expression for f in ('and', 'or')):
-            return (f'({self.children[0].expression}{self.label}'
-                    f'{self.children[0].expression})')
-        elif 'not' in raw_expression:
-            return (f'(not{self.children[0].expression})')
-        # Outputs of divide-by-zero, e.g. a/(b-b), are sympified to 'zoo'.
-        # Replace any instance, and then re-sympify to let the 0 propogate.
-        result = str(sympify(raw_expression))
-        while 'zoo' in result:
-            result = result.replace('zoo', '0')
-            result = str(sympify(result))
-        return result
+        if simplified:
+            # Parse the raw subtree by calling again with (simplified=False)
+            raw_expr = self.parse(simplified=False)
+
+            # Some functions are not supported by sympy. If none of those funcs
+            # appear in the subtree, return the sympified expression.
+            if not any(f in raw_expr for f in ('if', 'and', 'or', 'not')):
+                result = str(sympify(raw_expr))
+
+                # Some trees, e.g. 'a/(b-b)', result in a 0-division, which
+                # sympy parses as 'zoo'. If this happens, replace 'zoo' with 0
+                # and sympify again to let the zero propagate.
+                while 'zoo' in result:
+                    result = result.replace('zoo', '0')
+                    result = str(sympify(result))
+                return result
+
+            # If any unsupported funcs DO appear in the subtree, return the
+            # raw parsing of this node, but try to simplify each sub-node
+            # individually (recursively) by including (simplified=True).
+
+            # TODO: What sympy does, but for those unsupported functions.
+            # e.g. ((a)if((a)==(a))else(a)) can clearly be simplified to (a)
+
+        # Position the label and sutrees so that no relational information is
+        # lost (i.e. liberal use of parenthesis) and it is ast-interpretable
+        ws = ' ' if simplified else '' # whitespace
+        if not self.children:  # terminals, constants
+            return f'({self.label})'
+        elif len(self.children) == 1:  # **, abs, square, sqrt, not
+            return f'({self.label}{ws}{self.children[0].parse(simplified)})'
+        elif len(self.children) == 2:  # arithmetic, comparison, and/or
+            return (f'({self.children[0].parse(simplified)}{ws}{self.label}'
+                    f'{ws}{self.children[1].parse(simplified)})')
+        elif self.label == 'if':
+            return (f'({self.children[0].parse(simplified)}'
+                    f'{ws}if{ws}{self.children[1].parse(simplified)}'
+                    f'{ws}else{ws}{self.children[2].parse(simplified)})')
 
     def display(self, *args, method='viz', **kwargs):
         if method == 'list':

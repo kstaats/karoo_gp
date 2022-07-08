@@ -63,12 +63,12 @@ class Tree:
     @property
     def raw_expression(self):
         """Return the raw (full) expression"""
-        return self.root.raw_expression
+        return self.root.parse()
 
     @property
     def expression(self):
         """Return the simplified expression"""
-        return self.root.expression
+        return self.root.parse(simplified=True)
 
     def save(self):
         return f'{self.tree_type}{self.raw_expression}'
@@ -188,8 +188,8 @@ class Tree:
 
         # Get display fields before modifying
         from_disp = self.display()
-        from_expr = self.get_child(i).raw_expression
-        with_expr = to_insert.raw_expression
+        from_expr = self.get_child(i).parse()
+        with_expr = to_insert.parse()
 
         self.set_child(i, to_insert)
         initial_depth = self.depth

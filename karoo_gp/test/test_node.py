@@ -39,7 +39,7 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
         parent=node.parent,
         children=str(node.children),
         repr=str(node),
-        parse=node.raw_expression,
+        parse=node.parse(),
         display=node.display(),
         depth=node.depth,
         height=node.height,
@@ -51,17 +51,17 @@ def test_node(node_default_kwargs, paths, tree_type, tree_depth_base,
         second_child = node.get_child(2, method)
         expected_height = {'BFS': 1, 'DFS': 2}[method]
         assert second_child.height == expected_height
-        node_output['second_child'] = second_child.raw_expression
+        node_output['second_child'] = second_child.parse()
 
     new_child_node = Node.load('((a)+(b))', tree_type)
     node.set_child(2, new_child_node, method)
-    assert node.get_child(2, method).raw_expression == new_child_node.raw_expression
-    node_output['set_child'] = node.raw_expression
+    assert node.get_child(2, method).parse() == new_child_node.parse()
+    node_output['set_child'] = node.parse()
 
     if node.depth > 1:
         node.prune(kwargs['rng'], kwargs['get_nodes'])
         assert node.depth == 1
-        node_output['prune'] = node.raw_expression
+        node_output['prune'] = node.parse()
 
     # Load reference and compare
     fname = paths.test_data / (f'node_ref[{tree_type}-{tree_depth_base}-'
@@ -107,13 +107,11 @@ def test_node_force_types(rng, force_types, tree_type, method):
                 i_node += 1
                 if child.height > height:
                     break
-                if child.node_type == 'terminal' and ft[height] == ['bool']:
-                    from IPython import embed; embed()
                 assert child.node_type in ft[height]
 
         # Verify that tree is parsed/simplified correctly
-        raw = node.raw_expression
-        expr = node.expression
+        raw = node.parse()
+        expr = node.parse(simplified=True)
         assert len(raw) >= len(expr)
         for i_child in range(node.n_children):
             child = node.get_child(i_child)

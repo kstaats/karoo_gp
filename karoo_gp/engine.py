@@ -1,6 +1,5 @@
 import os
 import ast
-import operator as op
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -16,6 +15,8 @@ class Engine(ABC):
     def __init__(self, model, engine_type='default'):
         self.model = model
         self.engine_type = engine_type
+        self.dtype = np.float64
+        self.num_obj = np.full
 
     def __repr__(self):
         return f"<Engine: {self.engine_type}>"
@@ -37,28 +38,94 @@ class Engine(ABC):
         if not all(isinstance(tree, Tree) for tree in trees):
             raise TypeError(f"trees must be a sequence of Trees")
 
+    def parse_expr(self, expr, X_dict, shape):
+        """Parse an expr into a function and insert sample X_dict"""
+        tree = ast.parse(expr, mode='eval').body
+        return self.parse_node(tree, X_dict, shape)
+
+    def parse_node(self, node, X_dict, shape):
+        """Recursively build a function from ast tree and sample X_dict"""
+        if isinstance(node, ast.IfExp):
+            return self.operators['if'](
+                self.parse_node(node.test, X_dict, shape),
+                self.parse_node(node.body, X_dict, shape),
+                self.parse_node(node.orelse, X_dict, shape))
+        if isinstance(node, ast.Name):
+            return X_dict[node.id]
+        elif isinstance(node, ast.Num):
+            return self.num_obj(shape, node.n)
+        elif isinstance(node, ast.UnaryOp):
+            return self.operators[type(node.op)](
+                self.parse_node(node.operand, X_dict, shape))
+        elif isinstance(node, ast.BinOp):
+            return self.operators[type(node.op)](
+                self.parse_node(node.left, X_dict, shape),
+                self.parse_node(node.right, X_dict, shape))
+        elif isinstance(node, ast.BoolOp):
+            return self.operators[type(node.op)](
+                *[self.parse_node(v, X_dict, shape) for v in node.values])
+        elif isinstance(node, ast.Compare):
+            return self.operators[type(node.ops[0])](
+                self.parse_node(node.left, X_dict, shape),
+                self.parse_node(node.comparators[0], X_dict, shape))
+        elif isinstance(node, ast.Call):
+            return self.operators[node.func.id](
+                self.parse_node(node.args[0], X_dict, shape))
+
+
 #++++++++++++++++++++++++++++
 #   Numpy                   |
 #++++++++++++++++++++++++++++
 
-def inf_to_zero_divide(a, b):
-    # This continued to raise 'RuntimeWarning: divide by zero' errors. This
-    # is a proposed solution. ref: https://stackoverflow.com/a/64747978
-    with np.errstate(divide='ignore'):
-        out = np.where(b==0, 0., a / b)
-    return out
+def safe_divide(a, b):
+    """If dividing by 0, return 0"""
+    return np.where(b==0, 0, a/b)
+
+def safe_sqrt(a):
+    """For sqrt(-a), return -sqrt(abs(a))"""
+    negative = np.less(a, 0)
+    absolute = np.abs(a)
+    square_root = np.sqrt(absolute)
+    square_root[negative] *= -1
+    return square_root
 
 class NumpyEngine(Engine):
     def __init__(self, model):
         super().__init__(model, engine_type='numpy')
         self.dtype = np.float64
+        def num_obj(shape, value):  # Function for terminals/constants arrays
+            return np.full(shape, value, dtype=self.dtype)
+        self.num_obj = num_obj
+
         self.operators = {
-            ast.Add: op.add,
-            ast.Sub: op.sub,
-            ast.Mult: op.mul,
-            ast.Div: inf_to_zero_divide,
-            ast.Pow: op.pow,
-            ast.USub: op.neg,
+            ast.Add: np.add,
+            ast.Sub: np.subtract,
+            ast.Mult: np.multiply,
+            ast.Div: safe_divide,
+            ast.Pow: np.float_power,
+            ast.USub: np.negative,
+            'if': np.where,
+            ast.And: np.logical_and,
+            ast.Or: np.logical_or,
+            ast.Not: np.logical_not,
+            ast.Eq: np.equal,
+            ast.NotEq: np.not_equal,
+            ast.Lt: np.less,
+            ast.LtE: np.less_equal,
+            ast.Gt: np.greater,
+            ast.GtE: np.greater_equal,
+            'abs': np.abs,
+            'sign': np.sign,
+            'square': np.square,
+            'sqrt': safe_sqrt,
+            'log': np.log,
+            'log1p': np.log1p,
+            'cos': np.cos,
+            'sin': np.sin,
+            'tan': np.tan,
+            'arccos': np.arccos,
+            'arcsin': np.arcsin,
+            'arctan': np.arctan,
         }
 
     def predict(self, trees, X, X_hash=None):
@@ -82,25 +149,6 @@ class NumpyEngine(Engine):
             predictions[i] = self.parse_expr(expr, X_dict, shape)
         return predictions
 
-    def parse_expr(self, expr, X_dict, shape):
-        """Parse an expr into a numpy function and insert sample X_dict"""
-        tree = ast.parse(expr, mode='eval').body
-        return self.parse_node(tree, X_dict, shape)
-
-    def parse_node(self, node, X_dict, shape):
-        """Recursively build a numpy graph from ast tree and sample X_dict"""
-        if isinstance(node, ast.Name):
-            return X_dict[node.id]
-        elif isinstance(node, ast.Num):
-            return np.full(shape, node.n, dtype=self.dtype)
-        elif isinstance(node, ast.UnaryOp):
-            return self.operators[type(node.op)](
-                self.parse_node(node.operand, X_dict, shape))
-        elif isinstance(node, ast.BinOp):
-            return self.operators[type(node.op)](
-                self.parse_node(node.left, X_dict, shape),
-                self.parse_node(node.right, X_dict, shape))
-
 #++++++++++++++++++++++++++++
 #   TensorFlow              |
 #++++++++++++++++++++++++++++
@@ -121,9 +169,12 @@ class TensorflowEngine(Engine):
     def __init__(self, model, tf_device="/gpu:0", tf_device_log=False):
         super().__init__(model, engine_type='tensorflow')
         self.dtype = tf.float64
+        def num_obj(shape, value):
+            # Tensorflow has a different ordering
+            return tf.constant(value, dtype=self.dtype, shape=shape)
+        self.num_obj = num_obj
 
         # Configure tensorflow
-        ### TensorFlow Imports and Definitions ###
         seed = (model.random_state if isinstance(model.random_state, int)
                 else 1000)
         tf.set_random_seed(seed)
@@ -134,6 +185,14 @@ class TensorflowEngine(Engine):
             allow_soft_placement=True)
         self.config.gpu_options.allow_growth = True
 
+        def safe_sqrt(a):
+            """For sqrt(-a), return -sqrt(abs(a))"""
+            negative = tf.less(a, 0)
+            absolute = tf.abs(a)
+            square_root = tf.sqrt(absolute)
+            square_root[negative] *= -1
+            return square_root
+
         # Reference for parse_node
         self.operators = {
             ast.Add: tf.add,
@@ -142,6 +201,29 @@ class TensorflowEngine(Engine):
             ast.Div: tf.divide,
             ast.Pow: tf.pow,
             ast.USub: tf.negative,
+            'if': tf.where,
+            ast.And: tf.logical_and,
+            ast.Or: tf.logical_or,
+            ast.Not: tf.logical_not,
+            ast.Eq: tf.equal,
+            ast.NotEq: tf.not_equal,
+            ast.Lt: tf.less,
+            ast.LtE: tf.less_equal,
+            ast.Gt: tf.greater,
+            ast.GtE: tf.greater_equal,
+            'abs': tf.abs,
+            'sign': tf.sign,
+            'square': tf.square,
+            'sqrt': safe_sqrt,
+            'log': tf.log,
+            'log1p': tf.log1p,
+            'cos': tf.cos,
+            'sin': tf.sin,
+            'tan': tf.tan,
+            'arccos': tf.acos,
+            'arcsin': tf.asin,
+            'arctan': tf.atan,
+
         }
 
     def predict(self, trees, X, X_hash=None):
@@ -149,7 +231,7 @@ class TensorflowEngine(Engine):
         # Check type
         self._type_check(trees)
 
-        shape = X.shape[0]
+        shape = (X.shape[0], )
         predictions = np.zeros((len(trees), X.shape[0]), dtype=np.float64)
         for i, tree in enumerate(trees):
 
@@ -171,22 +253,3 @@ class TensorflowEngine(Engine):
                     pred = self.parse_expr(tree.expression, X_dict, shape)
                     predictions[i] = sess.run([pred])[0]
         return predictions
-
-    def parse_expr(self, expr, X_dict, shape):
-        """Convert a string expression into a tensorflow graph"""
-        tree = ast.parse(expr, mode='eval').body
-        return self.parse_node(tree, X_dict, shape)
-
-    def parse_node(self, node, X_dict, shape):
-        """Recursively build a tensorflow graph of an ast node"""
-        if isinstance(node, ast.Name):
-            return X_dict[node.id]
-        elif isinstance(node, ast.Num):
-            return tf.constant(node.n, shape=shape, dtype=self.dtype)
-        elif isinstance(node, ast.UnaryOp):
-            return self.operators[type(node.op)](
-                self.parse_node(node.operand, X_dict, shape))
-        elif isinstance(node, ast.BinOp):
-            return self.operators[type(node.op)](
-                self.parse_node(node.left, X_dict, shape),
-                self.parse_node(node.right, X_dict, shape))
