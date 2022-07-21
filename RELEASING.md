@@ -11,7 +11,8 @@ publish it on PyPI.
    git switch master  # switch to the master branch
    git pull origin master  # pull remote changes from the main repo
    ```
-- [ ] Bump the version number in `karoo_gp/__init__.py` and commit.
+- [ ] Bump the version number in `karoo_gp/__init__.py`, update the
+      `RELEASE_NOTES.txt` file, and commit.
 - [ ] Tag the commit with e.g. `git tag -a v2.5.0 -m 'Karoo GP 2.5.0' feb5c01`,
       using the commit id of the version bump.
 - [ ] (Optional) For new major/minor releases, create a new branch:
