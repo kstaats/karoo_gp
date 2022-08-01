@@ -2,15 +2,14 @@
     "node_type": "operator",
     "tree_type": "g",
     "parent": null,
-    "children": "[<Node: NodeData(label='sqrt', node_type='operator', arity=1, min_depth=1, child_type=None)>, <Node: NodeData(label='-', node_type='operator', arity=2, min_depth=1, child_type=None)>]",
+    "children": "[<Node: NodeData(label='a', node_type='terminal', arity=0, min_depth=0, child_type=None)>, <Node: NodeData(label=2, node_type='constant', arity=0, min_depth=0, child_type=None)>]",
     "repr": "<Node: NodeData(label='/', node_type='operator', arity=2, min_depth=1, child_type=None)>",
-    "parse": "((sqrt(a))/((a)-(3)))",
-    "display": "           __________________/__________                    \n        sqr                    ________-__________          \n         a                   a                   3          \n",
-    "depth": 2,
+    "parse": "((a)/(2))",
+    "display": "                _____________/_______________               \n              a                             2               \n",
+    "depth": 1,
     "height": 0,
-    "n_children": 5,
-    "n_cols": 3,
-    "second_child": "(a)",
-    "set_child": "((sqrt((a)+(b)))/((a)-(3)))",
-    "prune": "((b)/(2))"
+    "n_children": 2,
+    "n_cols": 2,
+    "set_child": "((a)/((a)+(b)))",
+    "prune": "((a)/(3))"
 }
