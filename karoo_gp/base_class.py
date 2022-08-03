@@ -368,7 +368,7 @@ class BaseGP(BaseEstimator):
                     self.terminals_,
                     self.swim,
                     self.tree_depth_min,
-                    max(self.tree_depth_max_, self.tree_depth_base),
+                    self.tree_depth_max_,
                     self.tourn_size,
                     self.evolve_repro,
                     self.evolve_point,
