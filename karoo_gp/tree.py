@@ -201,9 +201,9 @@ class Tree:
         self.prune(rng, get_nodes, tree_depth_max)
         prune = (f' and prune to depth {self.depth}'
                  if self.depth != initial_depth else '')
-        log(f'\nIn a copy of the first parent: \n{from_disp}\n\n '
-            f'...we replace node {i} ({from_expr}) with node {i_mate} '
-            f'from the second parent: {with_expr}{prune}\n'
+        log(f'\nIn a copy of the parent: \n{from_disp}\n\n '
+            f'...we replace node {i}: {from_expr} with node {i_mate} '
+            f'from the second parent: {with_expr}{prune}. '
             f'The resulting offspring is: \n{self.display()}',
             display=['db'])
         pause(display=['db'])

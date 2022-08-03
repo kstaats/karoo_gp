@@ -450,15 +450,16 @@ def fx_karoo_pause(model):
         'fittest_dict': {},
         'population_len': 0,
         'next_gen_len':0,
-        'path': model.loader.path,
+        'path': '',
     }
     # So it doesn't break if called before population is initialized
-    if hasattr(model, 'population'):
+    if model.population is not None:
         pop_dict = {
             'gen_id': model.population.gen_id,
             'fittest_dict': model.population.fittest_dict,
             'population_len': len(model.population.trees),
             'next_gen_len': len(model.population.next_gen_trees),
+            'path': model.loader.path,
         }
         menu_dict = {**menu_dict, **pop_dict}
 
@@ -501,15 +502,15 @@ def fx_karoo_pause(model):
         for k, v in score.items():
             model.log(f'{k.replace("_", " ").title()}: {v}')
 
-    elif input_a == 'print_a':  # print a Tree from population_a
-        tree = model.population.trees[input_b - 1]
-        model.log(f'\tsym: {tree.expression}\n\tfitness: {tree.fitness}'
-                  f'\n{tree.display()}')
-
-    elif input_a == 'print_b':  # print a Tree from next_gen_trees
-        tree = model.population.next_gen_trees[input_b - 1]
-        model.log(f'Tree {tree.id}: \n\tsym: {tree.expression}'
-                  f'\n\tfitness: {tree.fitness}\n{tree.display()}')
+    elif input_a in ['print_a', 'print_b']:  # print a Tree from population_a
+        population = (model.population.trees if input_a == 'print_a'
+                      else model.population.next_gen_trees)
+        tree = population[input_b - 1]
+        model.log(f'\nTree ID {input_b}\n'
+                  f'Expression: {tree.expression}\n'
+                  f'Raw: {tree.raw_expression}\n'
+                  f'Fitness: {tree.fitness}'
+                  f'\n{tree.display(method="list")}')
 
     elif input_a == 'population':  # list all Trees in population_a
         for tree in model.population.trees:

@@ -62,7 +62,7 @@ class Population:
         """
         self.model.log(f'\nEvaluate all Trees in Generation {self.gen_id}')
         self.model.pause(display=['i'])
-
+        
         predictions = self.model.batch_predict(X, self.trees, X_hash)
         for tree, y_pred in zip(self.trees, predictions):
             cached = False
@@ -75,8 +75,8 @@ class Population:
                 tree.score = self.model.calculate_score(y_pred, y)
                 if X_hash is not None:
                     self.model.cache_[X_hash][tree.expression] = tree.score
-            self.model.log(f'\nTree {tree.id} yields (sym): {tree.expression}'
-                           f'\nwith fitness sum: {tree.fitness}')
+            self.model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
+            self.model.log(f'with fitness sum: {tree.fitness}\n', display=['i'])
         self.evaluated = True
         self.history.append(self.fittest().save())
 
@@ -114,7 +114,8 @@ class Population:
         for evolve_type, amount in evolve_amounts.items():
             verb = dict(repro='Reproductions', point='Point Mutations',
                         branch='Branch Mutations', cross='Crossovers')
-            log(f'\nPerform {amount} {verb[evolve_type]} ...')
+            log(f'', display=['i'])
+            log(f'Perform {amount} {verb[evolve_type]} ...')
             pause(display=['i'])
             amount = amount // 2 if evolve_type == 'cross' else amount
             for _ in range(amount):
@@ -208,6 +209,6 @@ class Population:
             self.model.log(f'Tree {t.id} has fitness {t.fitness}',
                            display=['i'])
         winner = reduce(self.model.fitness_compare, trees)
-        self.model.log(f'The winner of the tournament is Tree: {winner.id}',
+        self.model.log(f'\nThe winner of the tournament is Tree: {winner.id}',
                        display=['i'])
         return winner
