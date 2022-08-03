@@ -132,7 +132,8 @@ class Tree:
         for group in self.swappable:
             if node.node_type in group:
                 types = group
-        node.node_data = rng.choice(get_nodes(types))
+        same_arity_types = [n for n in get_nodes(types) if n.arity == node.arity]
+        node.node_data = rng.choice(same_arity_types)
 
     def branch_mutate(self, rng, get_nodes, force_types, tree_depth_max, log):
         """Replace a subtree (excluding root) with random subtree"""

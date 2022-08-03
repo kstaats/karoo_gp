@@ -69,7 +69,7 @@ class Engine(ABC):
                 self.parse_node(node.left, X_dict, shape),
                 self.parse_node(node.comparators[0], X_dict, shape))
         elif isinstance(node, ast.Call):
-            return self.operators[node.func.id](
+            return self.operators[node.func.id.lower()](
                 self.parse_node(node.args[0], X_dict, shape))
 
 
