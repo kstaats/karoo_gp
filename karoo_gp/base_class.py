@@ -19,9 +19,10 @@ import pathlib
 import operator
 
 import numpy as np
-from sklearn.utils import check_random_state, check_X_y
 import sklearn.metrics as skm
 import sklearn.model_selection as skcv
+
+from sklearn.utils import check_random_state, check_X_y
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from datetime import datetime
@@ -285,7 +286,7 @@ class BaseGP(BaseEstimator):
                 self.functions_ = Functions.arithmetic()
             else:
                 raise ValueError('functions must be a list of strings or type '
-                                'Functions')
+                                 'Functions')
 
         # Population
         if self.population is None:
@@ -297,8 +298,8 @@ class BaseGP(BaseEstimator):
                 tree_depth_base=self.tree_depth_base,
                 tree_pop_max=self.tree_pop_max,
             )
-            self.log(f'\n We have constructed the first, stochastic population of'
-                    f'{self.tree_pop_max} Trees.')
+            self.log(f'\n We have constructed the first, stochastic population of '
+                     f'{self.tree_pop_max} Trees.')
             self.population.evaluate(X, y, self.X_train_hash)
             self.log_history()
 
