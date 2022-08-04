@@ -21,7 +21,7 @@ def load_data(tmp_path, paths, kernel):
     data_path = paths.data_files[kernel]
     dataset = pd.read_csv(data_path)
     y = dataset.pop('s')
-    terminals = dataset.keys()
+    terminals = list(dataset.keys())
     X, y = dataset.to_numpy(), y.to_numpy()
 
     # Create savefile names

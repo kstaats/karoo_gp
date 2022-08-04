@@ -1,1 +1,16 @@
-{"node_type": "<class 'karoo_gp.functions.Function'>", "tree_type": "g", "parent": null, "children": "[<Branch: <Function: symbol=*, type='arithmetic', arity=2>>, <Branch: <Function: symbol=+, type='arithmetic', arity=2>>]", "repr": "<Branch: <Function: symbol=+, type='arithmetic', arity=2>>", "parse": "(1)*(c)+(b)-(a)*(3)-(2)+(b)", "save": "(((1)*(c))+((((b)-(a))*((3)-(2)))+(b)))", "display": "          ___________________+_________                     \n     ___*_____                      __+_________________    \n    1        c             _______*_________           b    \n                       ___-____         ___-____            \n                      b       a        3       2            \n", "depth": 4, "height": 0, "n_children": 12, "n_cols": 7, "second_child": "(1)", "set_child": "((((a)+(b))*(c))+((((b)-(a))*((3)-(2)))+(b)))", "prune": "((2)+(b))"}
+{
+    "node_type": "<class 'karoo_gp.functions.Function'>",
+    "tree_type": "g",
+    "parent": null,
+    "children": "[<Branch: <Function: symbol=/, type='arithmetic', arity=2>>, <Branch: <Function: symbol=-, type='arithmetic', arity=2>>]",
+    "repr": "<Branch: <Function: symbol=/, type='arithmetic', arity=2>>",
+    "parse": "(((a)/(2))/((a)-(3)))",
+    "display": "                _____________/_______________               \n        ______/________               ______-________       \n       a              2              a              3       \n",
+    "depth": 2,
+    "height": 0,
+    "n_children": 6,
+    "n_cols": 4,
+    "second_child": "(a)",
+    "set_child": "((((a)+(b))/(2))/((a)-(3)))",
+    "prune": "((b)/(2))"
+}

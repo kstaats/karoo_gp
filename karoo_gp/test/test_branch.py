@@ -31,11 +31,10 @@ def test_branch(branch_default_kwargs, paths, tree_type, tree_depth_base,
                   tree_type=tree_type,
                   depth=tree_depth_base,
                   method=method)
-    # random_seed = abs(hash(f'{tree_type}{tree_depth_base}{method}'))
     branch = Branch.generate(**kwargs)
 
     # Query attributes/methods
-    random_int = int(kwargs['rng'].integers(1000))
+    random_int = int(kwargs['rng'].randint(1000))
     branch_output = dict(
         node_type=str(type(branch.node)),
         tree_type=branch.tree_type,
@@ -43,7 +42,6 @@ def test_branch(branch_default_kwargs, paths, tree_type, tree_depth_base,
         children=str(branch.children),
         repr=str(branch),
         parse=branch.parse(),
-        save=branch.save(),
         display=branch.display(),
         depth=branch.depth,
         height=branch.height,
@@ -55,17 +53,17 @@ def test_branch(branch_default_kwargs, paths, tree_type, tree_depth_base,
         second_child = branch.get_child(2, method)
         expected_height = {'BFS': 1, 'DFS': 2}[method]
         assert second_child.height == expected_height
-        branch_output['second_child'] = second_child.save()
+        branch_output['second_child'] = second_child.parse()
 
     new_child_branch = Branch.load('((a)+(b))', tree_type)
     branch.set_child(2, new_child_branch, method)
-    assert branch.get_child(2, method).save() == new_child_branch.save()
-    branch_output['set_child'] = branch.save()
+    assert branch.get_child(2, method).parse() == new_child_branch.parse()
+    branch_output['set_child'] = branch.parse()
 
     if branch.depth > 1:
         branch.prune(kwargs['rng'], kwargs['terminals'])
         assert branch.depth == 1
-        branch_output['prune'] = branch.save()
+        branch_output['prune'] = branch.parse()
 
     # Load reference and compare
     fname = paths.test_data / (f'branch_ref[{tree_type}-{tree_depth_base}-'

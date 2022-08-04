@@ -552,7 +552,7 @@ functions = np.loadtxt(func_path, delimiter=',', skiprows=1, dtype=str)
 functions = [f[0] for f in functions]  # Arity is now hard-coded by symbol
 dataset = pd.read_csv(filename)
 y = dataset.pop('s')
-terminals = dataset.keys()
+terminals = list(dataset.keys())
 X, y = dataset.to_numpy(), y.to_numpy()
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -583,7 +583,7 @@ gp = cls(
     precision=precision,
     swim=swim,
     mode=mode,
-    seed=seed,
+    random_state=seed,
     pause_callback=fx_karoo_pause_refer,
     functions=functions,
     terminals=terminals,

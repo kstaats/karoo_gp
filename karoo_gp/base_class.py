@@ -22,6 +22,9 @@ import numpy as np
 import sklearn.metrics as skm
 import sklearn.model_selection as skcv
 
+from sklearn.utils import check_random_state, check_X_y
+from sklearn.base import BaseEstimator, TransformerMixin
+
 from datetime import datetime
 
 from . import Functions, Terminals, NumpyEngine, TensorflowEngine, \
@@ -58,7 +61,7 @@ class DataLoader:
             writer = csv.writer(f)
             writer.writerows(data)
 
-class BaseGP(object):
+class BaseGP(BaseEstimator):
 
     """
     This Base_BP class al the core attributes, objects and methods of Karoo GP.
@@ -67,8 +70,8 @@ class BaseGP(object):
 
     BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
-    ├─ .encoder(y)                      - Initialize with y_train
-    │   └─ .decode(pred)                - transforms prediction to match y
+    ├─ .decoder(y)                      - Initialize with y_train
+    │   └─ .transform(pred)             - transforms prediction to match y
     │
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
     │
@@ -104,84 +107,61 @@ class BaseGP(object):
     └- .score(pred, y)                  - return score of prediction against y
     """
 
+
+    # Fit parameters (set later)
+    engine = None
+    scoring_ = None
+    history_ = None
+    X_hash_ = None
+    test_split_ = None
+    terminals_ = None
+    functions_ = None
+    population = None
+    cache_ = None
+
     def __init__(
         self, tree_type='r', tree_depth_base=3, tree_depth_max=None,
         tree_depth_min=1, tree_pop_max=100, gen_max=10, tourn_size=7,
         filename='', output_dir='', evolve_repro=0.1, evolve_point=0.1,
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
-        swim='p', mode='s', seed=None, pause_callback=None,
+        swim='p', mode='s', random_state=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
-        functions=None, terminals=None, test_size=0.2, scoring=None,
-        higher_is_better=False):
-        """Initialize a BaseGP object with given parameters"""
+        functions=None, terminals=None, constants=None, test_size=0.2,
+        scoring=None, higher_is_better=False, prediction_transformer=None,
+        cache=None):
+        """Initialize a Karoo_GP object with given parameters"""
 
         # Model parameters
-        self.seed = seed
-        self.rng = np.random.default_rng(seed)
-        np.random.seed(seed)                 # used by skm in train_test_split
-        self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
-        self.filename = filename             # prefix for output files
-        self.output_dir = output_dir         # path to output directory
-        self.loader = DataLoader(self)       # set path, initialize logs
-        self.mode = mode                     # determines if pauses after fit
-        self.display = display               # determines when pause/log called
-        self.pause_callback = pause_callback # called throughout based on disp
-        self.cache = {}                      # scores by hash(data), expression
-        self.history = {}                    # best score for each field/gen
-
-        # Initialize Population
-        self.functions = Functions(functions) if functions is not None else Functions.arithmetic()
-        self.terminals = terminals if isinstance(terminals, Terminals) else Terminals(terminals)
         self.tree_type = tree_type           # (f)ull, (g)row or (r)amped 50/50
         self.tree_depth_base = tree_depth_base # depth of initial population
-        self.tree_pop_max = tree_pop_max     # number of trees per generation
-        self.population = Population.generate(
-            model=self,
-            functions=self.functions,
-            terminals=self.terminals,
-            tree_type=self.tree_type,
-            tree_depth_base=self.tree_depth_base,
-            tree_pop_max=tree_pop_max,
-        )
-        self.log(f'\n We have constructed the first, stochastic population of '
-                 f'{self.tree_pop_max} Trees.')
-
-        # Engine
-        if engine_type == 'numpy':
-            self.engine = NumpyEngine(self)
-        elif engine_type == 'tensorflow':
-            self.engine = TensorflowEngine(self, tf_device, tf_device_log)
-        else:
-            raise ValueError(f'Unrecognized engine_type: {engine_type}')
-
-        # Fit/Evolution Parameters
-        self.test_size = test_size           # how to portion train/test data
-        self.X_hash = None                   # hash of last-used fit data
-        self.gen_max = gen_max               # number of generations to evolve
-        self.swim = swim                     # culling method
-
-        if tree_depth_max is None:
-            self.tree_depth_max = tree_depth_base
-        elif tree_depth_max >= tree_depth_base:
-            self.tree_depth_max = tree_depth_max
-        else:
-            raise ValueError(f'Max depth ({tree_depth_max}) must be greater '
-                             f'or equal to base depth ({tree_depth_base})')
-
+        self.tree_depth_max = tree_depth_max # max allowed depth
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
+        self.tree_pop_max = tree_pop_max     # number of trees per generation
+        self.gen_max = gen_max               # number of generations to evolve
         self.tourn_size = tourn_size         # number of Trees per tournament
+        self.filename = filename             # prefix for output files
+        self.output_dir = output_dir         # path to output directory
         self.evolve_repro = evolve_repro     # ratio of next_gen reproduced
         self.evolve_point = evolve_point     # ratio of next_gen point mutated
         self.evolve_branch = evolve_branch   # ratio of next_gen branch mutated
         self.evolve_cross = evolve_cross     # ratio of next_gen made by crossover
-
-        # These fields optionally overwritten by subclass
+        self.display = display               # determines when pause/log called
         self.precision = precision           # max decimal places. pred & score
-        self.encoder = None
-        self.scoring = (scoring if scoring is not None else  # TODO: validate
-                        dict(fitness=skm.mean_absolute_error))
+        self.swim = swim                     # culling method
+        self.mode = mode                     # determines if pauses after fit
+        self.random_state = random_state
+        self.pause_callback = pause_callback # called throughout based on disp
+        self.engine_type = engine_type
+        self.tf_device = tf_device
+        self.tf_device_log = tf_device_log
+        self.functions = functions
+        self.terminals = terminals
+        self.constants = constants
+        self.test_size = test_size           # how to portion train/test data
+        self.scoring = scoring
         self.higher_is_better = higher_is_better
-        self.history = {label: [] for label in self.scoring.keys()}
+        self.prediction_transformer = prediction_transformer
+        self.cache = cache
 
     def log(self, msg, display={'i', 'g', 'm', 'db'}):
         if self.display in display or display == 'all':
@@ -199,6 +179,25 @@ class BaseGP(object):
     def error(self, msg, display={'i', 'g', 'm', 'db'}):
         self.log(msg, display)
         self.pause(display)
+
+    def log_history(self):
+        """Add the score of the current fittest tree to history"""
+        def recursively_merge_history(a, b):
+            """Concatenate values in multi-level dict to history"""
+            for k, v in a.items():
+                if isinstance(v, dict):
+                    if k not in b:
+                        b[k] = {}
+                    recursively_merge_history(v, b[k])
+                elif isinstance(v, (int, float, str, list)):
+                    if k not in b:
+                        b[k] = []
+                    b[k].append(v)
+                else:
+                    raise ValueError('Scoring must be a single- or multi-level'
+                                     ' dict of int, float, str or list values')
+        score = self.score(self.X_test, self.y_test)
+        recursively_merge_history(score, self.history_)
 
 
     #+++++++++++++++++++++++++++++++++++++++++++++
@@ -232,17 +231,95 @@ class BaseGP(object):
                 last_fittest = tree
         return fittest_dict
 
-    def fit(self, X=None, y=None):
-        """Evolve a population of trees based on training data"""
-        self.log('Press ? to see options, or ENTER to continue the run',
-                 display=['i'])
-        self.pause(display=['i'])
+    def check_model(self):
+        """Initialize and/or validate model parameters"""
 
+        if self.scoring_ is None:
+            # RNG
+            self.rng = check_random_state(self.random_state)  # TODO: rename `random_state_` (skl)
+
+            # Scoring: optionally overwritten by child class
+            self.scoring_ = (self.scoring if self.scoring is not None else
+                             dict(fitness=skm.mean_absolute_error))
+            self.history_ = {}
+            # Engine
+            self.cache_ = self.cache or {}
+            if self.engine_type == 'numpy':
+                self.engine = NumpyEngine(self)
+            elif self.engine_type == 'tensorflow':
+                self.engine = TensorflowEngine(self, self.tf_device, self.tf_device_log)
+            else:
+                raise ValueError(f'Unrecognized engine_type: {self.engine_type}')
+            # Loader
+            self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
+            self.loader = DataLoader(self)       # set path, initialize logs
+
+    def check_population(self, X, y):
+        """Initialize and/or validate population parameters"""
+        # Terminals
+        if self.terminals_ is None:
+            if self.terminals is None:
+                terms = [f'f{i}' for i in range(X.shape[1])]
+            elif (isinstance(self.terminals, list) and
+                  all(isinstance(t, str) for t in self.terminals)):
+                terms = self.terminals
+            else:
+                raise ValueError('terminals must be a list of strings')
+            if self.constants is not None and (
+                not isinstance(self.constants, list) or
+                not all(type(c) in [int, float] for c in self.constants)):
+                raise ValueError('constants must be a list of ints or floats')
+            self.terminals_ = Terminals(terms, self.constants)
+        if len(self.terminals_.variables) != X.shape[1]:
+            raise ValueError('terminals and features must be same length')
+
+        # Functions
+        if self.functions_ is None:
+            # Validate functions
+            if isinstance(self.functions, Functions):
+                self.functions_ = self.functions
+            elif isinstance(self.functions, list):
+                # TODO validate symbol against supported
+                self.functions_ = Functions(self.functions)
+            # TODO support function type as args, e.g. 'logic, arithmetic'
+            elif self.functions is None:
+                self.functions_ = Functions.arithmetic()
+            else:
+                raise ValueError('functions must be a list of strings or type '
+                                 'Functions')
+
+        # Population
+        if self.population is None:
+            self.population = Population.generate(
+                model=self,
+                functions=self.functions_,
+                terminals=self.terminals_,
+                tree_type=self.tree_type,
+                tree_depth_base=self.tree_depth_base,
+                tree_pop_max=self.tree_pop_max,
+            )
+            self.log(f'\n We have constructed the first, stochastic population of '
+                     f'{self.tree_pop_max} Trees.')
+            self.population.evaluate(X, y, self.X_train_hash)
+            self.log_history()
+
+        # Update max allowed depth
+        if self.tree_depth_max is None:
+            self.tree_depth_max_ = self.tree_depth_base
+        elif self.tree_depth_max >= self.tree_depth_base:
+            self.tree_depth_max_ = self.tree_depth_max
+        else:
+            raise ValueError(f'Max depth ({self.tree_depth_max}) must be '
+                             f'greater than or equal to base depth ('
+                             f'{self.tree_depth_base})')
+
+    def check_test_split(self, X, y):
+        """Split train/test data; reuse subsequently for same X, y"""
         # Store a fingerprint of the dataset (X_hash) and cache the results
         # of `train_test_split`. If `fit()` is called muptiple times with the
         # same X, y, the same split will be used. Otherwise, split new data.
         X_hash = hash(X.data.tobytes())
-        if self.X_hash == X_hash:
+        if self.X_hash_ == X_hash:
             # Load previously-split train/test data
             X_train, y_train = self.X_train, self.y_train
             X_test, y_test = self.X_test, self.y_test
@@ -254,20 +331,31 @@ class BaseGP(object):
             # Split train and test sets
             else:
                 X_train, X_test, y_train, y_test = skcv.train_test_split(
-                    X, y, test_size=self.test_size, random_state=self.seed)
+                    X, y, test_size=self.test_size, random_state=self.random_state)
             # Save fingerprint and train/test sets
-            self.X_hash = X_hash
+            self.X_hash_ = X_hash
             self.X_train, self.y_train = X_train, y_train
             self.X_test, self.y_test = X_test, y_test
 
         # Initialize hash for training set
-        X_train_hash = hash(X_train.data.tobytes())
-        if X_train_hash not in self.cache:
-            self.cache[X_train_hash] = {}
+        self.X_train_hash = hash(self.X_train.data.tobytes())
+        if self.X_train_hash not in self.cache_:
+            self.cache_[self.X_train_hash] = {}
 
-        # Evaluate the initial population
-        if not self.population.evaluated:
-            self.population.evaluate(X_train, y_train, X_train_hash)
+        return self.X_train, self.X_test, self.y_train, self.y_test
+
+    def fit(self, X=None, y=None):
+        """Evolve a population of trees based on training data"""
+
+        self.log('Press ? to see options, or ENTER to continue the run',
+                 display=['i'])
+        self.pause(display=['i'])
+
+        # Initialize model and all variables
+        self.check_model()
+        X, y = check_X_y(X, y)
+        X_train, X_test, y_train, y_test = self.check_test_split(X, y)
+        self.check_population(X_train, y_train)
 
         menu = 1
         while menu != 0:  # Supports adding generations mid-run
@@ -276,11 +364,11 @@ class BaseGP(object):
                 # Evolve the next generation
                 self.population = self.population.evolve(
                     self.tree_pop_max,
-                    self.functions,
-                    self.terminals,
+                    self.functions_,
+                    self.terminals_,
                     self.swim,
                     self.tree_depth_min,
-                    self.tree_depth_max,
+                    self.tree_depth_max_,
                     self.tourn_size,
                     self.evolve_repro,
                     self.evolve_point,
@@ -289,11 +377,10 @@ class BaseGP(object):
                 )
 
                 # Evaluate new generation
-                self.population.evaluate(X_train, y_train, X_train_hash)
+                self.population.evaluate(X_train, y_train, self.X_train_hash)
 
                 # Add best score to history
-                for k, v in self.score(self.X_test, self.y_test).items():
-                    self.history[k].append(v)
+                self.log_history()
 
             if self.mode == 's':  # (s)erver mode: terminate after run
                 menu = 0
@@ -316,12 +403,12 @@ class BaseGP(object):
     def batch_predict(self, X, trees, X_hash=None):
         """Return predicted values for y given X for a list of trees
 
-        * If encoder (e.g. MultiClassifier) is specified, decode predictions
+        * If prediction_transformer (e.g. MultiClassifier), transform predictions
         * If precision is specified, round predictions to precision
         """
         y = self.engine.predict(trees, X, X_hash)
-        if self.encoder is not None:
-            y = self.encoder.decode(y)
+        if self.prediction_transformer is not None:
+            y = self.prediction_transformer.transform(y)
         if self.precision is not None:
             y = np.round(y, self.precision)
         return y
@@ -333,7 +420,7 @@ class BaseGP(object):
     def calculate_score(self, y_pred, y_true):
         """Return a dict with the results of each scoring function"""
         return {label: fx(y_true, y_pred)
-                for label, fx in self.scoring.items()}
+                for label, fx in self.scoring_.items()}
 
     def fx_karoo_terminate(self):
         '''
@@ -523,7 +610,6 @@ class RegressorGP(BaseGP):
         return round(x, sigfigs - int(np.floor(np.log10(abs(x)))) - 1)
 
 
-
 class MatchingGP(BaseGP):
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
@@ -566,7 +652,7 @@ class MatchingGP(BaseGP):
 
 class MultiClassifierGP(BaseGP):
     def __init__(self, *args, **kwargs):
-        """Add kernel-specific scoring function(s) and kwargs"""
+        """Add kernel-specific scoring functions, setup decoder"""
 
         def n_correct(y_true, y_pred):
             """Default classification fitness: number of correct predictions"""
@@ -587,42 +673,64 @@ class MultiClassifierGP(BaseGP):
                                  classification_report=cls_report_zero_div,
                                  confusion_matrix=conf_matrix_as_list)
         kwargs['higher_is_better'] = True
+        kwargs['prediction_transformer'] = ClassDecoder(n_classes=kwargs.pop('n_classes', None))
         super().__init__(*args, **kwargs)
 
     def fit(self, X, y, *args, **kwargs):
-        """Initialize encoder to be used by scorer"""
-        self.encoder = self.encoder or LabelEncoder(y)
+        """Initialize decoder to be used by scorer"""
+        self.prediction_transformer.fit(y)
         super().fit(X, y, *args, **kwargs)
 
 
-class LabelEncoder:
+class ClassDecoder(TransformerMixin):
     """
-    For classification tasks, classes are encoded in sample data as 0-N
-    integers, where N is the number of classes (e.g. [0, 1, 2, 3], N = 4).
-    When calculating tree output, y values are skewed so that they're centered
-    at 0 (e.g. [-1.5, -0.5, 0.5, 1.5], skew = -1.5).
+    Transforms tree predictions (-2.3, -1, 3.3) into class labels (0, 0, 3).
 
-    This class stores the skew value and implements encode/decode methods:
-      encode (y -> output): adds skew to input
-      decode (output -> y): subtract skew, round, clip to 0-N
+    For a normalized input values (zero-centered, stdev=1), the model should
+    have the greatest precision around zero. Class labels are expected to be
+    integers from 0-N. For this reason, we skew the output range so that the
+    model has the greatest precision around labels range.
 
-    TODO: Make this an sklearn Transformer, use their naming conventions
+    1. Fit the decoder to training labels (y). Determine the number of
+       classes (i.e. unique labels) and calculate skew. Skew is the
+       transformation needed to convert 0-N integers (0, 1, 2, 3) to
+       zero-centered floats (-1.5, -0.5, 0.5, 1.5); in this case -1.5
+       TODO: should be (-1, -0.33, 0.33, 1)
+    2. Transform predictions:
+        a. Engine output: (-2.3, -1, 3.3)
+        b. Skew removed: (-0.8, 0.5, 4.8)
+        c. Round*: (-1, 0, 5)
+        d. Clip between 0 and n: (0, 0, 3)
+
+    * 0.5 always rounds down: 1.5 -> 1, 2.5 -> 2, -0.5 -> -1
     """
-    def __init__(self, y=None, n_classes=None):
-        self.n_classes = n_classes or len(np.unique(y))
+    def __init__(self, n_classes=None):
+        if n_classes is not None:
+            self.n_classes = n_classes
+            self._set_skew()
+        else:
+            self.skew = None
+
+    def _set_skew(self):
         self.skew = (self.n_classes / 2) - 0.5
 
-    def encode(self, x):
-        """Convert 0-N encoding to zero-centered integer encoding"""
-        return x - self.skew
+    def fit(self, y):
+        self.n_classes = len(np.unique(y))
+        self._set_skew()
 
-    def decode(self, x):
-        """Convert zero-centered back to 0-N and crop tails"""
-        if len(x.shape) > 1:  # Use recursion for batch processing
-            return np.array([self.decode(x_i) for x_i in x])
-        else:  # Decode 1-dim array
+    def transform(self, x):
+        """Remove skew, round and clip 0-N"""
+        # Recursively transform batches
+        if len(x.shape) > 1:
+            return np.array([self.transform(x_i) for x_i in x])
+        # Transform single sample
+        else:
             unskewed = x + self.skew
-            rounded = np.where(unskewed % 1 <= 0.5,  # Round to nearest int
-                np.floor(unskewed), np.ceil(unskewed))  # 0.5 always rounds down
+            rounded = np.where(unskewed % 1 <= 0.5,
+                np.floor(unskewed), np.ceil(unskewed))
             clipped = np.minimum(np.maximum(rounded, 0), self.n_classes-1)
             return clipped.astype(np.int32)
+
+    def inverse_transform(self, y):
+        """Add skew"""
+        return y - self.skew

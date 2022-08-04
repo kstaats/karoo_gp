@@ -15,9 +15,9 @@ def X():
     return np.array([[1, 2, 3], [2, 3, 4]]), np.array([[3, 4, 5], [4, 5, 6]])
 
 class MockModel:
-    seed = 1000
-    cache = dict()
-    terminals = Terminals(['a', 'b', 'c'])
+    random_state = 1000
+    cache_ = dict()
+    terminals_ = Terminals(['a', 'b', 'c'])
 
 @pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
 def test_engine(trees, X, engine_type):
@@ -38,12 +38,12 @@ def test_engine(trees, X, engine_type):
     assert isinstance(train_pred, np.ndarray)
     assert train_pred.dtype == engine.dtype
     assert train_pred.shape == (len(trees), len(X_train))
-    assert [list(p) for p in train_pred] == [[7.0, 14.0], [3.0, 8.0]]
+    assert [list(p) for p in train_pred] == [[7.0, 14.0], [0.3333333333333333, 0.5]]
 
     # Test skip cached expressions
     X_test_hash = hash(X_test.data.tobytes())
-    model.cache[X_test_hash] = {trees[0].expression: 'dummy'}
+    model.cache_[X_test_hash] = {trees[0].expression: 'dummy'}
     test_pred = engine.predict(trees, X_test, X_test_hash)
     assert sum(test_pred[0]) == 0
     assert sum(test_pred[1]) != 0
-    assert [list(p) for p in test_pred] == [[0.0, 0.0], [15.0, 24.0]]
+    assert [list(p) for p in test_pred] == [[0.0, 0.0], [0.6, 0.6666666666666666]]

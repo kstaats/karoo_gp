@@ -8,11 +8,11 @@ from .util import load_data
 # Create a dummy model with mock functions to confirm calls
 class MockModel:
     def __init__(self):
-        self.cache = {}
+        self.cache_ = {}
         self.log=MagicMock()
         self.pause=MagicMock()
         self.error=MagicMock()
-        self.rng=np.random.default_rng(1000)
+        self.rng=np.random.RandomState(1000)
         self.build_fittest_dict=MagicMock()
 
     def batch_predict(self, X, trees, X_hash):

@@ -41,7 +41,7 @@ def paths():
 
 @pytest.fixture
 def rng():
-    return np.random.default_rng(1000)
+    return np.random.RandomState(1000)
 
 @pytest.fixture
 def mock_func():

@@ -67,7 +67,7 @@ class NumpyEngine(Engine):
         self._type_check(trees)
 
         # Sort sample columns by terminal
-        variables = self.model.terminals.variables.keys()
+        variables = self.model.terminals_.variables.keys()
         X_dict = {name: X[:, i] for i, name in enumerate(variables)}
         shape = X.shape[0]
 
@@ -77,7 +77,7 @@ class NumpyEngine(Engine):
             expr = tree.expression
 
             # Skip tree if cached score for X_hash and expr
-            if (X_hash and expr in self.model.cache[X_hash]):
+            if (X_hash and expr in self.model.cache_[X_hash]):
                 continue
             predictions[i] = self.parse_expr(expr, X_dict, shape)
         return predictions
@@ -124,7 +124,9 @@ class TensorflowEngine(Engine):
 
         # Configure tensorflow
         ### TensorFlow Imports and Definitions ###
-        tf.set_random_seed(model.seed)
+        seed = (model.random_state if isinstance(model.random_state, int)
+                else 1000)
+        tf.set_random_seed(seed)
         tf.disable_v2_behavior()
         self.tf_device = tf_device
         self.config = tf.ConfigProto(
@@ -153,7 +155,7 @@ class TensorflowEngine(Engine):
 
             # Skip tree if cached score for X_hash and expr
             expr = tree.expression
-            if (X_hash and expr in self.model.cache[X_hash]):
+            if (X_hash and expr in self.model.cache_[X_hash]):
                 continue
 
             tf.reset_default_graph()
@@ -161,7 +163,7 @@ class TensorflowEngine(Engine):
                 with sess.graph.device(self.tf_device):
 
                     # Sort sample columns by terminal
-                    variables = self.model.terminals.variables.keys()
+                    variables = self.model.terminals_.variables.keys()
                     X_dict = {v: tf.constant(X[:, i], dtype=self.dtype)
                             for i, v in enumerate(variables)}
 
