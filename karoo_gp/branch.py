@@ -254,6 +254,7 @@ class Branch:
             for (branch, branch_width) in last_children:
                 symbol = ' ' if branch is None else str(branch.node.symbol)[:symbol_max_len]
                 this_output = symbol.center(branch_width)
+                symbol_index = this_output.find(symbol)
                 this_children = []      # Children from this item
                 cum_width = 0           # Cumulative character-width of all subtrees
                 cum_cols = 0            # Cumulative maximum node-width of all subtrees
@@ -277,12 +278,16 @@ class Branch:
                         this_children.append((child, child_width))
                         cum_width += child_width
                     # Add lines to the output
-                    start_padding = this_children[0][1] // 2          # Midpoint of first child
+                    start_padding = this_children[0][1] // 2 - 1  # Midpoint of first child
                     end_padding = branch_width - (this_children[-1][1] // 2)  # ..of last child
-                    with_line = ''
-                    for i, v in enumerate(this_output):
-                        with_line += '_' if (i > start_padding and i < end_padding and v == ' ') else v
-                    this_output = with_line
+                    with_line = ['─' if (i > start_padding and i < end_padding and v == ' ') else v
+                                 for i, v in enumerate(this_output)]
+                    if len(with_line) > 3:
+                        with_line[start_padding] = '╭' # '┌'
+                        with_line[symbol_index-1] = '┤'
+                        with_line[symbol_index+1] = '├'
+                        with_line[end_padding-1] = '╮' # '┐'
+                    this_output = ''.join(with_line)
                 depth_output += this_output
                 depth_children += this_children
             last_children = depth_children
