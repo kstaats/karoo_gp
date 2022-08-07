@@ -9,10 +9,10 @@ class Tree:
     #   Initialize              |
     #++++++++++++++++++++++++++++
 
-    def __init__(self, id, root, tree_type='g', score=None):
+    def __init__(self, id_, root, tree_type='g', score=None):
         """Initialize a Tree from an id and Branch"""
         # TODO: start from 0
-        self.id = id        # The tree's position within population
+        self.id = id_        # The tree's position within population
         self.root = root    # The top Branch (depth = 0)
         self.tree_type = tree_type
         self.score = score or {}
