@@ -344,7 +344,7 @@ class BaseGP(BaseEstimator):
 
         return self.X_train, self.X_test, self.y_train, self.y_test
 
-    def fit(self, X=None, y=None):
+    def fit(self, dataset=None, dataset_without_solution=None):
         """Evolve a population of trees based on training data"""
 
         self.log('Press ? to see options, or ENTER to continue the run',
@@ -353,13 +353,13 @@ class BaseGP(BaseEstimator):
 
         # Initialize model and all variables
         self.check_model()
-        X, y = check_X_y(X, y)
-        X_train, X_test, y_train, y_test = self.check_test_split(X, y)
+        dataset, dataset_without_solution = check_X_y(dataset, dataset_without_solution)
+        X_train, X_test, y_train, y_test = self.check_test_split(dataset, dataset_without_solution)
         self.check_population(X_train, y_train)
 
         menu = 1
         while menu != 0:  # Supports adding generations mid-run
-            for gen in range(self.population.gen_id, self.gen_max):
+            for _ in range(self.population.gen_id, self.gen_max):
 
                 # Evolve the next generation
                 self.population = self.population.evolve(

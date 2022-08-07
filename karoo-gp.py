@@ -551,9 +551,10 @@ filename = filename or karoo_dir / 'karoo_gp' / 'files' / f'data_{suffix}.csv'
 functions = np.loadtxt(func_path, delimiter=',', skiprows=1, dtype=str)
 functions = [f[0] for f in functions]  # Arity is now hard-coded by symbol
 dataset = pd.read_csv(filename)
-y = dataset.pop('s')
+dataset_without_solution = dataset.pop('s')
 terminals = list(dataset.keys())
-X, y = dataset.to_numpy(), y.to_numpy()
+dataset_without_solution = dataset_without_solution.to_numpy()
+dataset = dataset.to_numpy()
 
 #++++++++++++++++++++++++++++++++++++++++++
 #   Conduct the GP run                    |
@@ -590,7 +591,7 @@ gp = cls(
 )
 
 # Fit to the data
-gp.fit(X, y)
+gp.fit(dataset, dataset_without_solution)
 
 if kernel == 'p':
     tree = gp.population.trees[0]
