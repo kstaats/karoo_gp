@@ -51,8 +51,8 @@ def pause(menu_dict):
         print('')
         print('\t\033[36m\033[1m id \t\033[0;0m display current generation ID')
         print('\t\033[36m\033[1m dir \t\033[0;0m display current working directory')
-        # print('\t\033[36m\033[1m load \t\033[0;0m load population_s (seed) '
-        #       'to replace population_a (current)')  # NEED TO FIX
+        print('\t\033[36m\033[1m load \t\033[0;0m load population_s (seed) '
+              'to replace population_a (current)')
         print('\t\033[36m\033[1m w \t\033[0;0m write the evolving next_gen_trees to disk')
         print('')
         print('\t\033[36m\033[1m add \t\033[0;0m add generations and continue your run')
@@ -278,23 +278,22 @@ def pause(menu_dict):
     elif menu == 'dir':
         print('\n\t Current working directory:', menu_dict['path'])
 
-    # NEED TO REBUILD
-    #elif menu == 'load':  # load population_s to replace population_a
-    #    while True:
-    #        try:
-    #            query = input('\n\t Overwrite the current population with population_s? '
-    #                          '(\033[1my\033[0;0m\033[32m/\033[1mn\033[0;0m\033[32m)\033[0;0m ')
-    #            if query == 'y': menu_dict['input_a'] = 'load'; break
-    #            elif query == 'n': break
-    #            else: raise ValueError()
-    #        except ValueError:
-    #            print('\n\t\033[32m Enter (\033[1my\033[0;0m)es or (\033[1mn\033[0;0m)o. '
-    #                  'Try again ...\033[0;0m')
-    #        except KeyboardInterrupt:
-    #            print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
+    elif menu == 'load':  # load population_s to replace population_a
+       while True:
+           try:
+               query = input('\n\t Overwrite the current population with population_s? '
+                             '(\033[1my\033[0;0m\033[32m/\033[1mn\033[0;0m\033[32m)\033[0;0m ')
+               if query == 'y': menu_dict['input_a'] = 'load'; break
+               elif query == 'n': break
+               else: raise ValueError()
+           except ValueError:
+               print('\n\t\033[32m Enter (\033[1my\033[0;0m)es or (\033[1mn\033[0;0m)o. '
+                     'Try again ...\033[0;0m')
+           except KeyboardInterrupt:
+               print('\n\n\t\033[32m Enter \033[1mq\033[0;0m\033[32m to quit\033[0;0m')
 
     elif menu == 'w':  # write the evolving next_gen_trees to disk
-        if menu_dict['gen_id'] > 1:
+        if menu_dict['next_gen_len'] > 0:
             menu_dict['input_a'] = 'write'
         else:
             print('\n\t\033[36m The evolving next_gen_trees does not yet exist\033[0;0m')

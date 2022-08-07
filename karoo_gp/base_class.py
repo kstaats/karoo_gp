@@ -30,36 +30,6 @@ from datetime import datetime
 from . import NumpyEngine, TensorflowEngine, Population, Tree, NodeData, \
               get_function_node, get_nodes
 
-# TODO: This is used to save the final population and the generated self.path
-# is used by fx_data_params_write/_json. I think this should be moved back to
-# BaseGP. Some of the save/load methods there are still unused/nonfunctioning,
-# and they can be combined with the useful parts of this.
-class DataLoader:
-    def __init__(self, model):
-        """Determine path and initialize log dir"""
-        runs_dir = os.path.join(os.getcwd(), 'runs')
-        if model.output_dir:
-            self.path = os.path.join(runs_dir, model.output_dir + '/')
-        else:
-            basename = os.path.basename(model.filename)  # extract the filename (if any)
-            root, _ = os.path.splitext(basename)  # split root from extension
-            # TODO: datetime should be set when run is initialized, i.e. in
-            # model.fit. However, sometimes the model terminates early, and
-            # needs to have made an output dir already. Update this with a
-            # comprehensive new approach to saving/logging data.
-            self.path = os.path.join(runs_dir, f'{root}_{model.datetime}/')
-        if not os.path.isdir(self.path):    # initialize elog dir
-            os.makedirs(self.path)
-        for fname in ['a', 'b', 'f', 's']:  # initialize log files
-            self.save('', fname)
-
-    def save(self, data, fname):
-        """Save data to csv"""
-        if fname in ['a', 'b', 'f', 's']:
-            fname = f'population_{fname}.csv'
-        with open(self.path + fname, 'w') as f:
-            writer = csv.writer(f)
-            writer.writerows(data)
 
 class BaseGP(BaseEstimator):
 
@@ -104,11 +74,15 @@ class BaseGP(BaseEstimator):
     └- .score(pred, y)                  - return score of prediction against y
     """
 
+    # Overridden by subclasses
+    kernel = 'b'  # Base
 
     # Fit parameters (set later)
     engine = None
     scoring_ = None
     history_ = None
+    datetime = None
+    path = None
     X_hash_ = None
     test_split_ = None
     node_lib = None
@@ -196,6 +170,59 @@ class BaseGP(BaseEstimator):
         score = self.score(self.X_test, self.y_test)
         recursively_merge_history(score, self.history_)
 
+    def save_population(self, population):
+        """Write population to csv following default instructions.
+
+        population:
+        'a': Append current trees to 'population_a.csv'
+        'b': Write next_gen_trees to 'populatin_b.csv' (overwrite)
+        'f': Write final trees to 'population_f' (overwrite);
+             called by terminate()
+        's': Write current trees to 'population_s' (overwrite);
+             called in interactive mode to edit manually and re-load
+             TODO: menu['w'] currently only saves pop_b; choose b or s
+        """
+
+        # Select trees to save
+        if self.population is None:  # Used to initialize empty csv's
+            pop = []
+        elif population in ('a', 'f', 's'):
+            gen_id = self.population.gen_id
+            pop = [f'Karoo GP by Kai Staats - Generation {gen_id}']
+            pop += self.population.save()
+        elif population == 'b':
+            pop = self.population.save(next_gen=True)
+        else:
+            raise ValueError(f'Unrecognized fname: {fname}')
+
+        # Select the appropriate file
+        fname = f'population_{population}.csv'
+        overwrite = False if population == 'a' else True
+        with open(self.path + fname, 'a') as f:
+            if overwrite:
+                f.truncate()
+            writer = csv.writer(f, delimiter=',')
+            writer.writerows([[p] for p in pop])
+            # Add extra line after generations
+            if population == 'a':
+                writer.writerows([''])
+
+    def load_population(self, path=None):
+        if path is None:
+            path = self.path + 'population_s.csv'
+        gen_id = None
+        trees = []
+        with open(path) as f:
+            reader = csv.reader(f, delimiter=',')
+            for row in reader:
+                item = row[0]
+                if item.startswith('Karoo'):  # First line
+                    gen_id = item.split('Generation ')[1]
+                elif not item:
+                    break
+                else:
+                    trees.append(item)
+        self.population = Population.load(self, trees, int(gen_id))
 
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Run Karoo GP                  |
@@ -247,9 +274,23 @@ class BaseGP(BaseEstimator):
                 self.engine = TensorflowEngine(self, self.tf_device, self.tf_device_log)
             else:
                 raise ValueError(f'Unrecognized engine_type: {self.engine_type}')
-            # Loader
+
+            # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
-            self.loader = DataLoader(self)       # set path, initialize logs
+            runs_dir = os.path.join(os.getcwd(), 'runs')
+            if not os.path.isdir(runs_dir):
+                os.makedirs(runs_dir)
+            if self.output_dir:
+                self.path = os.path.join(runs_dir, self.output_dir + '/')
+            else:
+                kname = dict(b='BASE', r='REGRESS',
+                             c='CLASSIFY', m='MATCH')[self.kernel]
+                self.path = os.path.join(
+                    runs_dir, f'data_{kname}_{self.datetime}/')
+            if not os.path.isdir(self.path):    # initialize elog dir
+                os.makedirs(self.path)
+                for pop in ['a', 'b', 'f', 's']:  # initialize log files
+                    self.save_population(pop)
 
     def check_population(self, X, y):
         """Initialize and/or validate population parameters"""
@@ -293,6 +334,7 @@ class BaseGP(BaseEstimator):
                      f'{self.tree_pop_max} Trees.')
             self.population.evaluate(X, y, self.X_train_hash)
             self.log_history()
+            self.save_population('a')
 
         # Update max allowed depth
         if self.tree_depth_max is None:
@@ -370,6 +412,7 @@ class BaseGP(BaseEstimator):
 
                 # Add best score to history
                 self.log_history()
+                self.save_population('a')
 
             if self.mode == 's':  # (s)erver mode: terminate after run
                 menu = 0
@@ -423,17 +466,14 @@ class BaseGP(BaseEstimator):
         TODO: Replace with a save() method, possibly call automatically when
         used via ContextManager, or manually.
         '''
-        kernel = {
-            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm', BaseGP: 'p'
-        }[type(self)]
-        self.fx_data_params_write(kernel)
-        self.fx_data_params_write_json(kernel)
+        self.fx_data_params_write(self.kernel)
+        self.fx_data_params_write_json(self.kernel)
 
         # save the final population
-        self.loader.save([t.save() for t in self.population.trees], 'f')
+        self.save_population('f')
 
         self.log(f'Your Trees and runtime parameters are archived in '
-                 f'{self.loader.path}/population_f.csv')
+                 f'{self.path}/population_f.csv')
         self.log('\n\033[3m "It is not the strongest of the species that '
                  'survive, nor the most intelligent,\033[0;0m\n'
                  '\033[3m  but the one most responsive to change."'
@@ -456,10 +496,9 @@ class BaseGP(BaseEstimator):
 
         Arguments required: app
         '''
-        with open(self.loader.path + 'log_config.txt', 'w') as file:
+        with open(self.path + 'log_config.txt', 'w') as file:
             file.write('Karoo GP')
             file.write('\n launched: ' + str(self.datetime))
-            file.write('\n dataset: ' + str(self.filename))
             file.write('\n')
             file.write('\n kernel: ' + str(kernel))
             file.write('\n precision: ' + str(self.precision))
@@ -479,10 +518,9 @@ class BaseGP(BaseEstimator):
             file.write('\n number of generations: ' + str(self.population.gen_id))
             file.write('\n\n')
 
-        with open(self.loader.path + 'log_test.txt', 'w') as file:
+        with open(self.path + 'log_test.txt', 'w') as file:
             file.write('Karoo GP')
             file.write('\n launched: ' + str(self.datetime))
-            file.write('\n dataset: ' + str(self.filename))
             file.write('\n')
 
             # Which population the fittest_dict indexes refer to
@@ -520,7 +558,7 @@ class BaseGP(BaseEstimator):
         generic = dict(
             package='Karoo GP',
             launched=self.datetime,
-            dataset=str(self.filename),
+            # dataset=str(self.filename),  # Should be external to model
         )
         config = dict(
             kernel=kernel,
@@ -559,7 +597,7 @@ class BaseGP(BaseEstimator):
                 fittest_tree=fittest_tree,
                 score=self.score(self.X_test, self.y_test),
             )
-        with open(self.loader.path + 'results.json', 'w') as f:
+        with open(self.path + 'results.json', 'w') as f:
             json.dump(final_dict, f, indent=4)
 
 
@@ -567,6 +605,8 @@ class BaseGP(BaseEstimator):
 # KERNEL IMPLEMENTATIONS
 
 class RegressorGP(BaseGP):
+    kernel = 'r'  # Regressor
+
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -603,6 +643,8 @@ class RegressorGP(BaseGP):
 
 
 class MatchingGP(BaseGP):
+    kernel = 'm'  # Match
+
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -643,6 +685,8 @@ class MatchingGP(BaseGP):
 
 
 class MultiClassifierGP(BaseGP):
+    kernel = 'c'  # Classify
+
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring functions, setup decoder"""
 

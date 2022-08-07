@@ -6,11 +6,15 @@ from . import Tree
 
 class Population:
 
-    def __init__(self, model, trees, gen_id=1, history=None):
+    #++++++++++++++++++++++++++++
+    #   Initialize              |
+    #++++++++++++++++++++++++++++
+
+    def __init__(self, model, trees, gen_id=None, history=None):
         """TODO"""
         self.model = model
         self.trees = trees
-        self.gen_id = gen_id
+        self.gen_id = 1 if gen_id is None else gen_id
         self.evaluated = False
         self.fittest_dict = {}
         self.history = history or []
@@ -49,6 +53,23 @@ class Population:
                                            **kwargs))
         return cls(model, trees)
 
+    @classmethod
+    def load(cls, model, saved_trees, gen_id=None):
+        """Take an array of (saved) trees and return a new population"""
+        loaded_trees = []
+        for i, t in enumerate(saved_trees):
+            loaded_trees.append(Tree.load(i+1, t))
+        return cls(model, loaded_trees, gen_id)
+
+    def save(self, next_gen=False):
+        """Return an array of saved trees (strings) from current or next gen"""
+        pop = self.trees if not next_gen else self.next_gen_trees
+        return [t.save() for t in pop]
+
+    #++++++++++++++++++++++++++++
+    #   Evaluate                |
+    #++++++++++++++++++++++++++++
+
     def fittest(self):
         """Return the fittest tree of the population."""
         if not self.evaluated:
@@ -62,7 +83,7 @@ class Population:
         """
         self.model.log(f'\nEvaluate all Trees in Generation {self.gen_id}')
         self.model.pause(display=['i'])
-        
+
         predictions = self.model.batch_predict(X, self.trees, X_hash)
         for tree, y_pred in zip(self.trees, predictions):
             cached = False
@@ -85,6 +106,10 @@ class Population:
                        f'{np.sort(list(self.fittest_dict.keys()))} offer the '
                        f'highest fitness scores.')
         self.model.pause(display=['g'])
+
+    #++++++++++++++++++++++++++++
+    #   Evolve                  |
+    #++++++++++++++++++++++++++++
 
     def evolve(self, tree_pop_max, swim='p', tree_depth_min=None,
                tree_depth_max=5, tourn_size=7, evolve_repro=0.1,
@@ -169,10 +194,6 @@ class Population:
         next_gen = Population(model=self.model, trees=self.next_gen_trees,
                               gen_id=self.gen_id + 1, history=self.history)
         return next_gen
-
-    #++++++++++++++++++++++++++++
-    #   Evolution               |
-    #++++++++++++++++++++++++++++
 
     def fitness_gene_pool(self, swim='p', tree_depth_min=None):
         self.gene_pool = []

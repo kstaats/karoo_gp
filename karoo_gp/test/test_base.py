@@ -1,3 +1,4 @@
+import csv
 import pytest
 import numpy as np
 
@@ -85,6 +86,51 @@ def test_model_base(default_kwargs, X_shape):
     best_fitness = model.population.fittest().fitness
     for tree in model.population.trees:
         assert tree.fitness >= best_fitness
+
+def test_model_save_load(tmp_path, paths, default_kwargs):
+
+    # Initialize regression model and fit 2 generations
+    data = load_data(tmp_path, paths, 'r')
+    X, y = data['X'], data['y']
+    kwargs = dict(default_kwargs)
+    kwargs['tree_pop_max'] = 10
+    kwargs['terminals'] = data['terminals']
+    kwargs['functions'] = data['functions']
+    kwargs['gen_max'] = 2
+    model = RegressorGP(**kwargs)
+    model.fit(X, y)
+
+    # Check saved record
+    fname = next(tmp_path.iterdir())
+    assert 'population_a.csv' in str(fname)
+    with open(fname) as f:
+        reader = csv.reader(f)
+        for i in range(2):
+            header = next(reader)
+            assert header[0] == f'Karoo GP by Kai Staats - Generation {i+1}'
+            for j in range(kwargs['tree_pop_max']):
+                saved_tree = next(reader)[0]  # First (and only) item on line
+                tree = Tree.load(j+1, saved_tree)
+                assert len(tree.save()) == len(saved_tree)
+            next(reader)  # Empty line after population
+
+    # Check load function
+    # - Note the last tree of pop
+    original = model.population.trees[-1].save()
+    # - Save pop to file
+    model.save_population('s')
+    # - Evolve one gen
+    model.gen_max = 3
+    model.fit(X, y)
+    # - Confirm last tree is different
+    updated = model.population.trees[-1].save()
+    assert original != updated
+    # - Load saved pop from file
+    model.load_population()
+    # - Confirm last tree is same as it was before
+    reloaded = model.population.trees[-1].save()
+    assert original == reloaded
+    
 
 @pytest.mark.parametrize('ker', ['c', 'r', 'm'])
 def test_model_kernel(tmp_path, paths, default_kwargs, ker):

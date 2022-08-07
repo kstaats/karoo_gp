@@ -23,8 +23,8 @@ class Tree:
             tree_type = expr[0]
             expr = expr[1:]
         elif expr[0] != '(':
-            raise ValueError('Load-from expressions must start with tree type'
-                             '("f"/"g") or "(".')
+            raise ValueError(f'Load-from expressions must start with tree type'
+                             f' (f/g) or parenthesis; got {expr[0]}')
         root = Node.load(expr, tree_type)
         tree = cls(id, root, tree_type)
         return tree
