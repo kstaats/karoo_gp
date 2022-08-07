@@ -459,7 +459,7 @@ def fx_karoo_pause(model):
             'fittest_dict': model.population.fittest_dict,
             'population_len': len(model.population.trees),
             'next_gen_len': len(model.population.next_gen_trees),
-            'path': model.loader.path,
+            'path': model.path,
         }
         menu_dict = {**menu_dict, **pop_dict}
 
@@ -520,15 +520,14 @@ def fx_karoo_pause(model):
         for tree in model.population.next_gen_trees:
             model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
-    # TODO: Test and troubleshoot the load/save system
     elif input_a == 'load':  # load population_s to replace population_a
-        # NEED TO replace 's' with a user defined filename
-        model.fx_data_recover(model.savefile['s'])
+        model.load_population()
+        model.log(f'\n\t Replacing population_a with population_s.csv')
 
     elif input_a == 'write':  # write the evolving next_gen_trees to disk
-        model.fx_data_tree_write(model.population.next_gen_trees, 'b')
+        model.save_population('b')
         model.log(f'\n\t All current members of the evolving next_gen_trees '
-                  f'saved to {model.savefile["b"]}')
+                  f'saved to {model.path}/population_b.csv')
 
     elif input_a == 'add':
         # check for added generations, then exit fx_karoo_pause

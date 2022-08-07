@@ -1,7 +1,6 @@
 {
     "package": "Karoo GP",
     "launched": "2022-07-07_08-29-41-068599",
-    "dataset": "karoo_gp/files/data_MATCH.csv",
     "config": {
         "kernel": "m",
         "precision": 6,
