@@ -15,7 +15,7 @@ operators_ref = {
 
 # TODO: Rename to 'Node'
 class Branch:
-    """An recursive tree element with a node, parent and children"""
+    """A recursive tree element with a node, parent and children"""
 
     #++++++++++++++++++++++++++++
     #   Initialize              |
