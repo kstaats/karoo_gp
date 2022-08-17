@@ -40,13 +40,13 @@ class BaseGP(BaseEstimator):
 
     BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
-    ├─ .node_lib = Nodes                - all active terminals, constands, fx
+    ├─ .nodes = Nodes                - all active terminals, constands, fx
     ├─ .decoder(y)                      - Initialize with y_train
     │   └─ .transform(pred)             - transforms prediction to match y
     │
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
     |
-    ├─ .get_nodes(types, depth)         - return matching nodes from node_lib
+    ├─ .get_nodes(types, depth)         - return nodes matching types & depth
     │
     ├─ .engine = Engine                 - Numpy for cpu, Tensorflow for gpu
     │   └─ .predict(trees, X, X_hash)   - returns X predictions for each tree
@@ -85,7 +85,7 @@ class BaseGP(BaseEstimator):
     path = None
     X_hash_ = None
     test_split_ = None
-    node_lib = None
+    nodes = None
     population = None
     cache_ = None
 
@@ -193,19 +193,19 @@ class BaseGP(BaseEstimator):
         elif population == 'b':
             pop = self.population.save(next_gen=True)
         else:
-            raise ValueError(f'Unrecognized fname: {fname}')
+            raise ValueError(f'Unrecognized population: {population}')
 
         # Select the appropriate file
         fname = f'population_{population}.csv'
-        overwrite = False if population == 'a' else True
-        with open(self.path + fname, 'a') as f:
-            if overwrite:
-                f.truncate()
+        mode = 'a' if population == 'a' else 'w'
+        with open(self.path + fname, mode) as f:
             writer = csv.writer(f, delimiter=',')
             writer.writerows([[p] for p in pop])
             # Add extra line after generations
-            if population == 'a':
-                writer.writerows([''])
+            if (population == 'a' and self.population and
+                self.population.gen_id > 0):
+                writer.writerow('')
+        return self.path + fname
 
     def load_population(self, path=None):
         if path is None:
@@ -295,17 +295,21 @@ class BaseGP(BaseEstimator):
     def check_population(self, X, y):
         """Initialize and/or validate population parameters"""
         # Nodes
-        if self.node_lib is None:
+        if self.nodes is None:
 
             # Terminals
             if self.terminals is None:
                 terms = [f'f{i}' for i in range(X.shape[1])]
-            elif (isinstance(self.terminals, list) and
-                  all(isinstance(t, str) for t in self.terminals) and
-                  len(self.terminals) == X.shape[1]):
-                terms = self.terminals
             else:
-                raise ValueError('terminals must be a list of strings')
+                if not isinstance(self.terminals, list):
+                    raise ValueError('Terminals must be a list, got',
+                                    type(self.terminals))
+                elif not all(isinstance(t, str) for t in self.terminals):
+                    raise ValueError('Terminal list items must be strings.')
+                elif len(self.terminals) != X.shape[1]:
+                    raise ValueError('Terminals list must be the same length'
+                                     'as X samples.')
+                terms = self.terminals
             terminals = [NodeData(t, 'terminal') for t in terms]
 
             # Constants
@@ -319,7 +323,7 @@ class BaseGP(BaseEstimator):
             function_labels = self.functions or ['+', '-', '*', '/', '**']
             functions = [get_function_node(f) for f in function_labels]
 
-            self.node_lib = terminals + constants + functions
+            self.nodes = terminals + constants + functions
 
         # Population
         if self.population is None:
@@ -455,7 +459,7 @@ class BaseGP(BaseEstimator):
                 for label, fx in self.scoring_.items()}
 
     def get_nodes(self, *args, **kwargs):
-        return get_nodes(*args, **kwargs, lib=self.node_lib)
+        return get_nodes(*args, **kwargs, lib=self.nodes)
 
     def fx_karoo_terminate(self):
         '''
@@ -470,10 +474,9 @@ class BaseGP(BaseEstimator):
         self.fx_data_params_write_json(self.kernel)
 
         # save the final population
-        self.save_population('f')
+        loc = self.save_population('f')
 
-        self.log(f'Your Trees and runtime parameters are archived in '
-                 f'{self.path}/population_f.csv')
+        self.log(f'Your Trees and runtime parameters are archived in {loc}')
         self.log('\n\033[3m "It is not the strongest of the species that '
                  'survive, nor the most intelligent,\033[0;0m\n'
                  '\033[3m  but the one most responsive to change."'

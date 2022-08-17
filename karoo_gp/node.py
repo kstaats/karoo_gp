@@ -53,6 +53,12 @@ class Node:
 
     @classmethod
     def recursive_load(cls, expr, tree_type, parent=None):
+        # TODO: This doesn't need to use ast. Instead:
+        # - expr is a string
+        # - remove outer-most parenthesis
+        # - split on first-level parenthesis into a list of labels & children
+        # - find the label, make the appropriate Node
+        # - load children recursively
         if isinstance(expr, ast.Expression):
             expr = expr.body
         if isinstance(expr, ast.Name):  # Terminal

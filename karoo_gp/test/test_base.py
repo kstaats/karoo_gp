@@ -117,8 +117,12 @@ def test_model_save_load(tmp_path, paths, default_kwargs):
     # Check load function
     # - Note the last tree of pop
     original = model.population.trees[-1].save()
+    # - Throw error for unrecognized population
+    with pytest.raises(ValueError):
+        model.save_population('h')
     # - Save pop to file
-    model.save_population('s')
+    loc = model.save_population('s')
+    assert loc == default_kwargs['output_dir'] + '/population_s.csv'
     # - Evolve one gen
     model.gen_max = 3
     model.fit(X, y)

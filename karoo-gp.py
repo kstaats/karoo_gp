@@ -525,9 +525,9 @@ def fx_karoo_pause(model):
         model.log(f'\n\t Replacing population_a with population_s.csv')
 
     elif input_a == 'write':  # write the evolving next_gen_trees to disk
-        model.save_population('b')
+        path = model.save_population('b')
         model.log(f'\n\t All current members of the evolving next_gen_trees '
-                  f'saved to {model.path}/population_b.csv')
+                  f'saved to {path}')
 
     elif input_a == 'add':
         # check for added generations, then exit fx_karoo_pause

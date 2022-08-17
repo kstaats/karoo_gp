@@ -6,9 +6,9 @@ from karoo_gp import Tree, Node, get_nodes
 from .util import dump_json
 
 @pytest.fixture
-def tree_default_kwargs(rng, node_lib):
+def tree_default_kwargs(rng, nodes):
     def get_nodes_(*args, **kwargs):
-        return get_nodes(*args, **kwargs, lib=node_lib)
+        return get_nodes(*args, **kwargs, lib=nodes)
     return dict(
         rng=rng,
         id=1,

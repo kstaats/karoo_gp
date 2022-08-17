@@ -19,9 +19,9 @@ def X():
 class MockModel:
     random_state = 1000
     cache_ = dict()
-    node_lib = [NodeData(t, 'terminal') for t in ['a', 'b', 'c']]
+    nodes = [NodeData(t, 'terminal') for t in ['a', 'b', 'c']]
     def get_nodes(self, *args, **kwargs):
-        return get_nodes(*args, **kwargs, lib=self.node_lib)
+        return get_nodes(*args, **kwargs, lib=self.nodes)
 
 @pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
 def test_engine(X, trees, engine_type):

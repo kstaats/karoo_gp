@@ -51,7 +51,7 @@ def mock_func():
     return handler
 
 @pytest.fixture()
-def node_lib():
+def nodes():
     return ([NodeData(t, 'terminal') for t in ['a', 'b', 'c']] +
             [NodeData(c, 'constant') for c in [1, 2, 3]] +
             [get_function_node(l) for l in ['+', '-', '*', '/']])

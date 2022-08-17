@@ -15,16 +15,16 @@ class MockModel:
         self.rng = np.random.RandomState(1000)
         self.build_fittest_dict = MagicMock()
         self.force_types = [('operator', 'cond')]
-        self.node_lib = ([NodeData(t, 'terminal') for t in ['a', 'b']] +
+        self.nodes = ([NodeData(t, 'terminal') for t in ['a', 'b']] +
                          [get_function_node(f) for f in ['+', '-', '*', '/']])
 
     def update_terminals(self, new_terminals):
-        self.node_lib = list(filter(lambda n: n.node_type != 'terminal',
-                                    self.node_lib))
-        self.node_lib += [NodeData(t, 'terminal') for t in new_terminals]
+        self.nodes = list(filter(lambda n: n.node_type != 'terminal',
+                                    self.nodes))
+        self.nodes += [NodeData(t, 'terminal') for t in new_terminals]
 
     def get_nodes(self, *args, **kwargs):
-        return get_nodes(*args, **kwargs, lib=self.node_lib)
+        return get_nodes(*args, **kwargs, lib=self.nodes)
 
     def batch_predict(self, X, trees, X_hash):
         """Return an array of 1's of expected shape"""

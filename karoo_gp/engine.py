@@ -93,9 +93,6 @@ class NumpyEngine(Engine):
     def __init__(self, model):
         super().__init__(model, engine_type='numpy')
         self.dtype = np.float64
-        def num_obj(shape, value):  # Function for terminals/constants arrays
-            return np.full(shape, value, dtype=self.dtype)
-        self.num_obj = num_obj
 
         self.operators = {
             ast.Add: np.add,
@@ -127,6 +124,9 @@ class NumpyEngine(Engine):
             'arcsin': np.arcsin,
             'arctan': np.arctan,
         }
+
+    def num_obj(self, shape, value):  # Function for terminals/constants arrays
+        return np.full(shape, value, dtype=self.dtype)
 
     def predict(self, trees, X, X_hash=None):
         """Return predicted the output of each sample for a list of trees"""
@@ -169,10 +169,6 @@ class TensorflowEngine(Engine):
     def __init__(self, model, tf_device="/gpu:0", tf_device_log=False):
         super().__init__(model, engine_type='tensorflow')
         self.dtype = tf.float64
-        def num_obj(shape, value):
-            # Tensorflow has a different ordering
-            return tf.constant(value, dtype=self.dtype, shape=shape)
-        self.num_obj = num_obj
 
         # Configure tensorflow
         seed = (model.random_state if isinstance(model.random_state, int)
@@ -224,6 +220,10 @@ class TensorflowEngine(Engine):
             'arcsin': tf.asin,
             'arctan': tf.atan,
         }
+
+    def num_obj(self, shape, value):
+        # Tensorflow has a different ordering
+        return tf.constant(value, dtype=self.dtype, shape=shape)
 
     def predict(self, trees, X, X_hash=None):
         """Return the predicted output of each sample for a list of trees"""

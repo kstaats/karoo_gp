@@ -7,12 +7,12 @@ from karoo_gp import Node, NodeData, get_nodes, function_lib
 from .util import dump_json
 
 @pytest.fixture
-def node_default_kwargs(rng, node_lib):
-    node_lib = ([NodeData(t, 'terminal') for t in ['a', 'b', 'c']] +
+def node_default_kwargs(rng, nodes):
+    nodes = ([NodeData(t, 'terminal') for t in ['a', 'b', 'c']] +
                 [NodeData(c, 'constant') for c in [1, 2, 3]] +
                 function_lib)
     def get_nodes_(*args, **kwargs):
-        return get_nodes(*args, **kwargs, lib=node_lib)
+        return get_nodes(*args, **kwargs, lib=nodes)
     return dict(
         rng=rng,
         get_nodes=get_nodes_,
