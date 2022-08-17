@@ -283,9 +283,13 @@ def pause(menu_dict):
            try:
                query = input('\n\t Overwrite the current population with population_s? '
                              '(\033[1my\033[0;0m\033[32m/\033[1mn\033[0;0m\033[32m)\033[0;0m ')
-               if query == 'y': menu_dict['input_a'] = 'load'; break
-               elif query == 'n': break
-               else: raise ValueError()
+               if query == 'y':
+                   menu_dict['input_a'] = 'load'
+                   break
+               elif query == 'n':
+                   break
+               else:
+                   raise ValueError()
            except ValueError:
                print('\n\t\033[32m Enter (\033[1my\033[0;0m)es or (\033[1mn\033[0;0m)o. '
                      'Try again ...\033[0;0m')

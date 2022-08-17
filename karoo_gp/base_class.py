@@ -175,7 +175,7 @@ class BaseGP(BaseEstimator):
 
         population:
         'a': Append current trees to 'population_a.csv'
-        'b': Write next_gen_trees to 'populatin_b.csv' (overwrite)
+        'b': Write next_gen_trees to 'population_b.csv' (overwrite)
         'f': Write final trees to 'population_f' (overwrite);
              called by terminate()
         's': Write current trees to 'population_s' (overwrite);
@@ -186,7 +186,7 @@ class BaseGP(BaseEstimator):
         # Select trees to save
         if self.population is None:  # Used to initialize empty csv's
             pop = []
-        elif population in ('a', 'f', 's'):
+        elif population in {'a', 'f', 's'}:
             gen_id = self.population.gen_id
             pop = [f'Karoo GP by Kai Staats - Generation {gen_id}']
             pop += self.population.save()

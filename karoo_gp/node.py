@@ -28,7 +28,7 @@ operators_ref = {
 }
 
 class Node:
-    """An recursive tree element with a node, parent and children"""
+    """A tree node, with node data, a parent, and children"""
 
     #++++++++++++++++++++++++++++
     #   Initialize              |
@@ -413,7 +413,7 @@ class Node:
 
     @property
     def n_children(self):
-        """Return the total childen in subtree excluding root (recursive)"""
+        """Return the total children in subtree excluding root (recursive)"""
         ch = self.children
         return 0 if not ch else len(ch) + sum([c.n_children for c in ch])
 
@@ -437,13 +437,13 @@ class Node:
         return copy
 
     def get_child(self, n, method='BFS'):
-        """Returns the child in the nth position; supports BFS or DFS"""
+        """Return the child in the nth position; supports BFS or DFS"""
         n = n if method != 'BFS' else self.i_bfs(n)
         child, _ = self.recursive_get_child(n)
         return child
 
     def recursive_get_child(self, n):
-        """Returns child n (dfs) as the 0th element of a 2-tuple"""
+        """Return child n (dfs) as the 0th element of a 2-tuple"""
         if n == 0:
             return self, n
         elif not self.children:

@@ -54,5 +54,5 @@ def get_nodes(types: Iterable[str], depth=2,
 
     Used by BaseGP with the lib of user-selected nodes, including terminals
     and constants"""
-    return list(filter(lambda n: (n.node_type in types and
-                                  n.min_depth <= depth), lib))
+    return [node for node in lib
+            if node.node_type in types and node.min_depth <= depth]

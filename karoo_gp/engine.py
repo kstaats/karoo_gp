@@ -134,7 +134,7 @@ class NumpyEngine(Engine):
         self._type_check(trees)
 
         # Sort sample columns by terminal
-        variables = [t.label for t in self.model.get_nodes(('terminal'))]
+        variables = [t.label for t in self.model.get_nodes(['terminal'])]
         X_dict = {name: X[:, i] for i, name in enumerate(variables)}
         shape = X.shape[0]
 
@@ -223,7 +223,6 @@ class TensorflowEngine(Engine):
             'arccos': tf.acos,
             'arcsin': tf.asin,
             'arctan': tf.atan,
-
         }
 
     def predict(self, trees, X, X_hash=None):
@@ -245,7 +244,7 @@ class TensorflowEngine(Engine):
                 with sess.graph.device(self.tf_device):
 
                     # Sort sample columns by terminal
-                    variables = [t.label for t in self.model.get_nodes(('terminal'))]
+                    variables = [t.label for t in self.model.get_nodes(['terminal'])]
                     X_dict = {v: tf.constant(X[:, i], dtype=self.dtype)
                             for i, v in enumerate(variables)}
 

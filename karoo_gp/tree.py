@@ -203,7 +203,7 @@ class Tree:
                  if self.depth != initial_depth else '')
         log(f'\nIn a copy of the parent: \n{from_disp}\n\n '
             f'...we replace node {i}: {from_expr} with node {i_mate} '
-            f'from the second parent: {with_expr}{prune}. '
+            f'from the second parent: {with_expr}{prune}.'
             f'The resulting offspring is: \n{self.display()}',
             display=['db'])
         pause(display=['db'])

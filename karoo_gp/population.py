@@ -56,9 +56,7 @@ class Population:
     @classmethod
     def load(cls, model, saved_trees, gen_id=None):
         """Take an array of (saved) trees and return a new population"""
-        loaded_trees = []
-        for i, t in enumerate(saved_trees):
-            loaded_trees.append(Tree.load(i+1, t))
+        loaded_trees = [Tree.load(i+1, t) for i, t in enumerate(saved_trees)]
         return cls(model, loaded_trees, gen_id)
 
     def save(self, next_gen=False):
@@ -209,8 +207,8 @@ class Population:
             elif swim == 'f':
                 # each tree must contain at least one instance of each feature
                 saved = tree.save()
-                missing = sum([1 for t in self.model.get_nodes(('terminal'))
-                               if f'({t.label})' not in saved])
+                missing = sum(1 for t in self.model.get_nodes(['terminal'])
+                               if f'({t.label})' not in saved)
                 if not missing:
                     self.model.log(
                         f'Tree {tree.id} includes at least one of each feature'
