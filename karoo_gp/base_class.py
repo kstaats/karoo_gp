@@ -11,12 +11,11 @@ likely find more enjoyment of this particular flavour of GP with
 a little understanding of its intent and design.
 '''
 
-import os
 import sys
 import csv
 import json
-import pathlib
 import operator
+from pathlib import Path
 
 import numpy as np
 import sklearn.metrics as skm
@@ -209,14 +208,14 @@ class BaseGP(BaseEstimator):
         # Select the appropriate file
         fname = f'population_{population}.csv'
         mode = 'a' if population == 'a' else 'w'
-        with open(self.path + fname, mode) as f:
+        with open(self.path / fname, mode) as f:
             writer = csv.writer(f, delimiter=',')
             writer.writerows([[p] for p in pop])
             # Add extra line after generations
             if (population == 'a' and self.population and
                 self.population.gen_id > 0):
                 writer.writerow('')
-        return self.path + fname
+        return self.path / fname
 
     def load_population(self, path=None):
         """Replace current population with `population_s.csv` from output_dir
@@ -232,7 +231,7 @@ class BaseGP(BaseEstimator):
         'population_s' in karoo_gp.py.
         """
         if path is None:
-            path = self.path + 'population_s.csv'
+            path = self.path / 'population_s.csv'
         gen_id = None
         trees = []
         with open(path) as f:
@@ -306,18 +305,17 @@ class BaseGP(BaseEstimator):
 
             # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
-            runs_dir = os.path.join(os.getcwd(), 'runs')
-            if not os.path.isdir(runs_dir):
-                os.makedirs(runs_dir)
+            runs_dir = Path.cwd() / 'runs'
+            if not Path.is_dir(runs_dir):
+                Path.mkdir(runs_dir)
             if self.output_dir:
-                self.path = os.path.join(runs_dir, self.output_dir + '/')
+                self.path = runs_dir / self.output_dir
             else:
                 kname = dict(b='BASE', r='REGRESS',
                              c='CLASSIFY', m='MATCH')[self.kernel]
-                self.path = os.path.join(
-                    runs_dir, f'data_{kname}_{self.datetime}/')
-            if not os.path.isdir(self.path):    # initialize elog dir
-                os.makedirs(self.path)
+                self.path = runs_dir / f'data_{kname}_{self.datetime}/'
+            if not Path.is_dir(self.path):    # initialize elog dir
+                Path.mkdir(self.path)
                 for pop in ['a', 'b', 'f', 's']:  # initialize log files
                     self.save_population(pop)
 
@@ -541,7 +539,7 @@ class BaseGP(BaseEstimator):
 
         Arguments required: app
         '''
-        with open(self.path + 'log_config.txt', 'w') as file:
+        with open(self.path / 'log_config.txt', 'w') as file:
             file.write('Karoo GP')
             file.write('\n launched: ' + str(self.datetime))
             file.write('\n')
@@ -563,7 +561,7 @@ class BaseGP(BaseEstimator):
             file.write('\n number of generations: ' + str(self.population.gen_id))
             file.write('\n\n')
 
-        with open(self.path + 'log_test.txt', 'w') as file:
+        with open(self.path / 'log_test.txt', 'w') as file:
             file.write('Karoo GP')
             file.write('\n launched: ' + str(self.datetime))
             file.write('\n')
@@ -642,7 +640,7 @@ class BaseGP(BaseEstimator):
                 fittest_tree=fittest_tree,
                 score=self.score(self.X_test, self.y_test),
             )
-        with open(self.path + 'results.json', 'w') as f:
+        with open(self.path / 'results.json', 'w') as f:
             json.dump(final_dict, f, indent=4)
 
 

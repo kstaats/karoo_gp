@@ -1,6 +1,7 @@
 import csv
 import pytest
 import numpy as np
+from pathlib import Path
 
 from karoo_gp import BaseGP, RegressorGP, MultiClassifierGP, MatchingGP, Tree
 from .util import load_data
@@ -122,7 +123,7 @@ def test_model_save_load(tmp_path, paths, default_kwargs):
         model.save_population('h')
     # - Save pop to file
     loc = model.save_population('s')
-    assert loc == default_kwargs['output_dir'] + '/population_s.csv'
+    assert loc == Path(f'{default_kwargs["output_dir"]}/population_s.csv')
     # - Evolve one gen
     model.gen_max = 3
     model.fit(X, y)

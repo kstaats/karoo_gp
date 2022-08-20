@@ -85,7 +85,11 @@ class Engine(ABC):
 #++++++++++++++++++++++++++++
 
 def safe_divide(a: np.ndarray, b: np.ndarray):
-    """If dividing by 0, return 0"""
+    """If dividing by 0, return 0
+
+    Note: np.where ignores elements of a/b for which b is 0, thereby avoiding
+    inf values, but it still results in an error when passed a/b. We use the
+    context manager below to silence these errors."""
     with np.errstate(divide='ignore', invalid='ignore'):
         output = np.where(b==0, 0, a/b)
     return output
