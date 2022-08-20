@@ -92,6 +92,9 @@ class Population:
 
         predictions = self.model.batch_predict(X, self.trees, X_hash)
         for tree, y_pred in zip(self.trees, predictions):
+            if tree.unfit:
+                self.model.log(f'Tree {tree.id} is unfit. (sym): {tree.expression}')
+                continue
             cached = False
             if X_hash is not None:
                 cached_score = self.model.cache_[X_hash].get(tree.expression)
@@ -204,8 +207,12 @@ class Population:
     def fitness_gene_pool(self, swim='p', tree_depth_min=None):
         """Add qualifying trees to self.gene_pool"""
         self.gene_pool = []
+        self.model.unfit = []
         for tree in self.trees:
-            if swim == 'p':
+            if tree.unfit:
+                self.model.unfit.append(tree.save())
+                continue
+            elif swim == 'p':
                 # each tree must have the min number of nodes defined by user
                 if (tree.n_children + 1 >= tree_depth_min and
                     tree.expression != '1'):

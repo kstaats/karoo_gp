@@ -87,6 +87,7 @@ class BaseGP(BaseEstimator):
     nodes = None
     population = None
     cache_ = None
+    unfit = None  # Keep a record of trees which were marked unfit
 
     def __init__(
         self, tree_type='r', tree_depth_base=3, tree_depth_max=None,
@@ -257,6 +258,10 @@ class BaseGP(BaseEstimator):
         but they don't hold a reference to BaseGP, and the user should be
         able to override this (default) compare_fitness function.
         """
+        if a.unfit:
+            return b  # Search for the first fit tree
+        elif b.unfit:
+            return a  # Skip unfit trees thereafter
         op = operator.gt if self.higher_is_better else operator.lt
         return a if op(a.score['fitness'], b.score['fitness']) else b
 
@@ -277,7 +282,10 @@ class BaseGP(BaseEstimator):
                 last_fittest = tree
         return fittest_dict
 
-    # 'Check' Functions
+    #+++++++++++++++++++++++++++++++++++++++++++++
+    #   'Check' Functions                        |
+    #+++++++++++++++++++++++++++++++++++++++++++++
+
     # Following the sklearn convention, BaseGP.fit(X, y) validates all model
     # attributes passed to __init__ and/or updated manually, well as X and y.
     # Some sklearn library functions are used (e.g. check_X_y), others are

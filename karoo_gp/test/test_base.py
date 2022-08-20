@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 from pathlib import Path
 
-from karoo_gp import BaseGP, RegressorGP, MultiClassifierGP, MatchingGP, Tree
+from karoo_gp import BaseGP, RegressorGP, MultiClassifierGP, MatchingGP, Tree, function_lib
 from .util import load_data
 
 @pytest.fixture
@@ -135,7 +135,7 @@ def test_model_save_load(tmp_path, paths, default_kwargs):
     # - Confirm last tree is same as it was before
     reloaded = model.population.trees[-1].save()
     assert original == reloaded
-    
+
 
 @pytest.mark.parametrize('ker', ['c', 'r', 'm'])
 def test_model_kernel(tmp_path, paths, default_kwargs, ker):
@@ -184,3 +184,46 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
         'm': dict(sym='3*b', fit=10.0, fitlist='545'),
     }
     compare_expected(model, fit_expected[ker])
+
+@pytest.mark.parametrize('dtype', ['int', 'float'])
+@pytest.mark.parametrize('digits', [2, 4])
+def test_model_unfit_trees(rng, default_kwargs, dtype, digits):
+
+    # Generate enormous trees with all available operators
+    kwargs = dict(default_kwargs)
+    kwargs['tree_depth_base'] = 8
+    kwargs['tree_depth_max'] = 9
+    kwargs['tree_pop_max'] = 20
+    kwargs['functions'] = [f.label for f in function_lib]
+    model = BaseGP(**kwargs)
+
+    # Compile a synthetic dataset of specified type
+    def get_X_y(values, n_samples=100):
+        X = np.array([[rng.choice(values) for _ in range(2)]
+                      for _ in range(n_samples)])
+        y = np.array([rng.choice(values) for _ in range(n_samples)])
+        return X, y
+    if dtype == 'int':
+        X, y = get_X_y(range(10**digits))
+    elif dtype == 'float':
+        X, y = get_X_y(np.arange(0, 1, 1/10**digits))
+
+    # Evolve the trees for 2 generations
+    model.fit(X, y)
+    expected = {
+        ('int', 2): dict(n=4, first='f(abs((((b)*(a))+(abs(a)))**(((b)*(a))**((b)**(b)))))'),
+        ('int', 4): dict(n=6, first='g((abs(a))**(a))'),
+        ('float', 2): dict(n=2, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**((((((a)==(b))if(square(a))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+(((a)>(a))if(square(b))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
+        ('float', 4): dict(n=2, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**((((((a)==(b))if(square(a))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+(((a)>(a))if(square(b))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
+    }
+    # Compare the actual first unfit to expected first unfit
+    assert len(model.unfit) == expected[dtype, digits]['n']
+    assert model.unfit[0] == expected[dtype, digits]['first']
+
+    # Warnings:
+    # - overflow encountered in float_power
+    # - overflow encountered in square
+    # - divide by zero encountered in float_power
+    # - invalid value encountered in float_power
+    # - invalid value encountered in multiply
+    # - invalid value encountered in true_divide
