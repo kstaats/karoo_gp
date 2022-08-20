@@ -287,13 +287,16 @@ class Node:
             if not any(f in raw_expr for f in ('if', 'and', 'or', 'not')):
                 result = str(sympify(raw_expr))
 
-                # Some trees, e.g. 'a/(b-b)', result in a 0-division, which
-                # sympy parses as 'zoo'. If this happens, replace 'zoo' with 0
-                # and sympify again to let the zero propagate.
-                while 'zoo' in result:
-                    result = result.replace('zoo', '0')
-                    result = str(sympify(result))
-                return result
+                # '0/0' sympifies to 'nan', in which case don't accept sympified
+                if result != 'nan':
+
+                    # Some trees, e.g. 'a/(b-b)', result in a 0-division, which
+                    # sympy parses as 'zoo'. If this happens, replace 'zoo' with 0
+                    # and sympify again to let the zero propagate.
+                    while 'zoo' in result:
+                        result = result.replace('zoo', '0')
+                        result = str(sympify(result))
+                    return result
 
             # If any unsupported funcs DO appear in the subtree, return the
             # raw parsing of this node, but try to simplify each sub-node
