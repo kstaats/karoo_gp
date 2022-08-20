@@ -111,6 +111,10 @@ class Node:
     @classmethod
     def generate(cls, rng, get_nodes, tree_type, depth, parent=None,
                  method='BFS', node_types=None, force_types=None):
+        """Return a randomly-generated node and subtree
+
+        TODO: Choose BFS or DFS. Supporting both is unnecessary and error-prone
+        """
         if method == 'BFS':
             return cls.breadth_first_generate(rng, get_nodes, tree_type,
                                               depth, parent, node_types,
@@ -314,12 +318,20 @@ class Node:
                     f'{ws}else{ws}{self.children[2].parse(simplified)})')
 
     def display(self, *args, method='viz', **kwargs):
+        """Return a printable string representation of the tree.
+
+        Supports two visualization methids:
+          - viz: display as vertical heirarchy of node labels & edges
+          - list: display as indended list of node details
+          - TODO min: list, but one line per tree and reduced info
+        """
         if method == 'list':
             return self.display_list(*args, **kwargs)
         elif method == 'viz':
             return self.display_viz(*args, **kwargs)
 
     def display_list(self, prefix=''):
+        """Return a printable string of node and subtree as an indented list"""
         parent = '' if self.parent is None else self.parent.id
         children = [] if not self.children else [c.id for c in self.children]
         output = (
@@ -333,7 +345,7 @@ class Node:
         return output
 
     def display_viz(self, width=60, label_max_len=3):
-        """Print a hierarchical tree representation of all nodes
+        """Return a printable hierarchical tree representation of all nodes
 
         Cycle through depths starting with the root (centered). At each depth,
         for every node at that depth, portion the horizontal space among its

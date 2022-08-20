@@ -1,8 +1,24 @@
+"""
+Node Library
+
+Karoo programs (Trees) are composed of different types of nodes, each of must
+include certain attributes. Then, in several situations, a subset of those
+nodes are selected based on position/parent type.
+
+This module includes:
+  - NodeData (dataclass): includes all required node attributes
+  - function_lib (list): NodeData objects for all Karoo's supported operators
+  - get_function_node (func): return NodeData for an operator symbol (e.g. '*')
+  - get_nodes (func): a helper function for subsetting a list of NodeData's
+"""
+
+
 from dataclasses import dataclass
 from typing import List, Iterable
 
 @dataclass
 class NodeData:
+    """Include all attributes required for a Node"""
     label: str                # The string representation used in expression
     node_type: str            # terminal, constant, operator, bool, or cond
     arity: int = 0            # Number of children

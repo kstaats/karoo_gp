@@ -1,3 +1,11 @@
+"""
+Engine
+
+This class calculates the output of the trees using numpy or tensorflow.
+
+TODO: Remove tensorflow, embed numpy evaluation directly into Node.
+"""
+
 import os
 import ast
 from abc import ABC, abstractmethod
@@ -8,7 +16,6 @@ from . import Tree
 from .util import LazyLoader
 # Tensorflow takes ~2 seconds to load, so only load when used
 tf = LazyLoader('tf', globals(), 'tensorflow.compat.v1')
-
 
 class Engine(ABC):
     """Calculate the output of a batch of data for a batch of trees"""
@@ -77,11 +84,13 @@ class Engine(ABC):
 #   Numpy                   |
 #++++++++++++++++++++++++++++
 
-def safe_divide(a, b):
+def safe_divide(a: np.ndarray, b: np.ndarray):
     """If dividing by 0, return 0"""
-    return np.where(b==0, 0, a/b)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        output = np.where(b==0, 0, a/b)
+    return output
 
-def safe_sqrt(a):
+def safe_sqrt(a: np.ndarray):
     """For sqrt(-a), return -sqrt(abs(a))"""
     negative = np.less(a, 0)
     absolute = np.abs(a)
@@ -125,7 +134,8 @@ class NumpyEngine(Engine):
             'arctan': np.arctan,
         }
 
-    def num_obj(self, shape, value):  # Function for terminals/constants arrays
+    def num_obj(self, shape, value):
+        """Return an array of correct shape/type from a terminal/constant"""
         return np.full(shape, value, dtype=self.dtype)
 
     def predict(self, trees, X, X_hash=None):
@@ -167,6 +177,12 @@ if os.environ.get("TF_CPP_MIN_LOG_LEVEL") is None:
 class TensorflowEngine(Engine):
 
     def __init__(self, model, tf_device="/gpu:0", tf_device_log=False):
+        """Import tensorflow and initialize settings
+
+        Tensorflow is lazy-loaded, and not loaded unless/until used because
+        otherwise it slows down Karoo initialization by a couple seconds, even
+        when not selected.
+        """
         super().__init__(model, engine_type='tensorflow')
         self.dtype = tf.float64
 
@@ -222,7 +238,9 @@ class TensorflowEngine(Engine):
         }
 
     def num_obj(self, shape, value):
-        # Tensorflow has a different ordering
+        """Return an array of correct shape/type from a terminal/constant
+
+        The order of arguments to _.constant is different between np/tf"""
         return tf.constant(value, dtype=self.dtype, shape=shape)
 
     def predict(self, trees, X, X_hash=None):

@@ -5,13 +5,21 @@ import numpy as np
 from . import Tree
 
 class Population:
+    """
+    One instance of Population holds a generation of trees, and performs
+    selection, mutation and crossover on them to produce the next generation
+    as a new instance.
+
+    This class also includes functions to generate a random population, and
+    save/load populations to csv.
+    """
 
     #++++++++++++++++++++++++++++
     #   Initialize              |
     #++++++++++++++++++++++++++++
 
     def __init__(self, model, trees, gen_id=None, history=None):
-        """TODO"""
+        """Create a new instance of Population from a list of trees"""
         self.model = model
         self.trees = trees
         self.gen_id = 1 if gen_id is None else gen_id
@@ -194,6 +202,7 @@ class Population:
         return next_gen
 
     def fitness_gene_pool(self, swim='p', tree_depth_min=None):
+        """Add qualifying trees to self.gene_pool"""
         self.gene_pool = []
         for tree in self.trees:
             if swim == 'p':
@@ -219,6 +228,7 @@ class Population:
         self.model.pause(display=['i'])
 
     def tournament(self, rng, tournament_size=7):
+        """Return the fittest of 7 random trees from the gene pool"""
         self.model.log('\nEnter the tournament ...', display=['i'])
         if not self.gene_pool:
             raise ValueError('Cannot conduct tournament: gene pool is empty')

@@ -24,7 +24,7 @@ class Tree:
             expr = expr[1:]
         elif expr[0] != '(':
             raise ValueError(f'Load-from expressions must start with tree type'
-                             f' (f/g) or parenthesis; got {expr[0]}')
+                             f' (f/g) or parenthesis; got {expr[0]!r}')
         root = Node.load(expr, tree_type)
         tree = cls(id, root, tree_type)
         return tree
@@ -37,14 +37,14 @@ class Tree:
     def generate(cls, id=None, tree_type='g', tree_depth_base=3,
                  get_nodes=None, rng=None,
                  force_types=None, method='BFS'):
-        '''Generate a new Tree object given starting parameters.'''
+        """Generate a new Tree object given starting parameters."""
         root = Node.generate(rng, get_nodes, tree_type, tree_depth_base,
                              parent=None, force_types=force_types,
                              method=method)
         return cls(id, root, tree_type)
 
     def copy(self, id=None, include_score=False):
-        '''Return a duplicate, all attributes/state'''
+        """Return a duplicate, all attributes/state"""
         args = (id if id is not None else self.id,
                 self.root.copy(),
                 self.tree_type,
@@ -73,9 +73,11 @@ class Tree:
         return self.root.parse(simplified=True)
 
     def save(self):
+        """Return a re-loadable string of the tree and key attributes"""
         return f'{self.tree_type}{self.raw_expression}'
 
     def display(self, *args, **kwargs):
+        """Return a printable string of all nodes"""
         return self.root.display(*args, **kwargs)
 
     #++++++++++++++++++++++++++++
@@ -84,19 +86,22 @@ class Tree:
 
     @property
     def depth(self):
+        """Return the maximum depth (distance from root) of any node"""
         return self.root.depth
 
     @property
     def n_children(self):
+        """Return the total number of nodes in subtree"""
         return self.root.n_children
 
     @property
     def fitness(self):
-        '''Return fitness or -1 if not yet evaluated'''
+        """Return fitness or None if not yet evaluated"""
         fitness = self.score.get('fitness')
         return None if fitness is None else float(fitness)
 
     def get_child(self, i_child, **kwargs):
+        """Return the child node in the ith position"""
         n_ch = self.n_children
         if i_child > n_ch:
             raise ValueError(f'Index "{i_child}" out of range ({n_ch}')
@@ -113,6 +118,7 @@ class Tree:
             self.get_child(i, method=method).id = i
 
     def set_child(self, i_child, node, **kwargs):
+        """Replace the ith child with the given node"""
         if i_child == 0:
             self.root = node
         n_ch = self.n_children

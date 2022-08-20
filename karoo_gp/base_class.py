@@ -34,13 +34,13 @@ from . import NumpyEngine, TensorflowEngine, Population, Tree, NodeData, \
 class BaseGP(BaseEstimator):
 
     """
-    This Base_BP class al the core attributes, objects and methods of Karoo GP.
+    This class contains the core attributes, objects and methods of Karoo GP.
     It's composed of a heirarchal structure of classes. Below are some of the
     more import attributes and methods for each class, and their organization:
 
     BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
-    ├─ .nodes = Nodes                - all active terminals, constands, fx
+    ├─ .nodes = Nodes                   - all active terminals, constants, fx
     ├─ .decoder(y)                      - Initialize with y_train
     │   └─ .transform(pred)             - transforms prediction to match y
     │
@@ -119,26 +119,30 @@ class BaseGP(BaseEstimator):
         self.precision = precision           # max decimal places. pred & score
         self.swim = swim                     # culling method
         self.mode = mode                     # determines if pauses after fit
-        self.random_state = random_state
+        self.random_state = random_state     # follows sklearn convention
         self.pause_callback = pause_callback # called throughout based on disp
-        self.engine_type = engine_type
-        self.tf_device = tf_device
-        self.tf_device_log = tf_device_log
-        self.functions = functions
+        self.engine_type = engine_type       # execute on cpu (np) or gpu (tf)
+        self.tf_device = tf_device           # configure gpu
+        self.tf_device_log = tf_device_log   # log dir for tensorflow
+        self.functions = functions           # list of operators to use
         self.force_types = force_types       # default: root = operator/cond
-        self.terminals = terminals
-        self.constants = constants
+        self.terminals = terminals           # list of terminal names to use
+        self.constants = constants           # list of constants to include
         self.test_size = test_size           # how to portion train/test data
-        self.scoring = scoring
+        self.scoring = scoring               # a dict of name/func pairs
+        # Whether fitness_compare returns the higher- or lower-fitness tree
         self.higher_is_better = higher_is_better
+        # A function called on the tree outputs, e.g. round/clip for classify
         self.prediction_transformer = prediction_transformer
-        self.cache = cache
+        self.cache = cache                   # a dict of expr/score pairs
 
     def log(self, msg, display={'i', 'g', 'm', 'db'}):
+        """Print a message to the console when in specified display mode"""
         if self.display in display or display == 'all':
             print(msg)
 
     def pause(self, display={'i', 'g', 'm', 'db'}):
+        """Call the pause_callback when in specified display mode"""
         if not self.pause_callback:
             self.log('No pause callback function provided')
             return 0
@@ -148,6 +152,7 @@ class BaseGP(BaseEstimator):
             return 0
 
     def error(self, msg, display={'i', 'g', 'm', 'db'}):
+        """Print an error message to the console when in display mode"""
         self.log(msg, display)
         self.pause(display)
 
@@ -180,7 +185,13 @@ class BaseGP(BaseEstimator):
              called by terminate()
         's': Write current trees to 'population_s' (overwrite);
              called in interactive mode to edit manually and re-load
-             TODO: menu['w'] currently only saves pop_b; choose b or s
+
+        TODO: Generalize: save_population(fname, next_gen=False, append=False).
+        Move the current schema/logic to karoo-gp.py, and replace calls with
+        lifecycle 'hooks' passed to BaseGP, e.g.:
+
+        callbacks={end_of_generation: lambda model: model.save_population(...)}
+
         """
 
         # Select trees to save
@@ -208,6 +219,18 @@ class BaseGP(BaseEstimator):
         return self.path + fname
 
     def load_population(self, path=None):
+        """Replace current population with `population_s.csv` from output_dir
+
+        TODO: This usually thows an error in interactive mode. We currently let
+        the user save/load at any point of the population lifecycle. This means
+        if e.g. you save a population before it's evaluated, and try to load
+        if during evolution, the saved trees won't include fitness and can't
+        be compared. This should be fixed by only allowing save/load at certain
+        points in the lifecycle.
+
+        TODO: Make more generic. Take the name as a parameter, pass
+        'population_s' in karoo_gp.py.
+        """
         if path is None:
             path = self.path + 'population_s.csv'
         gen_id = None
@@ -254,6 +277,12 @@ class BaseGP(BaseEstimator):
                 fittest_dict[tree.id] = tree.expression
                 last_fittest = tree
         return fittest_dict
+
+    # 'Check' Functions
+    # Following the sklearn convention, BaseGP.fit(X, y) validates all model
+    # attributes passed to __init__ and/or updated manually, well as X and y.
+    # Some sklearn library functions are used (e.g. check_X_y), others are
+    # custom and packaged into the methods below.
 
     def check_model(self):
         """Initialize and/or validate model parameters"""
@@ -351,7 +380,15 @@ class BaseGP(BaseEstimator):
                              f'{self.tree_depth_base})')
 
     def check_test_split(self, X, y):
-        """Split train/test data; reuse subsequently for same X, y"""
+        """Split train/test data; reuse subsequently for same X, y
+
+        TODO: It's probably wasteful to store X_train, etc. directly, and it's
+        counter to the sklearn guidelines anyway. Instead we should store a
+        boolean array of which values (if any) are test samples. This creates
+        an issue with the interactive mode though, because the menu needs to
+        be able to 'grab' X and y in order to 'eval' a tree, and currently it's
+        only passed the model.
+        """
         # Store a fingerprint of the dataset (X_hash) and cache the results
         # of `train_test_split`. If `fit()` is called muptiple times with the
         # same X, y, the same split will be used. Otherwise, split new data.
@@ -396,7 +433,7 @@ class BaseGP(BaseEstimator):
 
         menu = 1
         while menu != 0:  # Supports adding generations mid-run
-            for gen in range(self.population.gen_id, self.gen_max):
+            for _ in range(self.population.gen_id, self.gen_max):
 
                 # Evolve the next generation
                 self.population = self.population.evolve(
@@ -429,6 +466,8 @@ class BaseGP(BaseEstimator):
 
         * Pass the fittest tree to batch_predict as a list (of 1)
         * Return the first result
+
+        Primarily used externally, e.g. model.predict(X_test)
         """
         if not self.population.evaluated:
             tree = self.population.trees[0]
@@ -441,6 +480,8 @@ class BaseGP(BaseEstimator):
 
         * If prediction_transformer (e.g. MultiClassifier), transform predictions
         * If precision is specified, round predictions to precision
+
+        Primarily used internally by population during evaluation
         """
         y = self.engine.predict(trees, X, X_hash)
         if self.prediction_transformer is not None:
@@ -459,6 +500,7 @@ class BaseGP(BaseEstimator):
                 for label, fx in self.scoring_.items()}
 
     def get_nodes(self, *args, **kwargs):
+        """Returns a subset of self.nodes based on node_types and depth"""
         return get_nodes(*args, **kwargs, lib=self.nodes)
 
     def fx_karoo_terminate(self):
@@ -608,6 +650,15 @@ class BaseGP(BaseEstimator):
 # KERNEL IMPLEMENTATIONS
 
 class RegressorGP(BaseGP):
+    """
+    A trainable Regressor built on Karoo's BaseGP.
+
+    'Absolute error' is the fitness function: the sum of the absolute
+    difference between the prediction and actual for every sample. 'Mean
+    squared error' is also calculated and included in score/history.
+
+    Both functions round outputs to 6 significant figures.
+    """
     kernel = 'r'  # Regressor
 
     def __init__(self, *args, **kwargs):
@@ -646,6 +697,13 @@ class RegressorGP(BaseGP):
 
 
 class MatchingGP(BaseGP):
+    """
+    A Matching algorithm built on Karoo's BaseGP.
+
+    'Absolute matches' is the fitness function: the number of samples which
+    were predicted correctly.
+
+    TODO: remove?"""
     kernel = 'm'  # Match
 
     def __init__(self, *args, **kwargs):
@@ -688,6 +746,19 @@ class MatchingGP(BaseGP):
 
 
 class MultiClassifierGP(BaseGP):
+    """
+    A trainable Multiclass Classifier built on Karoo's BaseGP.
+
+    'Number Correct' is the fitness function: the number of samples
+    classified correctly. Also calculated for score/history are sklearn's
+    'Classification Report' and 'Confusion Matrix'.
+
+    This classes passes a ClassDecoder to BaseGP as the prediction_transformer.
+    The decoder is fit on y-data for the number of unique values (classes).
+    Then, numeric predictions from BaseGP are clipped/rounded to integers which
+    match those classes.
+    """
+
     kernel = 'c'  # Classify
 
     def __init__(self, *args, **kwargs):
@@ -698,14 +769,18 @@ class MultiClassifierGP(BaseGP):
             return float(np.sum(y_true == y_pred))
 
         def cls_report_zero_div(y_true, y_pred):
-            # TODO: cli test expected output (from '..write_json()')
-            # classification report dict keys are floats. Should use int.
+            """Call sklearn.metrics function with default kwargs
+
+            TODO: cli test expected output (from '..write_json()')
+            classification report dict keys are floats. Should use int.
+            """
             return skm.classification_report(
                 y_true.astype(np.float32),
                 y_pred.astype(np.float32),
                 zero_division=0, output_dict=True)
 
         def conf_matrix_as_list(y_true, y_pred):
+            """Call sklearn.metrics function but return as list"""
             return skm.confusion_matrix(y_true, y_pred).tolist()
 
         kwargs['scoring'] = dict(fitness=n_correct,
