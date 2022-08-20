@@ -128,10 +128,10 @@ class Node:
                                parent=None, node_types=None, force_types=None):
         """Return a randomly-generated node and subtree breadth-first"""
         def fn(types=None, depth=tree_depth):  # Helper functions to save space
-            types = types or ('operator', 'cond')
+            types = types or ['operator', 'cond']
             return rng.choice(get_nodes(types, depth))
         def tm():
-            return rng.choice(get_nodes(('terminal', 'constant')))
+            return rng.choice(get_nodes(['terminal', 'constant']))
         # 1. Call the random functions in BFS order and save the output.
         # Generate a dict of lists, one entry for each level of depth, with
         # randomly-chosen node at each level.
@@ -213,14 +213,14 @@ class Node:
 
         # Create terminal or function
         if is_terminal:
-            node_data = rng.choice(get_nodes(('terminal', 'constant')))
+            node_data = rng.choice(get_nodes(['terminal', 'constant']))
             node = cls(node_data, tree_type, parent=parent)
         else:
             types = None
             if force_types:
                 types = force_types[0]  # Can be falsy
                 force_types = force_types[1:]
-            types = types or node_types or ('operator', 'cond')
+            types = types or node_types or ['operator', 'cond']
             node_data = rng.choice(get_nodes(types, depth))
             node = cls(node_data, tree_type, parent=parent)
             # Generate children
@@ -509,6 +509,6 @@ class Node:
             return
         for i_c, child in enumerate(self.children):
             if child.children:
-                replacement = Node(rng.choice(get_nodes(('terminal', 'constant'))),
+                replacement = Node(rng.choice(get_nodes(['terminal', 'constant'])),
                                    self.tree_type)
                 self.set_child(i_c + 1, replacement)

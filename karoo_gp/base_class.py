@@ -95,7 +95,7 @@ class BaseGP(BaseEstimator):
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
         swim='p', mode='s', random_state=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
-        functions=None, force_types=[('operator', 'cond')], terminals=None,
+        functions=None, force_types=[['operator', 'cond']], terminals=None,
         constants=None, test_size=0.2, scoring=None, higher_is_better=False,
         prediction_transformer=None, cache=None):
         """Initialize a Karoo_GP object with given parameters"""

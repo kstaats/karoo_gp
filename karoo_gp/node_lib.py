@@ -14,7 +14,7 @@ This module includes:
 
 
 from dataclasses import dataclass
-from typing import List, Iterable
+from typing import List
 
 @dataclass
 class NodeData:
@@ -64,7 +64,7 @@ def get_function_node(label: str) -> NodeData:
             return node
     raise ValueError(f'NodeData not found for label: {label}')
 
-def get_nodes(types: Iterable[str], depth=2,
+def get_nodes(types: List[str], depth=2,
               lib: List[NodeData]=function_lib) -> List[NodeData]:
     """Return all NodeDatas of given types for min_depth from a given lib
 

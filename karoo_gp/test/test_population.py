@@ -14,7 +14,7 @@ class MockModel:
         self.error = MagicMock()
         self.rng = np.random.RandomState(1000)
         self.build_fittest_dict = MagicMock()
-        self.force_types = [('operator', 'cond')]
+        self.force_types = [['operator', 'cond']]
         self.nodes = ([NodeData(t, 'terminal') for t in ['a', 'b']] +
                          [get_function_node(f) for f in ['+', '-', '*', '/']])
 
@@ -46,7 +46,7 @@ def default_pop_kwargs():
         tree_type='r',
         tree_depth_base=3,
         tree_pop_max=10,
-        force_types=[('operator', 'cond')]
+        force_types=[['operator', 'cond']]
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g', 'r'])

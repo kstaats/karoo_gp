@@ -13,7 +13,7 @@ def tree_default_kwargs(rng, nodes):
         rng=rng,
         id=1,
         get_nodes=get_nodes_,
-        force_types=[('operator', 'cond')]
+        force_types=[['operator', 'cond']]
     )
 
 @pytest.mark.parametrize('tree_type', ['f', 'g'])
