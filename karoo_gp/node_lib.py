@@ -25,16 +25,20 @@ class NodeData:
     min_depth: int = 0        # Depth (additional) required to be coherent
     child_type: list = None   # Eligible child node types (optional)
 
+    def __repr__(self):
+        return f'<NodeData label={self.label!r} type={self.node_type}>'
+
+numeric = ['terminal', 'constant', 'operator', 'cond']
 function_lib = [
     # Operators
-    NodeData('+', 'operator', 2, min_depth=1),
-    NodeData('-', 'operator', 2, min_depth=1),
-    NodeData('*', 'operator', 2, min_depth=1),
-    NodeData('/', 'operator', 2, min_depth=1),
-    NodeData('**', 'operator', 2, min_depth=1),
-    NodeData('abs', 'operator', 1, min_depth=1),
-    NodeData('square', 'operator', 1, min_depth=1),
-    NodeData('sqrt', 'operator', 1, min_depth=1),
+    NodeData('+', 'operator', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('-', 'operator', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('*', 'operator', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('/', 'operator', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('**', 'operator', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('abs', 'operator', 1, min_depth=1, child_type=[numeric]),
+    NodeData('square', 'operator', 1, min_depth=1, child_type=[numeric]),
+    NodeData('sqrt', 'operator', 1, min_depth=1, child_type=[numeric]),
     # NodeData('log', 'operator', 1, min_depth=1),  # TODO: Sometimes cause nans
     # NodeData('log1p', 'operator', 1, min_depth=1),
     # NodeData('cos', 'operator', 1, min_depth=1),
@@ -44,17 +48,17 @@ function_lib = [
     # NodeData('arcsin', 'operator', 1, min_depth=1),
     # NodeData('arctan', 'operator', 1, min_depth=1),
     # Boolean
-    NodeData('==', 'bool', 2, min_depth=1),
-    NodeData('!=', 'bool', 2, min_depth=1),
-    NodeData('<', 'bool', 2, min_depth=1),
-    NodeData('<=', 'bool', 2, min_depth=1),
-    NodeData('>', 'bool', 2, min_depth=1),
-    NodeData('>=', 'bool', 2, min_depth=1),
-    NodeData('and', 'bool', 2, min_depth=2, child_type=[('bool'), ('bool')]),
-    NodeData('or', 'bool', 2, min_depth=2, child_type=[('bool'), ('bool')]),
-    NodeData('not', 'bool', 1, min_depth=2, child_type=[('bool')]),
+    NodeData('==', 'bool', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('!=', 'bool', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('<', 'bool', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('<=', 'bool', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('>', 'bool', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('>=', 'bool', 2, min_depth=1, child_type=[numeric, numeric]),
+    NodeData('and', 'bool', 2, min_depth=2, child_type=[['bool'], ['bool']]),
+    NodeData('or', 'bool', 2, min_depth=2, child_type=[['bool'], ['bool']]),
+    NodeData('not', 'bool', 1, min_depth=2, child_type=[['bool']]),
     # Conditional
-    NodeData('if', 'cond', 3, min_depth=2, child_type=[None, ('bool'), None]),
+    NodeData('if', 'cond', 3, min_depth=2, child_type=[None, ['bool'], None]),
 ]
 
 def get_function_node(label: str) -> NodeData:

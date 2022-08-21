@@ -164,6 +164,8 @@ class Tree:
             height = node.height
             depth = tree_depth_max - height
             force_types_ = None if height + 1 > len(force_types) else force_types[height]
+            if force_types_ is None and node.node_type == 'bool':
+                force_types_ = [['bool']]
             replacement = Node.generate(rng, get_nodes, self.tree_type, depth,
                                         force_types=force_types_)
             self.set_child(i_mutate, replacement)

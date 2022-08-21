@@ -213,8 +213,8 @@ def test_model_unfit_trees(rng, default_kwargs, dtype, digits):
     expected = {
         ('int', 2): dict(n=4, first='f(abs((((b)*(a))+(abs(a)))**(((b)*(a))**((b)**(b)))))'),
         ('int', 4): dict(n=6, first='g((abs(a))**(a))'),
-        ('float', 2): dict(n=2, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**((((((a)==(b))if(square(a))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+(((a)>(a))if(square(b))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
-        ('float', 4): dict(n=2, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**((((((a)==(b))if(square(a))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+(((a)>(a))if(square(b))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
+        ('float', 2): dict(n=1, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**(((((square(a))if((a)==(b))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+((square(b))if((a)>(a))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
+        ('float', 4): dict(n=1, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**(((((square(a))if((a)==(b))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+((square(b))if((a)>(a))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
     }
     # Compare the actual first unfit to expected first unfit
     assert len(model.unfit) == expected[dtype, digits]['n']

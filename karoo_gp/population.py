@@ -182,6 +182,19 @@ class Population:
                     offspring_b = parent_b.copy(id=len(self.next_gen_trees) + 1)
                     i_mutate_b = rng.randint(1, parent_b.n_children + 1)
 
+                    # If only one of the two nodes selected above is a boolean,
+                    # the result will be invalid. And in some cases, i_a could
+                    # be bool while parent_b may doesn't even include a bool.
+                    # For that reason, if they're not the same, both are reset.
+                    while True:
+                        n_a = offspring_a.get_child(i_mutate_a)
+                        n_b = offspring_b.get_child(i_mutate_b)
+                        if (n_a.node_type == 'bool') != (n_b.node_type == 'bool'):
+                            i_mutate_a = rng.randint(1, parent_a.n_children + 1)
+                            i_mutate_b = rng.randint(1, parent_b.n_children + 1)
+                        else:
+                            break
+
                     log('', display=['i'])  # Extra line to separate from tourn
                     for from_id, to_id, to_i in [
                         (parent_a.id, parent_b.id, i_mutate_b),

@@ -87,7 +87,7 @@ class Node:
 
             # Load children
             if isinstance(expr, ast.IfExp):  # Cond
-                children = [expr.test, expr.body, expr.orelse]
+                children = [expr.body, expr.test, expr.orelse]
             elif isinstance(expr, ast.Compare):  # Bool
                 children = [expr.left] + expr.comparators
             elif isinstance(expr, ast.BoolOp):
@@ -128,7 +128,8 @@ class Node:
                                parent=None, node_types=None, force_types=None):
         """Return a randomly-generated node and subtree breadth-first"""
         def fn(types=None, depth=tree_depth):  # Helper functions to save space
-            types = types or ['operator', 'cond']
+            types = ([t for t in types if t not in ('terminal', 'constant')]
+                     if types else ['operator', 'cond'])
             return rng.choice(get_nodes(types, depth))
         def tm():
             return rng.choice(get_nodes(['terminal', 'constant']))
@@ -153,8 +154,8 @@ class Node:
         for height in range(1, tree_depth + 1):
             for _parent in nodes_by_height[height-1]:
                 for i in range(_parent.arity):
-                    if (height == tree_depth or
-                        (tree_type == 'g' and
+                    if (height == tree_depth or  # Lowest level or
+                        (tree_type == 'g' and    # if grow tree and not root, flip a coin
                          _parent.min_depth <= 1 and
                          rng.choice([False, True]))):
                         node = tm()

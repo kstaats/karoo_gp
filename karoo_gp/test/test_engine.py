@@ -43,7 +43,7 @@ def test_engine(X, trees, engine_type):
     assert train_pred.dtype == engine.dtype
     assert train_pred.shape == (len(trees), len(X_train))
     assert ([list(p) for p in train_pred] ==
-        [[7.0, 14.0], [0.3333333333333333, 0.5], [1.0, 1.0], [0.0, 0.0]])
+        [[7.0, 14.0], [0.3333333333333333, 0.5], [1.0, 1.0], [1.0, 1.0]])
 
     # Test skip cached expressions
     X_test_hash = hash(X_test.data.tobytes())
