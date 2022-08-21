@@ -258,9 +258,9 @@ class BaseGP(BaseEstimator):
         but they don't hold a reference to BaseGP, and the user should be
         able to override this (default) compare_fitness function.
         """
-        if a.unfit:
+        if a.is_unfit:
             return b  # Search for the first fit tree
-        elif b.unfit:
+        elif b.is_unfit:
             return a  # Skip unfit trees thereafter
         op = operator.gt if self.higher_is_better else operator.lt
         return a if op(a.score['fitness'], b.score['fitness']) else b
@@ -314,7 +314,7 @@ class BaseGP(BaseEstimator):
             # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
             runs_dir = Path.cwd() / 'runs'
-            runs_dir.mkdir(exists_ok=True)
+            runs_dir.mkdir(exist_ok=True)
             if self.output_dir:
                 self.path = runs_dir / self.output_dir
             else:

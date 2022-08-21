@@ -3,10 +3,6 @@ import numpy as np
 from . import Node
 
 class Tree:
-    # This flag designates a tree which results in an error.
-    # Some allowed operators will return 'nan' or 'inf' values, e.g.:
-    #   '2**(1/0.0001) -> inf'  |  'arcsin(2) -> nan'
-    unfit = False
 
     #++++++++++++++++++++++++++++
     #   Initialize              |
@@ -20,6 +16,11 @@ class Tree:
         self.tree_type = tree_type
         self.score = score or {}
         self.renumber()
+
+        # This flag designates a tree which results in an error.
+        # Some allowed operators will return 'nan' or 'inf' values, e.g.:
+        #   '2**(1/0.0001) -> inf'  |  'arcsin(2) -> nan'
+        self.is_unfit = False
 
     @classmethod
     def load(cls, id, expr, tree_type='f'):

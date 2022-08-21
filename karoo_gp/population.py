@@ -92,7 +92,7 @@ class Population:
 
         predictions = self.model.batch_predict(X, self.trees, X_hash)
         for tree, y_pred in zip(self.trees, predictions):
-            if tree.unfit:
+            if tree.is_unfit:
                 self.model.log(f'Tree {tree.id} is unfit. (sym): {tree.expression}')
                 continue
             cached = False
@@ -142,7 +142,7 @@ class Population:
         # Create the list of eligible trees
         log('\nPrepare a viable gene pool ...', display=['i'])
         pause(display=['i'])
-        self.fitness_gene_pool(swim, tree_depth_min)
+        self.make_gene_pool(swim, tree_depth_min)
         # Initialize new population and begin evolving new trees
         self.next_gen_trees = []
         for evolve_type, amount in evolve_amounts.items():
@@ -217,12 +217,12 @@ class Population:
                               gen_id=self.gen_id + 1, history=self.history)
         return next_gen
 
-    def fitness_gene_pool(self, swim='p', tree_depth_min=None):
+    def make_gene_pool(self, swim='p', tree_depth_min=None):
         """Add qualifying trees to self.gene_pool"""
         self.gene_pool = []
         self.model.unfit = []
         for tree in self.trees:
-            if tree.unfit:
+            if tree.is_unfit:
                 self.model.unfit.append(tree.save())
                 continue
             elif swim == 'p':

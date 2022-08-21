@@ -161,7 +161,7 @@ class NumpyEngine(Engine):
             # Datasets with extreme large/small values and nonbasic operators
             # sometimes throw errors (see 'test_base_unfit_trees' for more).
             if any(np.isnan(pred)) or any(np.isinf(pred)):
-                tree.unfit = True
+                tree.is_unfit = True
             else:
                 predictions[i] = pred
         return predictions
