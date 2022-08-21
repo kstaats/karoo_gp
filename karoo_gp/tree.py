@@ -132,8 +132,7 @@ class Tree:
         self.renumber()
 
     # In mutation, node types within each tuple can be swapped
-    swappable = [['terminal', 'constant'], ['operator', 'cond'], ['bool']]
-
+    swappable = [['terminal', 'constant'], ['operator'], ['cond'], ['bool']]
     def point_mutate(self, rng, get_nodes, log):
         """Replace a node (including root) with random node of same type"""
         i_mutate = rng.randint(0, self.n_children + 1)

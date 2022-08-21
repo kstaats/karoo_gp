@@ -157,15 +157,9 @@ class NumpyEngine(Engine):
             # Skip tree if cached score for X_hash and expr
             if (X_hash and expr in self.model.cache_[X_hash]):
                 continue
+            pred = self.parse_expr(expr, X_dict, shape)
             # Datasets with extreme large/small values and nonbasic operators
             # sometimes throw errors (see 'test_base_unfit_trees' for more).
-            # TODO: catch case-by-case in parsing function. Do after making a
-            # decision on tensorflow.
-            try:
-                pred = self.parse_expr(expr, X_dict, shape)
-            except:
-                tree.unfit = True
-                continue
             if any(np.isnan(pred)) or any(np.isinf(pred)):
                 tree.unfit = True
             else:
