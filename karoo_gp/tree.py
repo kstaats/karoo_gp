@@ -122,7 +122,7 @@ class Tree:
             self.get_child(i, method=method).id = i
 
     def set_child(self, i_child, node, **kwargs):
-        """Replace the ith child with the given node"""
+        """Replace the nth child with the given node"""
         if i_child == 0:
             self.root = node
         n_ch = self.n_children

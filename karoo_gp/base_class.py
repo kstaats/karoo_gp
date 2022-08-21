@@ -314,16 +314,15 @@ class BaseGP(BaseEstimator):
             # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
             runs_dir = Path.cwd() / 'runs'
-            if not Path.is_dir(runs_dir):
-                Path.mkdir(runs_dir)
+            runs_dir.mkdir(exists_ok=True)
             if self.output_dir:
                 self.path = runs_dir / self.output_dir
             else:
                 kname = dict(b='BASE', r='REGRESS',
                              c='CLASSIFY', m='MATCH')[self.kernel]
                 self.path = runs_dir / f'data_{kname}_{self.datetime}/'
-            if not Path.is_dir(self.path):    # initialize elog dir
-                Path.mkdir(self.path)
+            if not self.path.exists():    # initialize elog dir
+                self.path.mkdir()
                 for pop in ['a', 'b', 'f', 's']:  # initialize log files
                     self.save_population(pop)
 
@@ -439,7 +438,7 @@ class BaseGP(BaseEstimator):
 
         menu = 1
         while menu != 0:  # Supports adding generations mid-run
-            for _ in range(self.population.gen_id, self.gen_max):
+            for gen in range(self.population.gen_id, self.gen_max):
 
                 # Evolve the next generation
                 self.population = self.population.evolve(
