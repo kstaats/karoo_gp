@@ -11,12 +11,11 @@ likely find more enjoyment of this particular flavour of GP with
 a little understanding of its intent and design.
 '''
 
-import os
 import sys
 import csv
 import json
-import pathlib
 import operator
+from pathlib import Path
 
 import numpy as np
 import sklearn.metrics as skm
@@ -27,59 +26,26 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from datetime import datetime
 
-from . import Functions, Terminals, NumpyEngine, TensorflowEngine, \
-              Population, Tree
+from . import NumpyEngine, TensorflowEngine, Population, Tree, NodeData, \
+              get_function_node, get_nodes
 
-# TODO: This is used to save the final population and the generated self.path
-# is used by fx_data_params_write/_json. I think this should be moved back to
-# BaseGP. Some of the save/load methods there are still unused/nonfunctioning,
-# and they can be combined with the useful parts of this.
-class DataLoader:
-    def __init__(self, model):
-        """Determine path and initialize log dir"""
-        runs_dir = os.path.join(os.getcwd(), 'runs')
-        if model.output_dir:
-            self.path = os.path.join(runs_dir, model.output_dir + '/')
-        else:
-            basename = os.path.basename(model.filename)  # extract the filename (if any)
-            root, _ = os.path.splitext(basename)  # split root from extension
-            # TODO: datetime should be set when run is initialized, i.e. in
-            # model.fit. However, sometimes the model terminates early, and
-            # needs to have made an output dir already. Update this with a
-            # comprehensive new approach to saving/logging data.
-            self.path = os.path.join(runs_dir, f'{root}_{model.datetime}/')
-        if not os.path.isdir(self.path):    # initialize elog dir
-            os.makedirs(self.path)
-        for fname in ['a', 'b', 'f', 's']:  # initialize log files
-            self.save('', fname)
-
-    def save(self, data, fname):
-        """Save data to csv"""
-        if fname in ['a', 'b', 'f', 's']:
-            fname = f'population_{fname}.csv'
-        with open(self.path + fname, 'w') as f:
-            writer = csv.writer(f)
-            writer.writerows(data)
 
 class BaseGP(BaseEstimator):
 
     """
-    This Base_BP class al the core attributes, objects and methods of Karoo GP.
+    This class contains the core attributes, objects and methods of Karoo GP.
     It's composed of a heirarchal structure of classes. Below are some of the
     more import attributes and methods for each class, and their organization:
 
     BaseGP
     ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
+    ├─ .nodes = Nodes                   - all active terminals, constants, fx
     ├─ .decoder(y)                      - Initialize with y_train
     │   └─ .transform(pred)             - transforms prediction to match y
     │
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
-    │
-    ├─ .terminals = Terminals           - list of terminals + constants
-    │   └─ .get(instx)                  - returns list of terminals from instx
-    │
-    ├─ .functions = Functions           - operators and associated type/arity
-    │   └─ .get(instx)                  - returns list of functions from instx
+    |
+    ├─ .get_nodes(types, depth)         - return nodes matching types & depth
     │
     ├─ .engine = Engine                 - Numpy for cpu, Tensorflow for gpu
     │   └─ .predict(trees, X, X_hash)   - returns X predictions for each tree
@@ -91,8 +57,8 @@ class BaseGP(BaseEstimator):
     │   │   └─ Tree                     - an evolvable expression tree
     │   │      ├─ .expression           - a string of sympified expr, e.g. a*b
     │   │      ├─ .score                - a dict of results matching `scoring`
-    │   │      ├─ .root = Branch        - a recursive node which forms a Tree
-    │   │      │   ├─ .symbol           - a terminal ('a') or function ('*')
+    │   │      ├─ .root = Node          - a recursive node which forms a Tree
+    │   │      │   ├─ .label            - a terminal ('a') or function ('*')
     │   │      │   ├─ .arity            - instructions for generating children
     │   │      │   ├─ .parent           - the node immediately above
     │   │      │   └─ .children         - the nodes immediately below
@@ -107,17 +73,21 @@ class BaseGP(BaseEstimator):
     └- .score(pred, y)                  - return score of prediction against y
     """
 
+    # Overridden by subclasses
+    kernel = 'b'  # Base
 
     # Fit parameters (set later)
     engine = None
     scoring_ = None
     history_ = None
+    datetime = None
+    path = None
     X_hash_ = None
     test_split_ = None
-    terminals_ = None
-    functions_ = None
+    nodes = None
     population = None
     cache_ = None
+    unfit = None  # Keep a record of trees which were marked unfit
 
     def __init__(
         self, tree_type='r', tree_depth_base=3, tree_depth_max=None,
@@ -126,9 +96,9 @@ class BaseGP(BaseEstimator):
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
         swim='p', mode='s', random_state=None, pause_callback=None,
         engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
-        functions=None, terminals=None, constants=None, test_size=0.2,
-        scoring=None, higher_is_better=False, prediction_transformer=None,
-        cache=None):
+        functions=None, force_types=[['operator', 'cond']], terminals=None,
+        constants=None, test_size=0.2, scoring=None, higher_is_better=False,
+        prediction_transformer=None, cache=None):
         """Initialize a Karoo_GP object with given parameters"""
 
         # Model parameters
@@ -149,25 +119,30 @@ class BaseGP(BaseEstimator):
         self.precision = precision           # max decimal places. pred & score
         self.swim = swim                     # culling method
         self.mode = mode                     # determines if pauses after fit
-        self.random_state = random_state
+        self.random_state = random_state     # follows sklearn convention
         self.pause_callback = pause_callback # called throughout based on disp
-        self.engine_type = engine_type
-        self.tf_device = tf_device
-        self.tf_device_log = tf_device_log
-        self.functions = functions
-        self.terminals = terminals
-        self.constants = constants
+        self.engine_type = engine_type       # execute on cpu (np) or gpu (tf)
+        self.tf_device = tf_device           # configure gpu
+        self.tf_device_log = tf_device_log   # log dir for tensorflow
+        self.functions = functions           # list of operators to use
+        self.force_types = force_types       # default: root = operator/cond
+        self.terminals = terminals           # list of terminal names to use
+        self.constants = constants           # list of constants to include
         self.test_size = test_size           # how to portion train/test data
-        self.scoring = scoring
+        self.scoring = scoring               # a dict of name/func pairs
+        # Whether fitness_compare returns the higher- or lower-fitness tree
         self.higher_is_better = higher_is_better
+        # A function called on the tree outputs, e.g. round/clip for classify
         self.prediction_transformer = prediction_transformer
-        self.cache = cache
+        self.cache = cache                   # a dict of expr/score pairs
 
     def log(self, msg, display={'i', 'g', 'm', 'db'}):
+        """Print a message to the console when in specified display mode"""
         if self.display in display or display == 'all':
             print(msg)
 
     def pause(self, display={'i', 'g', 'm', 'db'}):
+        """Call the pause_callback when in specified display mode"""
         if not self.pause_callback:
             self.log('No pause callback function provided')
             return 0
@@ -177,6 +152,7 @@ class BaseGP(BaseEstimator):
             return 0
 
     def error(self, msg, display={'i', 'g', 'm', 'db'}):
+        """Print an error message to the console when in display mode"""
         self.log(msg, display)
         self.pause(display)
 
@@ -199,6 +175,77 @@ class BaseGP(BaseEstimator):
         score = self.score(self.X_test, self.y_test)
         recursively_merge_history(score, self.history_)
 
+    def save_population(self, population):
+        """Write population to csv following default instructions.
+
+        population:
+        'a': Append current trees to 'population_a.csv'
+        'b': Write next_gen_trees to 'population_b.csv' (overwrite)
+        'f': Write final trees to 'population_f' (overwrite);
+             called by terminate()
+        's': Write current trees to 'population_s' (overwrite);
+             called in interactive mode to edit manually and re-load
+
+        TODO: Generalize: save_population(fname, next_gen=False, append=False).
+        Move the current schema/logic to karoo-gp.py, and replace calls with
+        lifecycle 'hooks' passed to BaseGP, e.g.:
+
+        callbacks={end_of_generation: lambda model: model.save_population(...)}
+
+        """
+
+        # Select trees to save
+        if self.population is None:  # Used to initialize empty csv's
+            pop = []
+        elif population in {'a', 'f', 's'}:
+            gen_id = self.population.gen_id
+            pop = [f'Karoo GP by Kai Staats - Generation {gen_id}']
+            pop += self.population.save()
+        elif population == 'b':
+            pop = self.population.save(next_gen=True)
+        else:
+            raise ValueError(f'Unrecognized population: {population}')
+
+        # Select the appropriate file
+        fname = f'population_{population}.csv'
+        mode = 'a' if population == 'a' else 'w'
+        with open(self.path / fname, mode) as f:
+            writer = csv.writer(f, delimiter=',')
+            writer.writerows([[p] for p in pop])
+            # Add extra line after generations
+            if (population == 'a' and self.population and
+                self.population.gen_id > 0):
+                writer.writerow('')
+        return self.path / fname
+
+    def load_population(self, path=None):
+        """Replace current population with `population_s.csv` from output_dir
+
+        TODO: This usually thows an error in interactive mode. We currently let
+        the user save/load at any point of the population lifecycle. This means
+        if e.g. you save a population before it's evaluated, and try to load
+        if during evolution, the saved trees won't include fitness and can't
+        be compared. This should be fixed by only allowing save/load at certain
+        points in the lifecycle.
+
+        TODO: Make more generic. Take the name as a parameter, pass
+        'population_s' in karoo_gp.py.
+        """
+        if path is None:
+            path = self.path / 'population_s.csv'
+        gen_id = None
+        trees = []
+        with open(path) as f:
+            reader = csv.reader(f, delimiter=',')
+            for row in reader:
+                item = row[0]
+                if item.startswith('Karoo'):  # First line
+                    gen_id = item.split('Generation ')[1]
+                elif not item:
+                    break
+                else:
+                    trees.append(item)
+        self.population = Population.load(self, trees, int(gen_id))
 
     #+++++++++++++++++++++++++++++++++++++++++++++
     #   Methods to Run Karoo GP                  |
@@ -211,6 +258,10 @@ class BaseGP(BaseEstimator):
         but they don't hold a reference to BaseGP, and the user should be
         able to override this (default) compare_fitness function.
         """
+        if a.is_unfit:
+            return b  # Search for the first fit tree
+        elif b.is_unfit:
+            return a  # Skip unfit trees thereafter
         op = operator.gt if self.higher_is_better else operator.lt
         return a if op(a.score['fitness'], b.score['fitness']) else b
 
@@ -231,6 +282,15 @@ class BaseGP(BaseEstimator):
                 last_fittest = tree
         return fittest_dict
 
+    #+++++++++++++++++++++++++++++++++++++++++++++
+    #   'Check' Functions                        |
+    #+++++++++++++++++++++++++++++++++++++++++++++
+
+    # Following the sklearn convention, BaseGP.fit(X, y) validates all model
+    # attributes passed to __init__ and/or updated manually, well as X and y.
+    # Some sklearn library functions are used (e.g. check_X_y), others are
+    # custom and packaged into the methods below.
+
     def check_model(self):
         """Initialize and/or validate model parameters"""
 
@@ -250,58 +310,69 @@ class BaseGP(BaseEstimator):
                 self.engine = TensorflowEngine(self, self.tf_device, self.tf_device_log)
             else:
                 raise ValueError(f'Unrecognized engine_type: {self.engine_type}')
-            # Loader
+
+            # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
-            self.loader = DataLoader(self)       # set path, initialize logs
+            runs_dir = Path.cwd() / 'runs'
+            runs_dir.mkdir(exist_ok=True)
+            if self.output_dir:
+                self.path = runs_dir / self.output_dir
+            else:
+                kname = dict(b='BASE', r='REGRESS',
+                             c='CLASSIFY', m='MATCH')[self.kernel]
+                self.path = runs_dir / f'data_{kname}_{self.datetime}/'
+            if not self.path.exists():    # initialize elog dir
+                self.path.mkdir()
+                for pop in ['a', 'b', 'f', 's']:  # initialize log files
+                    self.save_population(pop)
 
     def check_population(self, X, y):
         """Initialize and/or validate population parameters"""
-        # Terminals
-        if self.terminals_ is None:
+        # Nodes
+        if self.nodes is None:
+
+            # Terminals
             if self.terminals is None:
                 terms = [f'f{i}' for i in range(X.shape[1])]
-            elif (isinstance(self.terminals, list) and
-                  all(isinstance(t, str) for t in self.terminals)):
-                terms = self.terminals
             else:
-                raise ValueError('terminals must be a list of strings')
+                if not isinstance(self.terminals, list):
+                    raise ValueError('Terminals must be a list, got',
+                                    type(self.terminals))
+                elif not all(isinstance(t, str) for t in self.terminals):
+                    raise ValueError('Terminal list items must be strings.')
+                elif len(self.terminals) != X.shape[1]:
+                    raise ValueError('Terminals list must be the same length'
+                                     'as X samples.')
+                terms = self.terminals
+            terminals = [NodeData(t, 'terminal') for t in terms]
+
+            # Constants
             if self.constants is not None and (
                 not isinstance(self.constants, list) or
-                not all(type(c) in [int, float] for c in self.constants)):
+                not all(isinstance(c, (int, float)) for c in self.constants)):
                 raise ValueError('constants must be a list of ints or floats')
-            self.terminals_ = Terminals(terms, self.constants)
-        if len(self.terminals_.variables) != X.shape[1]:
-            raise ValueError('terminals and features must be same length')
+            constants = self.constants or []
 
-        # Functions
-        if self.functions_ is None:
-            # Validate functions
-            if isinstance(self.functions, Functions):
-                self.functions_ = self.functions
-            elif isinstance(self.functions, list):
-                # TODO validate symbol against supported
-                self.functions_ = Functions(self.functions)
-            # TODO support function type as args, e.g. 'logic, arithmetic'
-            elif self.functions is None:
-                self.functions_ = Functions.arithmetic()
-            else:
-                raise ValueError('functions must be a list of strings or type '
-                                 'Functions')
+            # Functions
+            function_labels = self.functions or ['+', '-', '*', '/', '**']
+            functions = [get_function_node(f) for f in function_labels]
+
+            self.nodes = terminals + constants + functions
 
         # Population
         if self.population is None:
             self.population = Population.generate(
                 model=self,
-                functions=self.functions_,
-                terminals=self.terminals_,
                 tree_type=self.tree_type,
                 tree_depth_base=self.tree_depth_base,
                 tree_pop_max=self.tree_pop_max,
+                force_types=self.force_types,
             )
             self.log(f'\n We have constructed the first, stochastic population of '
                      f'{self.tree_pop_max} Trees.')
             self.population.evaluate(X, y, self.X_train_hash)
             self.log_history()
+            self.save_population('a')
 
         # Update max allowed depth
         if self.tree_depth_max is None:
@@ -314,7 +385,15 @@ class BaseGP(BaseEstimator):
                              f'{self.tree_depth_base})')
 
     def check_test_split(self, X, y):
-        """Split train/test data; reuse subsequently for same X, y"""
+        """Split train/test data; reuse subsequently for same X, y
+
+        TODO: It's probably wasteful to store X_train, etc. directly, and it's
+        counter to the sklearn guidelines anyway. Instead we should store a
+        boolean array of which values (if any) are test samples. This creates
+        an issue with the interactive mode though, because the menu needs to
+        be able to 'grab' X and y in order to 'eval' a tree, and currently it's
+        only passed the model.
+        """
         # Store a fingerprint of the dataset (X_hash) and cache the results
         # of `train_test_split`. If `fit()` is called muptiple times with the
         # same X, y, the same split will be used. Otherwise, split new data.
@@ -364,8 +443,6 @@ class BaseGP(BaseEstimator):
                 # Evolve the next generation
                 self.population = self.population.evolve(
                     self.tree_pop_max,
-                    self.functions_,
-                    self.terminals_,
                     self.swim,
                     self.tree_depth_min,
                     self.tree_depth_max_,
@@ -381,6 +458,7 @@ class BaseGP(BaseEstimator):
 
                 # Add best score to history
                 self.log_history()
+                self.save_population('a')
 
             if self.mode == 's':  # (s)erver mode: terminate after run
                 menu = 0
@@ -393,6 +471,8 @@ class BaseGP(BaseEstimator):
 
         * Pass the fittest tree to batch_predict as a list (of 1)
         * Return the first result
+
+        Primarily used externally, e.g. model.predict(X_test)
         """
         if not self.population.evaluated:
             tree = self.population.trees[0]
@@ -405,6 +485,8 @@ class BaseGP(BaseEstimator):
 
         * If prediction_transformer (e.g. MultiClassifier), transform predictions
         * If precision is specified, round predictions to precision
+
+        Primarily used internally by population during evaluation
         """
         y = self.engine.predict(trees, X, X_hash)
         if self.prediction_transformer is not None:
@@ -422,6 +504,10 @@ class BaseGP(BaseEstimator):
         return {label: fx(y_true, y_pred)
                 for label, fx in self.scoring_.items()}
 
+    def get_nodes(self, *args, **kwargs):
+        """Returns a subset of self.nodes based on node_types and depth"""
+        return get_nodes(*args, **kwargs, lib=self.nodes)
+
     def fx_karoo_terminate(self):
         '''
         Terminates the evolutionary run (if yet in progress), saves parameters
@@ -431,17 +517,13 @@ class BaseGP(BaseEstimator):
         TODO: Replace with a save() method, possibly call automatically when
         used via ContextManager, or manually.
         '''
-        kernel = {
-            RegressorGP: 'r', MultiClassifierGP: 'c', MatchingGP: 'm', BaseGP: 'p'
-        }[type(self)]
-        self.fx_data_params_write(kernel)
-        self.fx_data_params_write_json(kernel)
+        self.fx_data_params_write(self.kernel)
+        self.fx_data_params_write_json(self.kernel)
 
         # save the final population
-        self.loader.save([t.save() for t in self.population.trees], 'f')
+        loc = self.save_population('f')
 
-        self.log(f'Your Trees and runtime parameters are archived in '
-                 f'{self.loader.path}/population_f.csv')
+        self.log(f'Your Trees and runtime parameters are archived in {loc}')
         self.log('\n\033[3m "It is not the strongest of the species that '
                  'survive, nor the most intelligent,\033[0;0m\n'
                  '\033[3m  but the one most responsive to change."'
@@ -464,10 +546,9 @@ class BaseGP(BaseEstimator):
 
         Arguments required: app
         '''
-        with open(self.loader.path + 'log_config.txt', 'w') as file:
+        with open(self.path / 'log_config.txt', 'w') as file:
             file.write('Karoo GP')
             file.write('\n launched: ' + str(self.datetime))
-            file.write('\n dataset: ' + str(self.filename))
             file.write('\n')
             file.write('\n kernel: ' + str(kernel))
             file.write('\n precision: ' + str(self.precision))
@@ -479,7 +560,7 @@ class BaseGP(BaseEstimator):
             file.write('\n')
             file.write('\n genetic operator Reproduction: ' + str(self.evolve_repro))
             file.write('\n genetic operator Point Mutation: ' + str(self.evolve_point))
-            file.write('\n genetic operator Branch Mutation: ' + str(self.evolve_branch))
+            file.write('\n genetic operator Node Mutation: ' + str(self.evolve_branch))
             file.write('\n genetic operator Crossover: ' + str(self.evolve_cross))
             file.write('\n')
             file.write('\n tournament size: ' + str(self.tourn_size))
@@ -487,10 +568,9 @@ class BaseGP(BaseEstimator):
             file.write('\n number of generations: ' + str(self.population.gen_id))
             file.write('\n\n')
 
-        with open(self.loader.path + 'log_test.txt', 'w') as file:
+        with open(self.path / 'log_test.txt', 'w') as file:
             file.write('Karoo GP')
             file.write('\n launched: ' + str(self.datetime))
-            file.write('\n dataset: ' + str(self.filename))
             file.write('\n')
 
             # Which population the fittest_dict indexes refer to
@@ -528,7 +608,7 @@ class BaseGP(BaseEstimator):
         generic = dict(
             package='Karoo GP',
             launched=self.datetime,
-            dataset=str(self.filename),
+            # dataset=str(self.filename),  # Should be external to model
         )
         config = dict(
             kernel=kernel,
@@ -567,7 +647,7 @@ class BaseGP(BaseEstimator):
                 fittest_tree=fittest_tree,
                 score=self.score(self.X_test, self.y_test),
             )
-        with open(self.loader.path + 'results.json', 'w') as f:
+        with open(self.path / 'results.json', 'w') as f:
             json.dump(final_dict, f, indent=4)
 
 
@@ -575,6 +655,17 @@ class BaseGP(BaseEstimator):
 # KERNEL IMPLEMENTATIONS
 
 class RegressorGP(BaseGP):
+    """
+    A trainable Regressor built on Karoo's BaseGP.
+
+    'Absolute error' is the fitness function: the sum of the absolute
+    difference between the prediction and actual for every sample. 'Mean
+    squared error' is also calculated and included in score/history.
+
+    Both functions round outputs to 6 significant figures.
+    """
+    kernel = 'r'  # Regressor
+
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -611,6 +702,15 @@ class RegressorGP(BaseGP):
 
 
 class MatchingGP(BaseGP):
+    """
+    A Matching algorithm built on Karoo's BaseGP.
+
+    'Absolute matches' is the fitness function: the number of samples which
+    were predicted correctly.
+
+    TODO: remove?"""
+    kernel = 'm'  # Match
+
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring function(s) and kwargs"""
 
@@ -651,6 +751,21 @@ class MatchingGP(BaseGP):
 
 
 class MultiClassifierGP(BaseGP):
+    """
+    A trainable Multiclass Classifier built on Karoo's BaseGP.
+
+    'Number Correct' is the fitness function: the number of samples
+    classified correctly. Also calculated for score/history are sklearn's
+    'Classification Report' and 'Confusion Matrix'.
+
+    This classes passes a ClassDecoder to BaseGP as the prediction_transformer.
+    The decoder is fit on y-data for the number of unique values (classes).
+    Then, numeric predictions from BaseGP are clipped/rounded to integers which
+    match those classes.
+    """
+
+    kernel = 'c'  # Classify
+
     def __init__(self, *args, **kwargs):
         """Add kernel-specific scoring functions, setup decoder"""
 
@@ -659,14 +774,18 @@ class MultiClassifierGP(BaseGP):
             return float(np.sum(y_true == y_pred))
 
         def cls_report_zero_div(y_true, y_pred):
-            # TODO: cli test expected output (from '..write_json()')
-            # classification report dict keys are floats. Should use int.
+            """Call sklearn.metrics function with default kwargs
+
+            TODO: cli test expected output (from '..write_json()')
+            classification report dict keys are floats. Should use int.
+            """
             return skm.classification_report(
                 y_true.astype(np.float32),
                 y_pred.astype(np.float32),
                 zero_division=0, output_dict=True)
 
         def conf_matrix_as_list(y_true, y_pred):
+            """Call sklearn.metrics function but return as list"""
             return skm.confusion_matrix(y_true, y_pred).tolist()
 
         kwargs['scoring'] = dict(fitness=n_correct,

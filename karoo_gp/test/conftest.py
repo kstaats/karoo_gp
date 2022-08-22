@@ -4,7 +4,8 @@ from collections import namedtuple
 import pytest
 import numpy as np
 
-from karoo_gp import Functions, Terminals
+from karoo_gp import NodeData, get_function_node
+
 
 @pytest.fixture
 def paths():
@@ -50,9 +51,7 @@ def mock_func():
     return handler
 
 @pytest.fixture()
-def functions():
-    return Functions(['+', '-', '*', '/'])
-
-@pytest.fixture()
-def terminals():
-    return Terminals(['a', 'b', 'c'], constants=[1, 2, 3])
+def nodes():
+    return ([NodeData(t, 'terminal') for t in ['a', 'b', 'c']] +
+            [NodeData(c, 'constant') for c in [1, 2, 3]] +
+            [get_function_node(l) for l in ['+', '-', '*', '/']])

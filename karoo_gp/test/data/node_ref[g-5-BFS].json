@@ -1,9 +1,9 @@
 {
-    "node_type": "<class 'karoo_gp.functions.Function'>",
+    "node_type": "operator",
     "tree_type": "g",
     "parent": null,
-    "children": "[<Branch: <Terminal: symbol='a' type='float'>>, <Branch: <Terminal: symbol=2 type='float'>>]",
-    "repr": "<Branch: <Function: symbol=/, type='arithmetic', arity=2>>",
+    "children": "[<Node: <NodeData label='a' type=terminal>>, <Node: <NodeData label=2 type=constant>>]",
+    "repr": "<Node: <NodeData label='/' type=operator>>",
     "parse": "((a)/(2))",
     "display": "                _____________/_______________               \n              a                             2               \n",
     "depth": 1,

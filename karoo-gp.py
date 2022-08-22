@@ -450,15 +450,16 @@ def fx_karoo_pause(model):
         'fittest_dict': {},
         'population_len': 0,
         'next_gen_len':0,
-        'path': model.loader.path,
+        'path': '',
     }
     # So it doesn't break if called before population is initialized
-    if hasattr(model, 'population'):
+    if model.population is not None:
         pop_dict = {
             'gen_id': model.population.gen_id,
             'fittest_dict': model.population.fittest_dict,
             'population_len': len(model.population.trees),
             'next_gen_len': len(model.population.next_gen_trees),
+            'path': model.path,
         }
         menu_dict = {**menu_dict, **pop_dict}
 
@@ -501,15 +502,15 @@ def fx_karoo_pause(model):
         for k, v in score.items():
             model.log(f'{k.replace("_", " ").title()}: {v}')
 
-    elif input_a == 'print_a':  # print a Tree from population_a
-        tree = model.population.trees[input_b - 1]
-        model.log(f'\tsym: {tree.expression}\n\tfitness: {tree.fitness}'
-                  f'\n{tree.display()}')
-
-    elif input_a == 'print_b':  # print a Tree from next_gen_trees
-        tree = model.population.next_gen_trees[input_b - 1]
-        model.log(f'Tree {tree.id}: \n\tsym: {tree.expression}'
-                  f'\n\tfitness: {tree.fitness}\n{tree.display()}')
+    elif input_a in ['print_a', 'print_b']:  # print a Tree from population_a
+        population = (model.population.trees if input_a == 'print_a'
+                      else model.population.next_gen_trees)
+        tree = population[input_b - 1]
+        model.log(f'\nTree ID {input_b}\n'
+                  f'Expression: {tree.expression}\n'
+                  f'Raw: {tree.raw_expression}\n'
+                  f'Fitness: {tree.fitness}'
+                  f'\n{tree.display(method="list")}')
 
     elif input_a == 'population':  # list all Trees in population_a
         for tree in model.population.trees:
@@ -519,15 +520,14 @@ def fx_karoo_pause(model):
         for tree in model.population.next_gen_trees:
             model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
-    # TODO: Test and troubleshoot the load/save system
     elif input_a == 'load':  # load population_s to replace population_a
-        # NEED TO replace 's' with a user defined filename
-        model.fx_data_recover(model.savefile['s'])
+        model.load_population()
+        model.log(f'\n\t Replacing population_a with population_s.csv')
 
     elif input_a == 'write':  # write the evolving next_gen_trees to disk
-        model.fx_data_tree_write(model.population.next_gen_trees, 'b')
+        path = model.save_population('b')
         model.log(f'\n\t All current members of the evolving next_gen_trees '
-                  f'saved to {model.savefile["b"]}')
+                  f'saved to {path}')
 
     elif input_a == 'add':
         # check for added generations, then exit fx_karoo_pause
@@ -549,7 +549,7 @@ func_path = karoo_dir / 'karoo_gp' / 'files' / f'operators_{suffix}.csv'
 filename = filename or karoo_dir / 'karoo_gp' / 'files' / f'data_{suffix}.csv'
 
 functions = np.loadtxt(func_path, delimiter=',', skiprows=1, dtype=str)
-functions = [f[0] for f in functions]  # Arity is now hard-coded by symbol
+functions = [f[0] for f in functions]  # Arity is now hard-coded by label
 dataset = pd.read_csv(filename)
 y = dataset.pop('s')
 terminals = list(dataset.keys())

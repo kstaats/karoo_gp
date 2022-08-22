@@ -1,13 +1,15 @@
 import pytest
 import numpy as np
 
-from karoo_gp import NumpyEngine, TensorflowEngine, Terminals, Tree
+from karoo_gp import NumpyEngine, TensorflowEngine, Tree, NodeData, get_nodes
 
 @pytest.fixture
 def trees():
     return [
         Tree.load(1, 'g((a)+((b)*(c)))'),
-        Tree.load(1, 'f(((a)*(b))/((b)*(c)))')
+        Tree.load(1, 'f(((a)*(b))/((b)*(c)))'),
+        Tree.load(1, 'f(((a)<(b))and((a)<(c)))'),
+        Tree.load(1, 'f(((a)<(10))if((a)>=(3))else((a)>(0)))'),
     ]
 
 @pytest.fixture
@@ -17,10 +19,12 @@ def X():
 class MockModel:
     random_state = 1000
     cache_ = dict()
-    terminals_ = Terminals(['a', 'b', 'c'])
+    nodes = [NodeData(t, 'terminal') for t in ['a', 'b', 'c']]
+    def get_nodes(self, *args, **kwargs):
+        return get_nodes(*args, **kwargs, lib=self.nodes)
 
 @pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
-def test_engine(trees, X, engine_type):
+def test_engine(X, trees, engine_type):
     X_train, X_test = X
 
     # Initialize
@@ -38,12 +42,12 @@ def test_engine(trees, X, engine_type):
     assert isinstance(train_pred, np.ndarray)
     assert train_pred.dtype == engine.dtype
     assert train_pred.shape == (len(trees), len(X_train))
-    assert [list(p) for p in train_pred] == [[7.0, 14.0], [0.3333333333333333, 0.5]]
+    assert ([list(p) for p in train_pred] ==
+        [[7.0, 14.0], [0.3333333333333333, 0.5], [1.0, 1.0], [1.0, 1.0]])
 
     # Test skip cached expressions
     X_test_hash = hash(X_test.data.tobytes())
-    model.cache_[X_test_hash] = {trees[0].expression: 'dummy'}
+    model.cache_[X_test_hash] = {trees[i].expression: 'dummy' for i in (0, 2)}
     test_pred = engine.predict(trees, X_test, X_test_hash)
-    assert sum(test_pred[0]) == 0
-    assert sum(test_pred[1]) != 0
-    assert [list(p) for p in test_pred] == [[0.0, 0.0], [0.6, 0.6666666666666666]]
+    assert ([list(p) for p in test_pred] ==
+        [[0.0, 0.0], [0.6, 0.6666666666666666], [0.0, 0.0], [1.0, 1.0]])

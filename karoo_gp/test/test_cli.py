@@ -39,14 +39,16 @@ def test_cli(tmp_path, paths, ker, typ, bas, seed):
     # remove the date since it's different
     actual_json.pop('launched')
     expected_json.pop('launched')
-    # extract the dataset path since it's different
-    actual_dataset = pathlib.Path(actual_json.pop('dataset'))
-    expected_dataset = pathlib.Path(expected_json.pop('dataset'))
 
-    # check that both datasets match the input dataset
-    assert (data_file.relative_to(paths.root) ==
-            actual_dataset.relative_to(paths.root) ==
-            expected_dataset)
+    # The model shouldn't use a dataset path; it just takes X and y
+    # # extract the dataset path since it's different
+    # actual_dataset = pathlib.Path(actual_json.pop('dataset'))
+    # expected_dataset = pathlib.Path(expected_json.pop('dataset'))
+
+    # # check that both datasets match the input dataset
+    # assert (data_file.relative_to(paths.root) ==
+    #         actual_dataset.relative_to(paths.root) ==
+    #         expected_dataset)
 
     # Not needed after implementing sigfig_round in the Regression kernel
     # if ker == 'r' and typ == 'f' and platform.mac_ver()[-1] == 'arm64':
