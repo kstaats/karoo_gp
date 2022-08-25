@@ -121,7 +121,7 @@ class Node:
                                               force_types)
         elif method == 'DFS':
             return cls.recursive_generate(rng, get_nodes, tree_type, depth,
-                                          parent, node_types, force_types)
+                                          force_types, parent)
 
     @classmethod
     def breadth_first_generate(cls, rng, get_nodes, tree_type, tree_depth,
@@ -201,36 +201,50 @@ class Node:
         return cls.load(expr, tree_type, parent=parent)
 
     @classmethod
-    def recursive_generate(cls, rng, get_nodes, tree_type, depth, parent=None,
-                           node_types=None, force_types=None):
-        """Return a randomly generated node and subtree depth-first (recursive)"""
-        # Grow trees flip a coin for function/terminal (except root)
-        if depth == 0:
-            is_terminal = True
-        elif tree_type == 'g' and (parent is not None or not force_types):
-            is_terminal = rng.choice([False, True])
-        else:
-            is_terminal = False
+    def recursive_generate(cls, rng, get_nodes, tree_type, depth,
+                           force_types=[], parent=None):
+        """Return a randomly generated node and subtree (recursive)"""
 
-        # Create terminal or function
+        # Determine allowed types
+        force_types_ = []           # For children
+        if force_types:  # If there's forced type for this depth,
+            types = force_types[0]  # use it, and don't pass it on.
+            force_types_ = force_types[1:]
+        elif parent is not None:    # Otherwise, inherit from parent.
+            # Doesn't work with mutate, because
+            this_i = len(parent.children)
+            types = parent.child_type[this_i]
+        else:
+            raise ValueError('Types must be specified for each node, either '
+                             'by the "force_types" kwarg (required for root, '
+                             'optional for depths), or inherited from the '
+                             '"child_type" attribute of the parent Node.')
+
+        # Decide whether terminal or function
+        if depth == 0:  # Always return a terminal at depth 0
+            is_terminal = True
+        elif (tree_type == 'g' and         # For grow trees,
+              'terminal' in types and      # if it's allowed,
+              rng.choice([False, True])):  # flip a coin.
+            is_terminal = True
+        else:  # Otherwise, return a function
+            is_terminal = False
+            types = list(filter(lambda t: t != 'terminal', types))
+            types = [t for t in types if t != 'terminal']
+
+
+        # Generate a random node
         if is_terminal:
             node_data = rng.choice(get_nodes(['terminal', 'constant']))
             node = cls(node_data, tree_type, parent=parent)
         else:
-            types = None
-            if force_types:
-                types = force_types[0]  # Can be falsy
-                force_types = force_types[1:]
-            types = types or node_types or ['operator', 'cond']
             node_data = rng.choice(get_nodes(types, depth))
             node = cls(node_data, tree_type, parent=parent)
             # Generate children
             node.children = []
-            kwargs = dict(rng=rng, get_nodes=get_nodes, tree_type=tree_type,
-                          depth=depth-1, force_types=force_types, parent=node)
             for i in range(node.arity):
-                node_types = None if not node.child_type else node.child_type[i]
-                node.children.append(cls.generate(**kwargs, node_types=node_types))
+                node.children.append(cls.recursive_generate(
+                    rng, get_nodes, tree_type, depth-1, force_types_, node))
         return node
 
     # MAY REDESIGN: The original 'fx_..' functions use breadth-first ordering,
@@ -504,12 +518,15 @@ class Node:
                     n = new_n
         return False, n
 
-    def prune(self, rng, get_nodes):
+    def prune(self, rng, get_nodes, max_depth=1, method='BFS'):
         """Replace all non-terminal child nodes with terminals"""
         if not self.children:
             return
         for i_c, child in enumerate(self.children):
-            if child.children:
-                replacement = Node(rng.choice(get_nodes(['terminal', 'constant'])),
-                                   self.tree_type)
-                self.set_child(i_c + 1, replacement)
+            if child.min_depth >= max_depth:
+                self.children[i_c] = Node(
+                    rng.choice(get_nodes(arity=0)),
+                    self.tree_type)
+                self.children[i_c].parent = self
+            elif max_depth > 1:
+                child.prune(rng, get_nodes, max_depth - 1, method)

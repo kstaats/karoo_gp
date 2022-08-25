@@ -58,7 +58,7 @@ function_lib = [
     NodeData('or', 'bool', 2, min_depth=2, child_type=[['bool'], ['bool']]),
     NodeData('not', 'bool', 1, min_depth=2, child_type=[['bool']]),
     # Conditional
-    NodeData('if', 'cond', 3, min_depth=2, child_type=[None, ['bool'], None]),
+    NodeData('if', 'cond', 3, min_depth=2, child_type=[numeric, ['bool'], numeric]),
 ]
 
 def get_function_node(label: str) -> NodeData:
@@ -68,11 +68,13 @@ def get_function_node(label: str) -> NodeData:
             return node
     raise ValueError(f'NodeData not found for label: {label}')
 
-def get_nodes(types: List[str], depth=2,
+def get_nodes(types: List[str]=None, depth=2, arity=None,
               lib: List[NodeData]=function_lib) -> List[NodeData]:
     """Return all NodeDatas of given types for min_depth from a given lib
 
     Used by BaseGP with the lib of user-selected nodes, including terminals
     and constants"""
-    return [node for node in lib
-            if node.node_type in types and node.min_depth <= depth]
+    return [node for node in lib if all((
+        node.min_depth <= depth,
+        True if types is None else node.node_type in types,
+        True if arity is None else node.arity == arity))]
