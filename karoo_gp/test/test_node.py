@@ -107,7 +107,7 @@ def test_node_force_types(rng, force_types, tree_type, method):
         i_node = 1
         for height in range(1, len(ft)):
             while True:
-                child = node.get_child(i_node, method='BFS')
+                child = node.get_child(i_node, method='DFS')
                 i_node += 1
                 if child.height > height:
                     break

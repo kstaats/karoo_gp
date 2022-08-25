@@ -110,7 +110,7 @@ class Node:
 
     @classmethod
     def generate(cls, rng, get_nodes, tree_type, depth, parent=None,
-                 method='BFS', node_types=None, force_types=None):
+                 method='DFS', node_types=None, force_types=None):
         """Return a randomly-generated node and subtree
 
         TODO: Choose BFS or DFS. Supporting both is unnecessary and error-prone
@@ -472,7 +472,7 @@ class Node:
                 c.parent = copy
         return copy
 
-    def get_child(self, n, method='BFS'):
+    def get_child(self, n, method='DFS'):
         """Return the child in the nth position; supports BFS or DFS"""
         n = n if method != 'BFS' else self.i_bfs(n)
         child, _ = self.recursive_get_child(n)
@@ -493,7 +493,7 @@ class Node:
                     return target, n
             return False, n
 
-    def set_child(self, n, node, method='BFS'):
+    def set_child(self, n, node, method='DFS'):
         """Replace the child in the nth position with supplied node"""
         if n == 0:
             raise ValueError('Cannot set child 0; replace from parent node')
@@ -518,7 +518,7 @@ class Node:
                     n = new_n
         return False, n
 
-    def prune(self, rng, get_nodes, max_depth=1, method='BFS'):
+    def prune(self, rng, get_nodes, max_depth=1, method='DFS'):
         """Replace all non-terminal child nodes with terminals"""
         if not self.children:
             return

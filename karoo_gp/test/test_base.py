@@ -150,6 +150,8 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     kwargs = dict(default_kwargs)
     kwargs['terminals'] = data['terminals']
     kwargs['functions'] = data['functions']
+    if ker == 'm':
+        kwargs['random_state'] = 1016
     model = cls(**kwargs)
     X, y = data['X'], data['y']
 
@@ -168,9 +170,9 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     model.gen_max = 1
     model.fit(X, y)
     initial_expected = {
-        'c': dict(sym='pl + pw**2 - sl', fit=107.0, fitlist='125224793'),
-        'r': dict(sym='1', fit=0.05, fitlist='1103738'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='12345679101116182023242836424346'),
+        'c': dict(sym='pl*sw - pl + pw**2 - pw - sl/pw', fit=85.0, fitlist='123678101123'),
+        'r': dict(sym='1', fit=0.05, fitlist='172637628091'),
+        'm': dict(sym='a + b + c', fit=10.0, fitlist='1213374958'),
     }
     compare_expected(model, initial_expected[ker])
 
@@ -178,10 +180,10 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
     model.gen_max = 2
     model.fit(X, y)
     fit_expected = {
-        'c': dict(sym='pl + pw**2 - sl', fit=107.0, fitlist='1237455758'),
+        'c': dict(sym='pl*sw - pl + pw**2 - pw - sl/pw', fit=85.0, fitlist='12352'),
         'r': dict(sym='1', fit=0.05,
-                  fitlist='1561620232945497173749798'),
-        'm': dict(sym='3*b', fit=10.0, fitlist='545'),
+                  fitlist='11334416084'),
+        'm': dict(sym='a + b + c', fit=10.0, fitlist='1443'),
     }
     compare_expected(model, fit_expected[ker])
 
@@ -211,10 +213,10 @@ def test_model_unfit_trees(rng, default_kwargs, dtype, digits):
     # Evolve the trees for 2 generations
     model.fit(X, y)
     expected = {
-        ('int', 2): dict(n=4, first='f(abs((((b)*(a))+(abs(a)))**(((b)*(a))**((b)**(b)))))'),
-        ('int', 4): dict(n=6, first='g((abs(a))**(a))'),
-        ('float', 2): dict(n=1, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**(((((square(a))if((a)==(b))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+((square(b))if((a)>(a))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
-        ('float', 4): dict(n=1, first='f(square((sqrt(((((a)*(a))*((b)*(b)))**(((a)-(b))-((a)*(b))))**((((b)+(a))+((a)**(b)))-(square((b)*(b))))))**(((((square(a))if((a)==(b))else((a)-(b)))*(square((b)-(b))))**((((b)-(a))-((b)/(b)))/((abs(b))-((b)**(b)))))*((((abs(b))+(square(b)))+((square(b))if((a)>(a))else(square(b))))*(abs(((a)**(a))**(sqrt(b))))))))'),
+        ('int', 2): dict(n=9, first='g((abs(b))**((b)*(a)))'),
+        ('int', 4): dict(n=10, first='g((abs(b))**((b)*(a)))'),
+        ('float', 2): dict(n=2, first='f(square(((square(square(sqrt(square(sqrt(a))))))*((((((a)+(a))**((a)/(b)))+(((b)/(b))**((a)+(b))))/((((a)**(a))+(sqrt(a)))*(((a)+(a))if((b)!=(a))else(abs(a)))))/(((abs(abs(b)))if((square(b))>((a)/(a)))else(((b)+(a))/((a)-(b))))/(sqrt(abs((b)/(a)))))))if((sqrt(((abs(sqrt(a)))**(sqrt((a)**(a))))**((((b)+(b))**(sqrt(b)))*(((a)**(b))*(sqrt(a))))))>=((((square((b)+(a)))**(((b)*(a))+(sqrt(a))))/(square(sqrt(square(a)))))**((sqrt(sqrt((b)/(a))))*((((b)-(a))-(square(b)))-((sqrt(b))+((a)*(b)))))))else(((abs((((a)**(b))if((a)<=(a))else((b)*(a)))+(((b)*(a))-((b)+(a)))))/(sqrt(sqrt(abs((b)+(a))))))/((((((b)*(a))-((a)+(b)))*((sqrt(b))+((a)-(a))))**(((abs(b))**((b)+(a)))if(((a)/(a))<=(sqrt(b)))else(abs(sqrt(a)))))-(sqrt((((b)*(b))+((a)*(a)))**(square(sqrt(b)))))))))'),
+        ('float', 4): dict(n=3, first='f(square(((square(square(sqrt(square(sqrt(a))))))*((((((a)+(a))**((a)/(b)))+(((b)/(b))**((a)+(b))))/((((a)**(a))+(sqrt(a)))*(((a)+(a))if((b)!=(a))else(abs(a)))))/(((abs(abs(b)))if((square(b))>((a)/(a)))else(((b)+(a))/((a)-(b))))/(sqrt(abs((b)/(a)))))))if((sqrt(((abs(sqrt(a)))**(sqrt((a)**(a))))**((((b)+(b))**(sqrt(b)))*(((a)**(b))*(sqrt(a))))))>=((((square((b)+(a)))**(((b)*(a))+(sqrt(a))))/(square(sqrt(square(a)))))**((sqrt(sqrt((b)/(a))))*((((b)-(a))-(square(b)))-((sqrt(b))+((a)*(b)))))))else(((abs((((a)**(b))if((a)<=(a))else((b)*(a)))+(((b)*(a))-((b)+(a)))))/(sqrt(sqrt(abs((b)+(a))))))/((((((b)*(a))-((a)+(b)))*((sqrt(b))+((a)-(a))))**(((abs(b))**((b)+(a)))if(((a)/(a))<=(sqrt(b)))else(abs(sqrt(a)))))-(sqrt((((b)*(b))+((a)*(a)))**(square(sqrt(b)))))))))'),
     }
     # Compare the actual first unfit to expected first unfit
     assert len(model.unfit) == expected[dtype, digits]['n']
