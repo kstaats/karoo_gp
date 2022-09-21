@@ -136,7 +136,6 @@ class Node:
             is_terminal = True
         else:  # Otherwise, return a function
             is_terminal = False
-            types = list(filter(lambda t: t != 'terminal', types))
             types = [t for t in types if t != 'terminal']
 
         # Generate a random node
