@@ -168,7 +168,7 @@ class Tree:
                 # TODO COnvert this to Node.inherited_types to replace swappable
                 # Without force_types, Node.generate below will check
                 node_child_i = next(i for i, c in enumerate(node.parent.children)
-                                    if id(c) == id(node))
+                                    if c is node)
                 force_types_ = [node.parent.child_type[node_child_i]]
             replacement = Node.generate(
                 rng, get_nodes, self.tree_type, depth, force_types=force_types_)
