@@ -26,8 +26,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from datetime import datetime
 
-from . import NumpyEngine, TensorflowEngine, Population, Tree, NodeData, \
-              get_function_node, get_nodes
+from . import Population, Tree, NodeData, get_function_node, get_nodes
 
 
 class BaseGP(BaseEstimator):
@@ -46,9 +45,6 @@ class BaseGP(BaseEstimator):
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
     |
     ├─ .get_nodes(types, depth)         - return nodes matching types & depth
-    │
-    ├─ .engine = Engine                 - Numpy for cpu, Tensorflow for gpu
-    │   └─ .predict(trees, X, X_hash)   - returns X predictions for each tree
     │
     ├─ .population = Population         - an isolated group of trees
     │   ├─ .fittest = Tree              - return the fittest tree

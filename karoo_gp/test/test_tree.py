@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import json
 
+import numpy as np
 from karoo_gp import Tree, Node, get_nodes
 from .util import dump_json
 
@@ -95,3 +96,27 @@ def test_tree(tree_default_kwargs, paths, tree_type, tree_depth_base,
         ref = json.load(f)
     for k, v in ref.items():
         assert v == tree_output[k], f'Non-matching value for "{k}"'
+
+# 5 October '22: Relocated from test_engine in tf2-update commit
+@pytest.fixture
+def trees():
+    return [
+        Tree.load(1, 'g((a)+((b)*(c)))'),
+        Tree.load(1, 'f(((a)*(b))/((b)*(c)))'),
+        Tree.load(1, 'f(((a)<(b))and((a)<(c)))'),
+        Tree.load(1, 'f(((a)<(10))if((a)>=(3))else((a)>(0)))'),
+    ]
+
+@pytest.fixture
+def X():
+    return np.array([[1, 2, 3], [2, 3, 4]])
+
+@pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
+def test_tree_predict(X, trees, engine_type):
+
+    # Test predict
+    terminals = ['a', 'b', 'c']
+    train_pred = np.array([t.predict(X, terminals, engine_type) for t in trees])
+    assert train_pred.shape == (len(trees), len(X))
+    assert ([list(p) for p in train_pred] ==
+        [[7.0, 14.0], [0.3333333333333333, 0.5], [1.0, 1.0], [1.0, 1.0]])
