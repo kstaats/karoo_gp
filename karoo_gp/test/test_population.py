@@ -26,10 +26,9 @@ class MockModel:
     def get_nodes(self, *args, **kwargs):
         return get_nodes(*args, **kwargs, lib=self.nodes)
 
-    def batch_predict(self, X, trees, X_hash):
+    def tree_predict(self, tree, X):
         """Return an array of 1's of expected shape"""
-        output = np.ones((len(trees), X.shape[0]))
-        return output[0] if len(trees) == 1 else output
+        return np.ones(X.shape[0])
 
     def calculate_score(self, y_pred, y_true):
         """Return expected dict with fitness = 1"""

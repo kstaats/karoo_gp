@@ -77,7 +77,6 @@ class BaseGP(BaseEstimator):
     kernel = 'b'  # Base
 
     # Fit parameters (set later)
-    engine = None
     scoring_ = None
     history_ = None
     datetime = None
@@ -304,11 +303,7 @@ class BaseGP(BaseEstimator):
             self.history_ = {}
             # Engine
             self.cache_ = self.cache or {}
-            if self.engine_type == 'numpy':
-                self.engine = NumpyEngine(self)
-            elif self.engine_type == 'tensorflow':
-                self.engine = TensorflowEngine(self, self.tf_device, self.tf_device_log)
-            else:
+            if self.engine_type not in ('numpy', 'tensorflow'):
                 raise ValueError(f'Unrecognized engine_type: {self.engine_type}')
 
             # File Manager
@@ -334,6 +329,7 @@ class BaseGP(BaseEstimator):
             # Terminals
             if self.terminals is None:
                 terms = [f'f{i}' for i in range(X.shape[1])]
+                self.terminals = terms
             else:
                 if not isinstance(self.terminals, list):
                     raise ValueError('Terminals must be a list, got',
@@ -471,26 +467,24 @@ class BaseGP(BaseEstimator):
     def predict(self, X):
         """Return predicted y values for X using the fittest tree
 
-        * Pass the fittest tree to batch_predict as a list (of 1)
-        * Return the first result
-
         Primarily used externally, e.g. model.predict(X_test)
         """
         if not self.population.evaluated:
             tree = self.population.trees[0]
         else:
             tree = self.population.fittest()
-        return self.batch_predict(X, [tree])[0]
+        return self.tree_predict(tree, X)
 
-    def batch_predict(self, X, trees, X_hash=None):
-        """Return predicted values for y given X for a list of trees
+
+    def tree_predict(self, tree, X):
+        """Return predicted values for y given X for a single tree
 
         * If prediction_transformer (e.g. MultiClassifier), transform predictions
         * If precision is specified, round predictions to precision
 
         Primarily used internally by population during evaluation
         """
-        y = self.engine.predict(trees, X, X_hash)
+        y = tree.predict(X, self.terminals, self.engine_type)
         if self.prediction_transformer is not None:
             y = self.prediction_transformer.transform(y)
         if self.precision is not None:

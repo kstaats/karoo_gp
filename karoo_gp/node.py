@@ -3,6 +3,7 @@ import math
 from collections import defaultdict
 from sympy import sympify
 import numpy as np
+import tensorflow as tf
 from . import NodeData, get_function_node
 
 # Used by load, i.e. recreate node from label strings
@@ -419,10 +420,16 @@ class Node:
                   >30,000 samples.
         """
         if self.node_type == 'terminal':
-            return X_dict[self.label]
+            value = X_dict[self.label].astype(np.float64)
+            if engine == 'tensorflow':
+                value = tf.convert_to_tensor(value)
+            return value
         elif self.node_type == 'constant':
             length = len(next(iter(X_dict.values())))
-            return np.repeat(self.label, length)
+            value = np.repeat(self.label, length).astype(np.float64)
+            if engine == 'tensorflow':
+                value = tf.convert_to_tensor(value)
+            return value
         else:
             if self.label == 'if':
                 # Args are stored [value_if_true, condition, value_if_false]
@@ -430,9 +437,9 @@ class Node:
                 # Funcs expect [condition, value_if_true, value_if_false]
                 # so here there are rearranged.
                 reordered = [self.children[i] for i in [1, 0, 2]]
-                args = [c.predict(X_dict) for c in reordered]
+                args = [c.predict(X_dict, engine) for c in reordered]
             else:
-                args = [c.predict(X_dict) for c in self.children]
+                args = [c.predict(X_dict, engine) for c in self.children]
             if engine == 'numpy':
                 return self.numpy_func(*args)
             if engine == 'tensorflow':

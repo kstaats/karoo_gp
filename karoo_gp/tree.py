@@ -229,8 +229,12 @@ class Tree:
         if terminals is None:
             # Mirror default naming convention from BaseGP.check_population
             terminals = [f'f{i}' for i in range(X.shape[1])]
-        else:
-            assert X.shape[1] == len(terminals), \
-                'Terminals must be the same length as X samples (X.shape[1])'
-        X_dict = {t: np.array(X[:, i], dtype=float) for i, t in enumerate(terminals)}
-        return self.root.predict(X_dict, engine)
+        X_dict = {t: X[:, i] for i, t in enumerate(terminals)}
+        pred = self.root.predict(X_dict, engine)
+
+        # Datasets with extreme large/small values and nonbasic operators
+        # sometimes throw errors (see 'test_base_unfit_trees' for more).
+        if any(np.isnan(pred)) or any(np.isinf(pred)):
+            self.is_unfit = True
+        return pred
+

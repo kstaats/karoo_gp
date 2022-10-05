@@ -67,7 +67,7 @@ def test_model_base(default_kwargs, X_shape):
 
     # Test predict and score functions (independent of population/data)
     trees =[Tree.load(1, 'f((a)+(b))'), Tree.load(2, 'f((a)*(a))')]
-    predictions = model.batch_predict(X, trees)
+    predictions = [model.tree_predict(t, X) for t in trees]
     for pred in predictions:
         assert pred.shape == y.shape
     scores = [model.calculate_score(p, y) for p in predictions]
@@ -183,7 +183,7 @@ def test_model_kernel(tmp_path, paths, default_kwargs, ker):
         'c': dict(sym='pl*sw - pl + pw**2 - pw - sl/pw', fit=85.0, fitlist='12352'),
         'r': dict(sym='1', fit=0.05,
                   fitlist='11334416084'),
-        'm': dict(sym='a + b + c', fit=10.0, fitlist='1443'),
+        'm': dict(sym='a + b + c', fit=10.0, fitlist='14'),
     }
     compare_expected(model, fit_expected[ker])
 
@@ -213,8 +213,8 @@ def test_model_unfit_trees(rng, default_kwargs, dtype, digits):
     # Evolve the trees for 2 generations
     model.fit(X, y)
     expected = {
-        ('int', 2): dict(n=9, first='g((abs(b))**((b)*(a)))'),
-        ('int', 4): dict(n=10, first='g((abs(b))**((b)*(a)))'),
+        ('int', 2): dict(n=7, first='g((abs(b))**((b)*(a)))'),
+        ('int', 4): dict(n=9, first='g((abs(b))**((b)*(a)))'),
         ('float', 2): dict(n=2, first='f(square(((square(square(sqrt(square(sqrt(a))))))*((((((a)+(a))**((a)/(b)))+(((b)/(b))**((a)+(b))))/((((a)**(a))+(sqrt(a)))*(((a)+(a))if((b)!=(a))else(abs(a)))))/(((abs(abs(b)))if((square(b))>((a)/(a)))else(((b)+(a))/((a)-(b))))/(sqrt(abs((b)/(a)))))))if((sqrt(((abs(sqrt(a)))**(sqrt((a)**(a))))**((((b)+(b))**(sqrt(b)))*(((a)**(b))*(sqrt(a))))))>=((((square((b)+(a)))**(((b)*(a))+(sqrt(a))))/(square(sqrt(square(a)))))**((sqrt(sqrt((b)/(a))))*((((b)-(a))-(square(b)))-((sqrt(b))+((a)*(b)))))))else(((abs((((a)**(b))if((a)<=(a))else((b)*(a)))+(((b)*(a))-((b)+(a)))))/(sqrt(sqrt(abs((b)+(a))))))/((((((b)*(a))-((a)+(b)))*((sqrt(b))+((a)-(a))))**(((abs(b))**((b)+(a)))if(((a)/(a))<=(sqrt(b)))else(abs(sqrt(a)))))-(sqrt((((b)*(b))+((a)*(a)))**(square(sqrt(b)))))))))'),
         ('float', 4): dict(n=3, first='f(square(((square(square(sqrt(square(sqrt(a))))))*((((((a)+(a))**((a)/(b)))+(((b)/(b))**((a)+(b))))/((((a)**(a))+(sqrt(a)))*(((a)+(a))if((b)!=(a))else(abs(a)))))/(((abs(abs(b)))if((square(b))>((a)/(a)))else(((b)+(a))/((a)-(b))))/(sqrt(abs((b)/(a)))))))if((sqrt(((abs(sqrt(a)))**(sqrt((a)**(a))))**((((b)+(b))**(sqrt(b)))*(((a)**(b))*(sqrt(a))))))>=((((square((b)+(a)))**(((b)*(a))+(sqrt(a))))/(square(sqrt(square(a)))))**((sqrt(sqrt((b)/(a))))*((((b)-(a))-(square(b)))-((sqrt(b))+((a)*(b)))))))else(((abs((((a)**(b))if((a)<=(a))else((b)*(a)))+(((b)*(a))-((b)+(a)))))/(sqrt(sqrt(abs((b)+(a))))))/((((((b)*(a))-((a)+(b)))*((sqrt(b))+((a)-(a))))**(((abs(b))**((b)+(a)))if(((a)/(a))<=(sqrt(b)))else(abs(sqrt(a)))))-(sqrt((((b)*(b))+((a)*(a)))**(square(sqrt(b)))))))))'),
     }

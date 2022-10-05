@@ -90,21 +90,19 @@ class Population:
         self.model.log(f'\nEvaluate all Trees in Generation {self.gen_id}')
         self.model.pause(display=['i'])
 
-        predictions = self.model.batch_predict(X, self.trees, X_hash)
-        for tree, y_pred in zip(self.trees, predictions):
-            if tree.is_unfit:
-                self.model.log(f'Tree {tree.id} is unfit. (sym): {tree.expression}')
-                continue
-            cached = False
-            if X_hash is not None:
-                cached_score = self.model.cache_[X_hash].get(tree.expression)
-                if cached_score:
-                    tree.score = cached_score
-                    cached = True
-            if not cached:
+        cache = None if X_hash is None else self.model.cache_[X_hash]
+        for i, tree in enumerate(self.trees):
+            expr = tree.expression
+            if cache is not None and expr in cache:
+                tree.score = cache[expr]
+            else:
+                y_pred = self.model.tree_predict(tree, X)
+                if tree.is_unfit:
+                    self.model.log(f'Tree {tree.id} is unfit. (sym): {tree.expression}')
+                    continue
                 tree.score = self.model.calculate_score(y_pred, y)
-                if X_hash is not None:
-                    self.model.cache_[X_hash][tree.expression] = tree.score
+                if cache is not None:
+                    self.model.cache_[X_hash][expr] = tree.score
             self.model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
             self.model.log(f'with fitness sum: {tree.fitness}\n', display=['i'])
         self.evaluated = True
