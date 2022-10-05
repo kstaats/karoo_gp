@@ -38,7 +38,6 @@ class Node:
         self.tree_type = tree_type
         self.parent = parent
         self.children = None
-        self.bfs_ref = None
         self.id = None
 
     @classmethod
@@ -109,165 +108,49 @@ class Node:
     #++++++++++++++++++++++++++++
 
     @classmethod
-    def generate(cls, rng, get_nodes, tree_type, depth, parent=None,
-                 method='BFS', node_types=None, force_types=None):
-        """Return a randomly-generated node and subtree
+    def generate(cls, rng, get_nodes, tree_type, depth, force_types=[],
+                 parent=None):
+        """Return a randomly generated node and subtree (recursive)"""
 
-        TODO: Choose BFS or DFS. Supporting both is unnecessary and error-prone
-        """
-        if method == 'BFS':
-            return cls.breadth_first_generate(rng, get_nodes, tree_type,
-                                              depth, parent, node_types,
-                                              force_types)
-        elif method == 'DFS':
-            return cls.recursive_generate(rng, get_nodes, tree_type, depth,
-                                          parent, node_types, force_types)
-
-    @classmethod
-    def breadth_first_generate(cls, rng, get_nodes, tree_type, tree_depth,
-                               parent=None, node_types=None, force_types=None):
-        """Return a randomly-generated node and subtree breadth-first"""
-        def fn(types=None, depth=tree_depth):  # Helper functions to save space
-            types = ([t for t in types if t not in ('terminal', 'constant')]
-                     if types else ['operator', 'cond'])
-            return rng.choice(get_nodes(types, depth))
-        def tm():
-            return rng.choice(get_nodes(['terminal', 'constant']))
-        # 1. Call the random functions in BFS order and save the output.
-        # Generate a dict of lists, one entry for each level of depth, with
-        # randomly-chosen node at each level.
-        nodes_by_height = defaultdict(list)  # left-to-right lists of nodes
-        if (tree_depth == 0 or
-            (tree_type == 'g' and
-             not force_types and
-             rng.choice([False, True]))):
-            root_node = tm()
+        # Determine allowed types
+        force_types_ = []           # For children
+        if force_types:  # If there's forced type for this depth,
+            types = force_types[0]  # use it, and don't pass it on.
+            force_types_ = force_types[1:]
+        elif parent is not None:    # Otherwise, inherit from parent.
+            # Doesn't work with mutate, because
+            this_i = len(parent.children)
+            types = parent.child_type[this_i]
         else:
-            types = None
-            if force_types:
-                types = force_types[0]
-                force_types = force_types[1:]
-            if not types and node_types:
-                types = node_types
-            root_node = fn(types, tree_depth)
-        nodes_by_height[0].append(root_node)
-        for height in range(1, tree_depth + 1):
-            for _parent in nodes_by_height[height-1]:
-                for i in range(_parent.arity):
-                    if (height == tree_depth or  # Lowest level or
-                        (tree_type == 'g' and    # if grow tree and not root, flip a coin
-                         _parent.min_depth <= 1 and
-                         rng.choice([False, True]))):
-                        node = tm()
-                    else:
-                        types = None
-                        if force_types:
-                            types = force_types[0]
-                        if not types and _parent.child_type:
-                            types = _parent.child_type[i]
-                        node = fn(types, tree_depth - height)
-                    nodes_by_height[height].append(node)
-            if not nodes_by_height[height]:
-                break
-            if force_types:
-                force_types = force_types[1:]
+            raise ValueError('Types must be specified for each node, either '
+                             'by the "force_types" kwarg (required for root, '
+                             'optional for depths), or inherited from the '
+                             '"child_type" attribute of the parent Node.')
 
-        # 2. Convert above into a string expr that's compatible with
-        # Node.load().  Parse by recursively filling-in child nodes,
-        # beginning with the root (depth 0). For node with arity n at depth d,
-        # the children are the n left-most unused nodes from depth d + 1.
-        used_index = {k: 0 for k in nodes_by_height}  # Last node-index used
-        def next_from_depth(depth):  # Return left-most unused node
-            output = nodes_by_height[depth][used_index[depth]]
-            used_index[depth] += 1
-            return output
-        def build_expression(node, depth):  # Recursive function to build expr
-            d = depth + 1
-            if node.arity == 0:  # arity
-                return f'({node.label})'
-            elif node.arity == 1:
-                return f'({node.label}{build_expression(next_from_depth(d), d)})'
-            elif node.arity == 2:
-                return (f'({build_expression(next_from_depth(d), d)}'
-                        f'{node.label}'  # label
-                        f'{build_expression(next_from_depth(d), d)})')
-            elif node.label == 'if':
-                return (f'({build_expression(next_from_depth(d), d)}'
-                        f'if{build_expression(next_from_depth(d), d)}'
-                        f'else{build_expression(next_from_depth(d), d)})')
-            else:
-                raise ValueError(f'Cannot build expression for {node}.')
-        expr = build_expression(nodes_by_height[0][0], 0)
-        return cls.load(expr, tree_type, parent=parent)
-
-    @classmethod
-    def recursive_generate(cls, rng, get_nodes, tree_type, depth, parent=None,
-                           node_types=None, force_types=None):
-        """Return a randomly generated node and subtree depth-first (recursive)"""
-        # Grow trees flip a coin for function/terminal (except root)
-        if depth == 0:
+        # Decide whether terminal or function
+        if depth == 0:  # Always return a terminal at depth 0
             is_terminal = True
-        elif tree_type == 'g' and (parent is not None or not force_types):
-            is_terminal = rng.choice([False, True])
-        else:
+        elif (tree_type == 'g' and         # For grow trees,
+              'terminal' in types and      # if it's allowed,
+              rng.choice([False, True])):  # flip a coin.
+            is_terminal = True
+        else:  # Otherwise, return a function
             is_terminal = False
+            types = [t for t in types if t != 'terminal']
 
-        # Create terminal or function
+        # Generate a random node
         if is_terminal:
             node_data = rng.choice(get_nodes(['terminal', 'constant']))
             node = cls(node_data, tree_type, parent=parent)
         else:
-            types = None
-            if force_types:
-                types = force_types[0]  # Can be falsy
-                force_types = force_types[1:]
-            types = types or node_types or ['operator', 'cond']
             node_data = rng.choice(get_nodes(types, depth))
             node = cls(node_data, tree_type, parent=parent)
             # Generate children
             node.children = []
-            kwargs = dict(rng=rng, get_nodes=get_nodes, tree_type=tree_type,
-                          depth=depth-1, force_types=force_types, parent=node)
             for i in range(node.arity):
-                node_types = None if not node.child_type else node.child_type[i]
-                node.children.append(cls.generate(**kwargs, node_types=node_types))
+                node.children.append(cls.generate(
+                    rng, get_nodes, tree_type, depth-1, force_types_, node))
         return node
-
-    # MAY REDESIGN: The original 'fx_..' functions use breadth-first ordering,
-    # but the recursive method is depth-first. Changing the order would change
-    # the test results, which would defeat the purpose of the tests. This
-    # version supports both by adding the 'method' argument ('BFS' by default
-    # or 'DFS') to class methods generate, get_child and set_child. The last 2
-    # use a new method, i_bfs, which just returns the dfs index given a bfs
-    # index from a cached dict, which is cleared when the tree is modified.
-    #
-    # TODO: Decide which to use by default. DFS is theoretically faster and
-    # simpler to implement recursively, but recursive fx aren't cheap in
-    # Python.
-
-    def i_bfs(self, n):
-        """Convert breadth-first index to depth-first index"""
-        if n in [0, 1]:
-            return n
-        elif self.bfs_ref is None:
-            n_children = self.n_children
-            if n > n_children:
-                raise ValueError(f'Index {n!r} out of range ({n_children})')
-            # Generate a 2d list of nodes by depth
-            nodes_by_depth = defaultdict(list)
-            for i in range(n_children + 1):
-                c, _ = self.recursive_get_child(i)
-                nodes_by_depth[c.height].append(i)
-            # Make a dict of {i_bfs: i_dfs} pairs
-            self.bfs_ref = {}
-            i_bfs = 0
-            depths = list(nodes_by_depth.keys())
-            for depth in depths:
-                nodes = nodes_by_depth[depth]
-                for node in nodes:
-                    self.bfs_ref[i_bfs] = node
-                    i_bfs += 1
-        return self.bfs_ref[n]
 
     #++++++++++++++++++++++++++++
     #   Display                 |
@@ -335,7 +218,10 @@ class Node:
             return self.display_viz(*args, **kwargs)
 
     def display_list(self, prefix=''):
-        """Return a printable string of node and subtree as an indented list"""
+        """Return a printable string of node and subtree as an indented list
+
+        TODO: Single-line only
+        """
         parent = '' if self.parent is None else self.parent.id
         children = [] if not self.children else [c.id for c in self.children]
         output = (
@@ -458,9 +344,8 @@ class Node:
                 c.parent = copy
         return copy
 
-    def get_child(self, n, method='BFS'):
+    def get_child(self, n):
         """Return the child in the nth position; supports BFS or DFS"""
-        n = n if method != 'BFS' else self.i_bfs(n)
         child, _ = self.recursive_get_child(n)
         return child
 
@@ -479,13 +364,11 @@ class Node:
                     return target, n
             return False, n
 
-    def set_child(self, n, node, method='BFS'):
+    def set_child(self, n, node):
         """Replace the child in the nth position with supplied node"""
         if n == 0:
             raise ValueError('Cannot set child 0; replace from parent node')
-        n = n if method != 'BFS' else self.i_bfs(n)
         complete, _ = self.recursive_set_child(n, node)
-        self.bfs_ref = None  # Need to re-index as tree has changed
         return complete
 
     def recursive_set_child(self, n, node):
@@ -504,12 +387,15 @@ class Node:
                     n = new_n
         return False, n
 
-    def prune(self, rng, get_nodes):
+    def prune(self, rng, get_nodes, max_depth=1):
         """Replace all non-terminal child nodes with terminals"""
         if not self.children:
             return
         for i_c, child in enumerate(self.children):
-            if child.children:
-                replacement = Node(rng.choice(get_nodes(['terminal', 'constant'])),
-                                   self.tree_type)
-                self.set_child(i_c + 1, replacement)
+            if child.min_depth >= max_depth:
+                self.children[i_c] = Node(
+                    rng.choice(get_nodes(arity=0)),
+                    self.tree_type)
+                self.children[i_c].parent = self
+            elif max_depth > 1:
+                child.prune(rng, get_nodes, max_depth - 1)

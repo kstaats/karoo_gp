@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-07_08-29-31-675314",
+    "launched": "2022-08-25_13-34-35-015069",
     "config": {
         "kernel": "r",
         "precision": 6,
@@ -20,11 +20,11 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 9,
-        "expression": "r*t/(r*t + t/r)"
+        "id": 7,
+        "expression": "1"
     },
     "score": {
-        "fitness": 2.36964,
-        "mean_squared_error": 0.168251
+        "fitness": 0.05,
+        "mean_squared_error": 7.77778e-05
     }
 }

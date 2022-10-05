@@ -1,0 +1,16 @@
+{
+    "node_type": "operator",
+    "tree_type": "f",
+    "parent": null,
+    "children": "[<Node: <NodeData label='**' type=operator>>, <Node: <NodeData label='-' type=operator>>]",
+    "repr": "<Node: <NodeData label='/' type=operator>>",
+    "parse": "((((1)**((2)if((a)>=(b))else(abs(b))))**(((sqrt(c))-(square(2)))if((3)>(square(a)))else(3)))/((3)-((sqrt((2)*(1)))*((1)-((c)-(3))))))",
+    "display": "                    _________/___________________           \n          ________**_________            _______-__         \n   ______**_            ____if_______  3       ___*____     \n 1     ____if_____    -__     >__   3       sqr      _-__   \n     2     >=_  abssqr squ  3  squ           *__   1    -__ \n         a   b   b  c   2       a          2   1       c  3 \n",
+    "depth": 5,
+    "height": 0,
+    "n_children": 33,
+    "n_cols": 16,
+    "second_child": "((1)**((2)if((a)>=(b))else(abs(b))))",
+    "set_child": "((((a)+(b))**(((sqrt(c))-(square(2)))if((3)>(square(a)))else(3)))/((3)-((sqrt((2)*(1)))*((1)-((c)-(3))))))",
+    "prune": "((2)/(a))"
+}

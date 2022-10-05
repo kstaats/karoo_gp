@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-07_07-28-24-573135",
+    "launched": "2022-08-25_13-34-28-009356",
     "config": {
         "kernel": "c",
         "precision": 6,
@@ -20,41 +20,41 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 10,
-        "expression": "pw*sw - sw**3/sl"
+        "id": 6,
+        "expression": "pl - sl/pw"
     },
     "score": {
-        "fitness": 25.0,
+        "fitness": 20.0,
         "classification_report": {
             "0.0": {
-                "precision": 0.6923076923076923,
+                "precision": 0.5625,
                 "recall": 1.0,
-                "f1-score": 0.8181818181818181,
+                "f1-score": 0.72,
                 "support": 9
             },
             "1.0": {
                 "precision": 1.0,
-                "recall": 0.5833333333333334,
-                "f1-score": 0.7368421052631579,
+                "recall": 0.16666666666666666,
+                "f1-score": 0.2857142857142857,
                 "support": 12
             },
             "2.0": {
-                "precision": 0.9,
+                "precision": 0.75,
                 "recall": 1.0,
-                "f1-score": 0.9473684210526316,
+                "f1-score": 0.8571428571428571,
                 "support": 9
             },
-            "accuracy": 0.8333333333333334,
+            "accuracy": 0.6666666666666666,
             "macro avg": {
-                "precision": 0.8641025641025641,
-                "recall": 0.8611111111111112,
-                "f1-score": 0.8341307814992026,
+                "precision": 0.7708333333333334,
+                "recall": 0.7222222222222223,
+                "f1-score": 0.620952380952381,
                 "support": 30
             },
             "weighted avg": {
-                "precision": 0.8776923076923075,
-                "recall": 0.8333333333333334,
-                "f1-score": 0.824401913875598,
+                "precision": 0.79375,
+                "recall": 0.6666666666666666,
+                "f1-score": 0.5874285714285714,
                 "support": 30
             }
         },
@@ -65,9 +65,9 @@
                 0
             ],
             [
-                4,
                 7,
-                1
+                2,
+                3
             ],
             [
                 0,

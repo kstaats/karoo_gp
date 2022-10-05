@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-07_08-39-10-624622",
+    "launched": "2022-08-25_13-41-32-308092",
     "config": {
         "kernel": "m",
         "precision": 6,
@@ -15,13 +15,13 @@
             "crossover": 0.6
         },
         "tournament_size": 7,
-        "population": 30,
+        "population": 15,
         "number_of_generations": 10
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 24,
-        "expression": "a + a*c/b + b + c/b"
+        "id": 2,
+        "expression": "a + b + c"
     },
     "score": {
         "fitness": 10.0

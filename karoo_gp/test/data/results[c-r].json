@@ -1,6 +1,6 @@
 {
     "package": "Karoo GP",
-    "launched": "2022-07-07_08-29-29-251396",
+    "launched": "2022-08-25_13-34-32-694947",
     "config": {
         "kernel": "c",
         "precision": 6,
@@ -20,59 +20,59 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 7,
-        "expression": "-pl + pw*sl + pw - sl"
+        "id": 10,
+        "expression": "sw + pw**(-2)"
     },
     "score": {
-        "fitness": 19.0,
+        "fitness": 9.0,
         "classification_report": {
             "0.0": {
-                "precision": 0.5,
-                "recall": 1.0,
-                "f1-score": 0.6666666666666666,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1-score": 0.0,
                 "support": 9
             },
             "1.0": {
-                "precision": 1.0,
-                "recall": 0.16666666666666666,
-                "f1-score": 0.2857142857142857,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1-score": 0.0,
                 "support": 12
             },
             "2.0": {
-                "precision": 0.8,
-                "recall": 0.8888888888888888,
-                "f1-score": 0.8421052631578948,
+                "precision": 0.3,
+                "recall": 1.0,
+                "f1-score": 0.4615384615384615,
                 "support": 9
             },
-            "accuracy": 0.6333333333333333,
+            "accuracy": 0.3,
             "macro avg": {
-                "precision": 0.7666666666666666,
-                "recall": 0.6851851851851851,
-                "f1-score": 0.5981620718462825,
+                "precision": 0.09999999999999999,
+                "recall": 0.3333333333333333,
+                "f1-score": 0.15384615384615383,
                 "support": 30
             },
             "weighted avg": {
-                "precision": 0.7899999999999999,
-                "recall": 0.6333333333333333,
-                "f1-score": 0.5669172932330827,
+                "precision": 0.09,
+                "recall": 0.3,
+                "f1-score": 0.13846153846153844,
                 "support": 30
             }
         },
         "confusion_matrix": [
             [
-                9,
                 0,
-                0
+                0,
+                9
             ],
             [
-                8,
-                2,
-                2
+                0,
+                0,
+                12
             ],
             [
-                1,
                 0,
-                8
+                0,
+                9
             ]
         ]
     }
