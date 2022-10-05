@@ -347,11 +347,13 @@ class BaseGP(BaseEstimator):
             terminals = [NodeData(t, 'terminal') for t in terms]
 
             # Constants
-            if self.constants is not None and (
-                not isinstance(self.constants, list) or
-                not all(isinstance(c, (int, float)) for c in self.constants)):
-                raise ValueError('constants must be a list of ints or floats')
-            constants = self.constants or []
+            if self.constants is None:
+                constants = []
+            else:
+                if (not isinstance(self.constants, list) or
+                    not all(isinstance(c, (int, float)) for c in self.constants)):
+                    raise ValueError('constants must be a list of ints or floats')
+                constants = [NodeData(c, 'constant') for c in self.constants]
 
             # Functions
             function_labels = self.functions or ['+', '-', '*', '/', '**']
