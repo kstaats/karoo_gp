@@ -209,3 +209,28 @@ class Tree:
             f'The resulting offspring is: \n{self.display()}',
             display=['db'])
         pause(display=['db'])
+
+    #++++++++++++++++++++++++++++
+    #   Predict                 |
+    #++++++++++++++++++++++++++++
+
+    def predict(self, X, terminals=None, engine='numpy'):
+        """Return the execution output of the tree on some data
+
+        Args
+        ====
+        - X: A numpy array of shape (n_samples, n_terminals)
+        - terminals: A list of length X.shape[1] of strings which match the
+                     labels of terminal Nodes.
+        - engine: Whether to execute on CPU (numpy) or GPU (tensorflow).
+                  Based on experimentation it seems GPU is beneficial for
+                  >30,000 samples.
+        """
+        if terminals is None:
+            # Mirror default naming convention from BaseGP.check_population
+            terminals = [f'f{i}' for i in range(X.shape[1])]
+        else:
+            assert X.shape[1] == len(terminals), \
+                'Terminals must be the same length as X samples (X.shape[1])'
+        X_dict = {t: np.array(X[:, i], dtype=float) for i, t in enumerate(terminals)}
+        return self.root.predict(X_dict, engine)
