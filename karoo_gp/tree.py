@@ -229,8 +229,8 @@ class Tree:
         if terminals is None:
             # Mirror default naming convention from BaseGP.check_population
             terminals = [f'f{i}' for i in range(X.shape[1])]
-        X_dict = {t: X[:, i] for i, t in enumerate(terminals)}
-        pred = self.root.predict(X_dict, engine)
+        X_index = {t: i for i, t in enumerate(terminals)}
+        pred = self.root.predict(X, X_index, engine)
 
         # Datasets with extreme large/small values and nonbasic operators
         # sometimes throw errors (see 'test_base_unfit_trees' for more).

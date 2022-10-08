@@ -408,7 +408,7 @@ class Node:
     #   Predict                 |
     #++++++++++++++++++++++++++++
 
-    def predict(self, X_dict=None, engine='numpy'):
+    def predict(self, X, X_index, engine='numpy'):
         """Recursively calculate and return the result of the tree on some data
 
         Args
@@ -420,12 +420,12 @@ class Node:
                   >30,000 samples.
         """
         if self.node_type == 'terminal':
-            value = X_dict[self.label].astype(np.float64)
+            value = X[:, X_index[self.label]].astype(np.float64)
             if engine == 'tensorflow':
                 value = tf.convert_to_tensor(value)
             return value
         elif self.node_type == 'constant':
-            length = len(next(iter(X_dict.values())))
+            length = X.shape[0]
             value = np.repeat(self.label, length).astype(np.float64)
             if engine == 'tensorflow':
                 value = tf.convert_to_tensor(value)
@@ -437,9 +437,9 @@ class Node:
                 # Funcs expect [condition, value_if_true, value_if_false]
                 # so here there are rearranged.
                 reordered = [self.children[i] for i in [1, 0, 2]]
-                args = [c.predict(X_dict, engine) for c in reordered]
+                args = [c.predict(X, X_index, engine) for c in reordered]
             else:
-                args = [c.predict(X_dict, engine) for c in self.children]
+                args = [c.predict(X, X_index, engine) for c in self.children]
             if engine == 'numpy':
                 return self.numpy_func(*args)
             if engine == 'tensorflow':
