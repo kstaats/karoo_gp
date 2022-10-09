@@ -217,14 +217,17 @@ class Tree:
     def predict(self, X, terminals=None, engine='numpy'):
         """Return the execution output of the tree on some data
 
-        Args
-        ====
-        - X: A numpy array of shape (n_samples, n_terminals)
-        - terminals: A list of length X.shape[1] of strings which match the
-                     labels of terminal Nodes.
-        - engine: Whether to execute on CPU (numpy) or GPU (tensorflow).
+        :param X: A numpy array of shape (n_samples, n_terminals)
+        :type X: np.array
+
+        :param terminals: A list of length X.shape[1] of strings which match
+                          the labels of terminal Nodes.
+        :type terminals: list
+
+        :param engine: Whether to execute on CPU (numpy) or GPU (tensorflow).
                   Based on experimentation it seems GPU is beneficial for
                   >30,000 samples.
+        :type engine: str
         """
         if terminals is None:
             # Mirror default naming convention from BaseGP.check_population
