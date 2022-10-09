@@ -91,7 +91,10 @@ class Population:
         self.model.pause(display=['i'])
 
         cache = None if X_hash is None else self.model.cache_[X_hash]
-        for i, tree in enumerate(self.trees):
+        for tree in self.trees:
+            # TODO: Implement lru_cache, check out statistics on hit/miss
+            # If sympy is expensive and hit rate is low, this may be a
+            # new slow-down.
             expr = tree.expression
             if cache is not None and expr in cache:
                 tree.score = cache[expr]

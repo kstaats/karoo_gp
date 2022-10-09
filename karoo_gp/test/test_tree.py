@@ -111,12 +111,12 @@ def trees():
 def X():
     return np.array([[1, 2, 3], [2, 3, 4]])
 
-@pytest.mark.parametrize('engine_type', ['numpy', 'tensorflow'])
-def test_tree_predict(X, trees, engine_type):
+@pytest.mark.parametrize('engine', ['numpy', 'tensorflow'])
+def test_tree_predict(X, trees, engine):
 
     # Test predict
     terminals = ['a', 'b', 'c']
-    train_pred = np.array([t.predict(X, terminals, engine_type) for t in trees])
+    train_pred = np.array([t.predict(X, terminals, engine) for t in trees])
     assert train_pred.shape == (len(trees), len(X))
     assert ([list(p) for p in train_pred] ==
         [[7.0, 14.0], [0.3333333333333333, 0.5], [1.0, 1.0], [1.0, 1.0]])

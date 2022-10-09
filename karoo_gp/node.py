@@ -413,12 +413,13 @@ class Node:
 
         Args
         ====
-        - X_dict: Data to be predicted on. If X were a pandas DataFrame,
-                  X_dict is {term: X[:, term] for term in X.columns}
-        - engine: Whether to execute on CPU (numpy) or GPU (tensorflow).
-                  Based on experimentation it seems GPU is beneficial for
-                  >30,000 samples.
+        - X:        Data to be predicted on
+        - X_index:  Mapping of variables names to columns of X
+        - engine:   Whether to execute on CPU (numpy) or GPU (tensorflow).
+                    Based on experimentation it seems GPU is beneficial for
+                    >30,000 samples.
         """
+
         if self.node_type == 'terminal':
             value = X[:, X_index[self.label]].astype(np.float64)
             if engine == 'tensorflow':
@@ -431,6 +432,7 @@ class Node:
                 value = tf.convert_to_tensor(value)
             return value
         else:
+            # Operators, boolean, conditional or other (user-created)
             if self.label == 'if':
                 # Args are stored [value_if_true, condition, value_if_false]
                 # for clearer rendering, i.e. 'a if b else c'.

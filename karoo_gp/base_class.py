@@ -90,7 +90,7 @@ class BaseGP(BaseEstimator):
         filename='', output_dir='', evolve_repro=0.1, evolve_point=0.1,
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
         swim='p', mode='s', random_state=None, pause_callback=None,
-        engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
+        engine='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, force_types=[['operator', 'cond']], terminals=None,
         constants=None, test_size=0.2, scoring=None, higher_is_better=False,
         prediction_transformer=None, cache=None):
@@ -116,7 +116,7 @@ class BaseGP(BaseEstimator):
         self.mode = mode                     # determines if pauses after fit
         self.random_state = random_state     # follows sklearn convention
         self.pause_callback = pause_callback # called throughout based on disp
-        self.engine_type = engine_type       # execute on cpu (np) or gpu (tf)
+        self.engine = engine       # execute on cpu (np) or gpu (tf)
         self.tf_device = tf_device           # configure gpu
         self.tf_device_log = tf_device_log   # log dir for tensorflow
         self.functions = functions           # list of operators to use
@@ -299,8 +299,8 @@ class BaseGP(BaseEstimator):
             self.history_ = {}
             # Engine
             self.cache_ = self.cache or {}
-            if self.engine_type not in ('numpy', 'tensorflow'):
-                raise ValueError(f'Unrecognized engine_type: {self.engine_type}')
+            if self.engine not in {'numpy', 'tensorflow'}:
+                raise ValueError(f'Unrecognized engine: {self.engine}')
 
             # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
@@ -324,19 +324,18 @@ class BaseGP(BaseEstimator):
 
             # Terminals
             if self.terminals is None:
-                terms = [f'f{i}' for i in range(X.shape[1])]
-                self.terminals = terms
+                # If user doesn't specify terminal names, generate them here.
+                self.terminals = [f'f{i}' for i in range(X.shape[1])]
             else:
                 if not isinstance(self.terminals, list):
-                    raise ValueError('Terminals must be a list, got',
-                                    type(self.terminals))
+                    raise ValueError(f'Terminals must be a list, got '
+                                     f'{type(self.terminals)}')
                 elif not all(isinstance(t, str) for t in self.terminals):
                     raise ValueError('Terminal list items must be strings.')
                 elif len(self.terminals) != X.shape[1]:
-                    raise ValueError('Terminals list must be the same length'
+                    raise ValueError('Terminals list must be the same length '
                                      'as X samples.')
-                terms = self.terminals
-            terminals = [NodeData(t, 'terminal') for t in terms]
+            terminals = [NodeData(t, 'terminal') for t in self.terminals]
 
             # Constants
             if self.constants is None:
@@ -480,7 +479,7 @@ class BaseGP(BaseEstimator):
 
         Primarily used internally by population during evaluation
         """
-        y = tree.predict(X, self.terminals, self.engine_type)
+        y = tree.predict(X, self.terminals, self.engine)
         if self.prediction_transformer is not None:
             y = self.prediction_transformer.transform(y)
         if self.precision is not None:
