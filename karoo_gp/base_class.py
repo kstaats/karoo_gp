@@ -36,37 +36,71 @@ class BaseGP(BaseEstimator):
     It's composed of a heirarchal structure of classes. Below are some of the
     more import attributes and methods for each class, and their organization:
 
-    BaseGP
-    ├─ .scoring = {field: func...}      - funcs are passed (y_true, y_pred)
-    ├─ .nodes = Nodes                   - all active terminals, constants, fx
-    ├─ .decoder(y)                      - Initialize with y_train
-    │   └─ .transform(pred)             - transforms prediction to match y
-    │
-    ├─ .fitness_compare(a, b)           - determines the fitter of two trees
-    |
-    ├─ .get_nodes(types, depth)         - return nodes matching types & depth
-    │
-    ├─ .population = Population         - an isolated group of trees
-    │   ├─ .fittest = Tree              - return the fittest tree
-    │   ├─ .trees                       - list of Trees, length tree_pop_max
-    │   │   ├─ ...
-    │   │   └─ Tree                     - an evolvable expression tree
-    │   │      ├─ .expression           - a string of sympified expr, e.g. a*b
-    │   │      ├─ .score                - a dict of results matching `scoring`
-    │   │      ├─ .root = Node          - a recursive node which forms a Tree
-    │   │      │   ├─ .label            - a terminal ('a') or function ('*')
-    │   │      │   ├─ .arity            - instructions for generating children
-    │   │      │   ├─ .parent           - the node immediately above
-    │   │      │   └─ .children         - the nodes immediately below
-    │   │      │       └─ ...
-    │   │      └─ mutate, crossover...  - methods used by population.evolve
-    │   │
-    │   ├─ .evaluate(X, y)              - predict and score trees
-    │   └─ .evolve()                    - return a new generation of trees
-    │
-    ├─ .fit(X, y)                       - evolve expressions to predict y
-    ├- .predict(X)                      - return predicted y values for X
-    └- .score(pred, y)                  - return score of prediction against y
+    :param tree_type: (f)ull, (g)row or (r)amped 50/50.
+    :type tree_type: str
+
+    :param tree_depth_base: depth of initial population
+    :type tree_depth_base: int
+
+    :param tree_depth_max: max allowed depth
+    :type tree_depth_max: int
+
+    :param tree_depth_min: min allowed number of nodes
+    :type tree_depth_min: int
+
+    :param tree_pop_max: number of trees per generation
+    :type tree_pop_max: int
+
+    :param gen_max: number of generations to evolve
+    :type gen_max: int
+
+    :param tourn_size: number of Trees per tournament
+    :type tourn_size: int
+
+    :param filename: prefix for output files
+    :type filename: str
+
+    :param output_dir: path to output directory
+    :type output_dir: str
+
+    :param evolve_repro: ratio of next_gen reproduced
+    :type evolve_repro: float
+
+    :param evolve_point: ratio of next_gen point mutated
+    :type evolve_point: float
+
+    :param evolve_branch: ratio of next_gen branch mutated
+    :type evolve_branch: float
+
+    :param evolve_cross: ratio of next_gen made by crossover
+    :type evolve_cross: float
+
+    :param random_state: follows sklearn convention
+    :type random_state: int, np.RandomState, or None
+
+    :param engine_type: execute on cpu (numpy) or gpu (tensorflow)
+    :type engine_type: str
+
+    :param functions: list of operators to use
+    :type functions: list
+
+    :param force_types: default: root = operator/cond
+    :type force_types: list
+
+    :param terminals: list of terminal names to use
+    :type terminals: list
+
+    :param constants: list of constants to include
+    :type constants: list
+
+    :param test_size: how to portion train/test data
+    :type test_size: float
+
+    :param scoring: a dict of name/func pairs
+    :type scoring: dict
+
+    :param higher_is_better: prediction_transformer:
+    :type higher_is_better: bool
     """
 
     # Overridden by subclasses
@@ -100,6 +134,8 @@ class BaseGP(BaseEstimator):
         self.tree_type = tree_type           # (f)ull, (g)row or (r)amped 50/50
         self.tree_depth_base = tree_depth_base # depth of initial population
         self.tree_depth_max = tree_depth_max # max allowed depth
+        # TODO: This should be renamed 'tree_min_nodes' because it restricts the
+        # gene pool based on the number of nodes, not the depth.
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
         self.tree_pop_max = tree_pop_max     # number of trees per generation
         self.gen_max = gen_max               # number of generations to evolve
