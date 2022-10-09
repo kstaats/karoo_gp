@@ -100,6 +100,8 @@ class BaseGP(BaseEstimator):
         self.tree_type = tree_type           # (f)ull, (g)row or (r)amped 50/50
         self.tree_depth_base = tree_depth_base # depth of initial population
         self.tree_depth_max = tree_depth_max # max allowed depth
+        # TODO: This should be renamed 'tree_min_nodes' because it restricts the
+        # gene pool based on the number of nodes, not the depth.
         self.tree_depth_min = tree_depth_min # min allowed number of nodes
         self.tree_pop_max = tree_pop_max     # number of trees per generation
         self.gen_max = gen_max               # number of generations to evolve
