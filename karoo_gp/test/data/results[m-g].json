@@ -20,8 +20,8 @@
     },
     "outcome": "SUCCESS",
     "fittest_tree": {
-        "id": 19,
-        "expression": "a + b + c"
+        "id": 18,
+        "expression": "2*a + c + 1"
     },
     "score": {
         "fitness": 10.0

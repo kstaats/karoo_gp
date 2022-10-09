@@ -26,8 +26,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from datetime import datetime
 
-from . import NumpyEngine, TensorflowEngine, Population, Tree, NodeData, \
-              get_function_node, get_nodes
+from . import Population, Tree, NodeData, get_function_node, get_nodes
 
 
 class BaseGP(BaseEstimator):
@@ -46,9 +45,6 @@ class BaseGP(BaseEstimator):
     ├─ .fitness_compare(a, b)           - determines the fitter of two trees
     |
     ├─ .get_nodes(types, depth)         - return nodes matching types & depth
-    │
-    ├─ .engine = Engine                 - Numpy for cpu, Tensorflow for gpu
-    │   └─ .predict(trees, X, X_hash)   - returns X predictions for each tree
     │
     ├─ .population = Population         - an isolated group of trees
     │   ├─ .fittest = Tree              - return the fittest tree
@@ -77,7 +73,6 @@ class BaseGP(BaseEstimator):
     kernel = 'b'  # Base
 
     # Fit parameters (set later)
-    engine = None
     scoring_ = None
     history_ = None
     datetime = None
@@ -95,7 +90,7 @@ class BaseGP(BaseEstimator):
         filename='', output_dir='', evolve_repro=0.1, evolve_point=0.1,
         evolve_branch=0.2, evolve_cross=0.6, display='s', precision=None,
         swim='p', mode='s', random_state=None, pause_callback=None,
-        engine_type='numpy', tf_device="/gpu:0", tf_device_log=False,
+        engine='numpy', tf_device="/gpu:0", tf_device_log=False,
         functions=None, force_types=[['operator', 'cond']], terminals=None,
         constants=None, test_size=0.2, scoring=None, higher_is_better=False,
         prediction_transformer=None, cache=None):
@@ -121,7 +116,7 @@ class BaseGP(BaseEstimator):
         self.mode = mode                     # determines if pauses after fit
         self.random_state = random_state     # follows sklearn convention
         self.pause_callback = pause_callback # called throughout based on disp
-        self.engine_type = engine_type       # execute on cpu (np) or gpu (tf)
+        self.engine = engine       # execute on cpu (np) or gpu (tf)
         self.tf_device = tf_device           # configure gpu
         self.tf_device_log = tf_device_log   # log dir for tensorflow
         self.functions = functions           # list of operators to use
@@ -304,12 +299,8 @@ class BaseGP(BaseEstimator):
             self.history_ = {}
             # Engine
             self.cache_ = self.cache or {}
-            if self.engine_type == 'numpy':
-                self.engine = NumpyEngine(self)
-            elif self.engine_type == 'tensorflow':
-                self.engine = TensorflowEngine(self, self.tf_device, self.tf_device_log)
-            else:
-                raise ValueError(f'Unrecognized engine_type: {self.engine_type}')
+            if self.engine not in {'numpy', 'tensorflow'}:
+                raise ValueError(f'Unrecognized engine: {self.engine}')
 
             # File Manager
             self.datetime = datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
@@ -333,18 +324,18 @@ class BaseGP(BaseEstimator):
 
             # Terminals
             if self.terminals is None:
-                terms = [f'f{i}' for i in range(X.shape[1])]
+                # If user doesn't specify terminal names, generate them here.
+                self.terminals = [f'f{i}' for i in range(X.shape[1])]
             else:
                 if not isinstance(self.terminals, list):
-                    raise ValueError('Terminals must be a list, got',
-                                    type(self.terminals))
+                    raise ValueError(f'Terminals must be a list, got '
+                                     f'{type(self.terminals)}')
                 elif not all(isinstance(t, str) for t in self.terminals):
                     raise ValueError('Terminal list items must be strings.')
                 elif len(self.terminals) != X.shape[1]:
-                    raise ValueError('Terminals list must be the same length'
+                    raise ValueError('Terminals list must be the same length '
                                      'as X samples.')
-                terms = self.terminals
-            terminals = [NodeData(t, 'terminal') for t in terms]
+            terminals = [NodeData(t, 'terminal') for t in self.terminals]
 
             # Constants
             if self.constants is None:
@@ -471,26 +462,24 @@ class BaseGP(BaseEstimator):
     def predict(self, X):
         """Return predicted y values for X using the fittest tree
 
-        * Pass the fittest tree to batch_predict as a list (of 1)
-        * Return the first result
-
         Primarily used externally, e.g. model.predict(X_test)
         """
         if not self.population.evaluated:
             tree = self.population.trees[0]
         else:
             tree = self.population.fittest()
-        return self.batch_predict(X, [tree])[0]
+        return self.tree_predict(tree, X)
 
-    def batch_predict(self, X, trees, X_hash=None):
-        """Return predicted values for y given X for a list of trees
+
+    def tree_predict(self, tree, X):
+        """Return predicted values for y given X for a single tree
 
         * If prediction_transformer (e.g. MultiClassifier), transform predictions
         * If precision is specified, round predictions to precision
 
         Primarily used internally by population during evaluation
         """
-        y = self.engine.predict(trees, X, X_hash)
+        y = tree.predict(X, self.terminals, self.engine)
         if self.prediction_transformer is not None:
             y = self.prediction_transformer.transform(y)
         if self.precision is not None:

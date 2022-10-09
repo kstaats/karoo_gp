@@ -2,6 +2,8 @@ import ast
 import math
 from collections import defaultdict
 from sympy import sympify
+import numpy as np
+import tensorflow as tf
 from . import NodeData, get_function_node
 
 # Used by load, i.e. recreate node from label strings
@@ -307,6 +309,8 @@ class Node:
         self.arity = node_data.arity
         self.min_depth = node_data.min_depth
         self.child_type = node_data.child_type
+        self.numpy_func = node_data.numpy_func
+        self.tensorflow_func = node_data.tensorflow_func
 
     @property
     def depth(self):
@@ -399,3 +403,46 @@ class Node:
                 self.children[i_c].parent = self
             elif max_depth > 1:
                 child.prune(rng, get_nodes, max_depth - 1)
+
+    #++++++++++++++++++++++++++++
+    #   Predict                 |
+    #++++++++++++++++++++++++++++
+
+    def predict(self, X, X_index, engine='numpy'):
+        """Recursively calculate and return the result of the tree on some data
+
+        Args
+        ====
+        - X:        Data to be predicted on
+        - X_index:  Mapping of variables names to columns of X
+        - engine:   Whether to execute on CPU (numpy) or GPU (tensorflow).
+                    Based on experimentation it seems GPU is beneficial for
+                    >30,000 samples.
+        """
+
+        if self.node_type == 'terminal':
+            value = X[:, X_index[self.label]].astype(np.float64)
+            if engine == 'tensorflow':
+                value = tf.convert_to_tensor(value)
+            return value
+        elif self.node_type == 'constant':
+            length = X.shape[0]
+            value = np.repeat(self.label, length).astype(np.float64)
+            if engine == 'tensorflow':
+                value = tf.convert_to_tensor(value)
+            return value
+        else:
+            # Operators, boolean, conditional or other (user-created)
+            if self.label == 'if':
+                # Args are stored [value_if_true, condition, value_if_false]
+                # for clearer rendering, i.e. 'a if b else c'.
+                # Funcs expect [condition, value_if_true, value_if_false]
+                # so here there are rearranged.
+                reordered = [self.children[i] for i in [1, 0, 2]]
+                args = [c.predict(X, X_index, engine) for c in reordered]
+            else:
+                args = [c.predict(X, X_index, engine) for c in self.children]
+            if engine == 'numpy':
+                return self.numpy_func(*args)
+            if engine == 'tensorflow':
+                return self.tensorflow_func(*args)

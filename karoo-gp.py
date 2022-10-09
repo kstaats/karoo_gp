@@ -493,7 +493,7 @@ def fx_karoo_pause(model):
         model.log(f'Tree {tree.id} yields (sym): {tree.expression}')
 
         # Predict X_test and show predictions vs actual
-        predictions = model.batch_predict(model.X_test, [tree])[0]
+        predictions = model.tree_predict(tree, model.X_test)
         for i, (y_pred, y_true) in enumerate(zip(predictions, model.y_test)):
             model.log(f'Data row {i} predicts: {y_pred}, actual: {y_true}')
 

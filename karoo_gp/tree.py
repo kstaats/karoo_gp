@@ -209,3 +209,32 @@ class Tree:
             f'The resulting offspring is: \n{self.display()}',
             display=['db'])
         pause(display=['db'])
+
+    #++++++++++++++++++++++++++++
+    #   Predict                 |
+    #++++++++++++++++++++++++++++
+
+    def predict(self, X, terminals=None, engine='numpy'):
+        """Return the execution output of the tree on some data
+
+        Args
+        ====
+        - X: A numpy array of shape (n_samples, n_terminals)
+        - terminals: A list of length X.shape[1] of strings which match the
+                     labels of terminal Nodes.
+        - engine: Whether to execute on CPU (numpy) or GPU (tensorflow).
+                  Based on experimentation it seems GPU is beneficial for
+                  >30,000 samples.
+        """
+        if terminals is None:
+            # Mirror default naming convention from BaseGP.check_population
+            terminals = [f'f{i}' for i in range(X.shape[1])]
+        X_index = {t: i for i, t in enumerate(terminals)}
+        pred = self.root.predict(X, X_index, engine)
+
+        # Datasets with extreme large/small values and nonbasic operators
+        # sometimes throw errors (see 'test_base_unfit_trees' for more).
+        if any(np.isnan(pred)) or any(np.isinf(pred)):
+            self.is_unfit = True
+        return pred
+
