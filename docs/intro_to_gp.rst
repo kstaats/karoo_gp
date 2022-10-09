@@ -40,7 +40,7 @@ GP Parameters
 ------------
 All Full tree branches reach the maximum depth. These trees are less likely
 to solve problems as they are not as flexible in their solution space. For
-example, if the desired solution is a + b + c (5 elements) but the Full tree
+example, if the desired solution is ``a + b + c`` (5 elements) but the Full tree
 is confined to 15 elements, some will be forced to cancel each other in order
 to arrive to the desired solution. However, Full trees do contribute higher
 order expressions.
@@ -79,7 +79,7 @@ possible number of nodes, as follows:
 Karoo is unique from traditional tree-based GP in that it incorporates a user
 defined maximum tree depth, thereby restricting program bloat. However, deeper
 trees present opportunity for more complex solutions, and they enable the
-inclusion of a greater number of features (columns in your .csv). As depth 3
+inclusion of a greater number of features (columns in your ``.csv``). As depth 3
 enables up to 15 nodes, and depth 5 enables up to 63 nodes, quite a bit of
 growth is possible with trees just 2-3 depths greater. Or, you can set the
 maximum to 10 (2047 possible nodes) and learn if a larger solution is in fact
@@ -90,15 +90,16 @@ more able to resolve your data.
 If the Maximum Tree Depth is the ceiling, then this is the floor. The minimum
 number of nodes (both operators and terminals) defines the simplest expression
 allowed. For example, the correct solution to Kepler's 3rd Law of Planetary
-Motion is t * t / r * r * r which has 9 elements (nodes). In Karoo GP, the gene
+Motion is ``t * t / r * r * r`` which has 9 elements (nodes). In Karoo GP, the gene
 pool from which the tournament selection operates is built only from those
 trees which meet the minimum number of nodes criterion. This is very useful in
 solving the default problem for the Regression kernel, as GP tends to the
-simpler t / t.
+simpler ``t / t``.
 
-**NOTE**: If you set the minimum number of nodes too high, you may invoke
-elitism in the population, killing off simpler solutions or even the entire
-population.
+.. note::
+   If you set the minimum number of nodes too high, you may invoke
+   elitism in the population, killing off simpler solutions or even the entire
+   population.
 
 5. Number of Trees
 ------------------

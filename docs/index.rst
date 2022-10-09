@@ -7,8 +7,8 @@ Welcome to Karoo GP
 ===================
 Karoo GP is a Machine Learning application suite which provides both symbolic
 regression and classification data analysis. Written in the programming
-language Python, Karoo GP owes its foundation to the “Field Guide to Genetic
-Programming” by Poli, Langdon, McPhee, and Koza.
+language Python, Karoo GP owes its foundation to the "Field Guide to Genetic
+Programming" by Poli, Langdon, McPhee, and Koza.
 
 Karoo GP is a scalable platform with multicore and GPU support, designed to
 readily work with realworld data. No programming required. As a teaching tool,
