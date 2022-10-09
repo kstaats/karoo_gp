@@ -18,13 +18,13 @@ repeatable experimentation.
 
 Karoo GP supports multiple programming workflows:
 
-- **API Libary**: A set of classes and functions which can be used to run Karoo
-  in a Jupyter notebook environment or similar.
 - **Text User Interface (TUI)**: An intuitive Desktop user interface and a
   fully scriptable Server interface with user defined default parameters and
   command-line arguments, both of which work with your datasets.
 - **Command Line Interface (CLI)**: An executable with optional flags which
   executes Karoo and reads and writes directly from/to the file directory.
+- **API Libary**: A set of classes and functions which can be used to run Karoo
+  in a Jupyter notebook environment or similar.
 
 .. toctree::
    :maxdepth: 2
@@ -37,5 +37,5 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. * :ref:`modindex`
+.. * :ref:`search`

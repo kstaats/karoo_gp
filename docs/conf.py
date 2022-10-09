@@ -34,6 +34,10 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
+# By default, autodoc imports modules and all their sub-modules/packages. This
+# was causing problems with tensorflow on Apple Silicon. Below is a workaround
+# to ignore specific imports when building.
+autodoc_mock_imports=['tensorflow', 'sympy']
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
