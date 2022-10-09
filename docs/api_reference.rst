@@ -2,6 +2,10 @@
 API Reference
 =============
 
+.. warning::
+   This section is under construction.
+   All API functionality is subject to change.
+
 .. _base-gp:
 
 BaseGP
