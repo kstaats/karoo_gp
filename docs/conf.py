@@ -12,8 +12,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 project = 'Karoo GP'
-copyright = '2022, Kai Staats, Grant Hawkins and Ezio Melotti'
-author = 'Kai Staats, Grant Hawkins and Ezio Melotti'
+copyright = '2022, Kai Staats, Grant Hawkins, and Ezio Melotti'
+author = 'Kai Staats, Grant Hawkins, and Ezio Melotti'
 release = '3.0'
 
 # -- General configuration ---------------------------------------------------
@@ -24,7 +24,7 @@ extensions = [
     'sphinx_rtd_theme',
 ]
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'venv', 'Thumbs.db', '.DS_Store']
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
