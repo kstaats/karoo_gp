@@ -206,7 +206,7 @@ class Node:
                     f'{ws}if{ws}{self.children[1].parse(simplified)}'
                     f'{ws}else{ws}{self.children[2].parse(simplified)})')
 
-    def display(self, *args, method='viz', **kwargs):
+    def display(self, *args, method='min', **kwargs):
         """Return a printable string representation of the tree.
 
         Supports two visualization methids:
@@ -218,6 +218,8 @@ class Node:
             return self.display_list(*args, **kwargs)
         elif method == 'viz':
             return self.display_viz(*args, **kwargs)
+        elif method == 'min':
+            return self.display_min(*args, **kwargs)
 
     def display_list(self, prefix=''):
         """Return a printable string of node and subtree as an indented list
@@ -234,6 +236,23 @@ class Node:
         if self.children:
             output += ''.join(child.display_list(prefix=prefix+'\t')
                               for child in self.children)
+        return output
+
+    def display_min(self, prefix='', mapper=None):
+        label = self.label
+        if self.node_type == 'terminal' and mapper is not None:
+            label = mapper[label]
+        output = f'{prefix}{label}\n'
+        if self.children:
+            if prefix.endswith('└╴'):
+                prefix = prefix[:-2] + '  '
+            elif prefix.endswith('├╴'):
+                prefix = prefix[:-2] + '│ '
+            for i, child in enumerate(self.children):
+                if i == len(self.children) - 1:
+                    output += child.display_min(f'{prefix}└╴', mapper=mapper)
+                else:
+                    output += child.display_min(f'{prefix}├╴', mapper=mapper)
         return output
 
     def display_viz(self, width=60, label_max_len=3):
@@ -276,7 +295,7 @@ class Node:
                         this_children.append((child, child_width))
                         cum_width += child_width
                     # Add lines to the output
-                    start_padding = this_children[0][1] // 2          # Midpoint of first child
+                    start_padding = this_children[0][1] // 2 - 1  # Midpoint of first child
                     end_padding = subtree_width - (this_children[-1][1] // 2)  # ..of last child
                     with_line = ''
                     for i, v in enumerate(this_output):
