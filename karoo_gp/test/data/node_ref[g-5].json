@@ -5,7 +5,7 @@
     "children": "[<Node: <NodeData label='a' type=terminal>>, <Node: <NodeData label=2 type=constant>>]",
     "repr": "<Node: <NodeData label='/' type=operator>>",
     "parse": "((a)/(2))",
-    "display": "                _____________/_______________               \n              a                             2               \n",
+    "display": "/\n\u251c\u2574a\n\u2514\u25742\n",
     "depth": 1,
     "height": 0,
     "n_children": 2,

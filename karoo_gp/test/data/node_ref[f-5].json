@@ -5,7 +5,7 @@
     "children": "[<Node: <NodeData label='**' type=operator>>, <Node: <NodeData label='-' type=operator>>]",
     "repr": "<Node: <NodeData label='/' type=operator>>",
     "parse": "((((1)**((2)if((a)>=(b))else(abs(b))))**(((sqrt(c))-(square(2)))if((3)>(square(a)))else(3)))/((3)-((sqrt((2)*(1)))*((1)-((c)-(3))))))",
-    "display": "                    _________/___________________           \n          ________**_________            _______-__         \n   ______**_            ____if_______  3       ___*____     \n 1     ____if_____    -__     >__   3       sqr      _-__   \n     2     >=_  abssqr squ  3  squ           *__   1    -__ \n         a   b   b  c   2       a          2   1       c  3 \n",
+    "display": "/\n\u251c\u2574**\n\u2502 \u251c\u2574**\n\u2502 \u2502 \u251c\u25741\n\u2502 \u2502 \u2514\u2574if\n\u2502 \u2502   \u251c\u25742\n\u2502 \u2502   \u251c\u2574>=\n\u2502 \u2502   \u2502 \u251c\u2574a\n\u2502 \u2502   \u2502 \u2514\u2574b\n\u2502 \u2502   \u2514\u2574abs\n\u2502 \u2502     \u2514\u2574b\n\u2502 \u2514\u2574if\n\u2502   \u251c\u2574-\n\u2502   \u2502 \u251c\u2574sqrt\n\u2502   \u2502 \u2502 \u2514\u2574c\n\u2502   \u2502 \u2514\u2574square\n\u2502   \u2502   \u2514\u25742\n\u2502   \u251c\u2574>\n\u2502   \u2502 \u251c\u25743\n\u2502   \u2502 \u2514\u2574square\n\u2502   \u2502   \u2514\u2574a\n\u2502   \u2514\u25743\n\u2514\u2574-\n  \u251c\u25743\n  \u2514\u2574*\n    \u251c\u2574sqrt\n    \u2502 \u2514\u2574*\n    \u2502   \u251c\u25742\n    \u2502   \u2514\u25741\n    \u2514\u2574-\n      \u251c\u25741\n      \u2514\u2574-\n        \u251c\u2574c\n        \u2514\u25743\n",
     "depth": 5,
     "height": 0,
     "n_children": 33,
